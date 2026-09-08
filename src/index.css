@@ -1,0 +1,236 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   CLIENTUM CRM DESIGN SYSTEM & MODULAR THEME ENGINE
+   Modular CSS Variable System supporting Light, Dark, and System modes
+   with High Contrast Ratios (WCAG AAA/AA) and Consistent Spacing Tokens
+   ========================================================================== */
+
+:root,
+[data-theme="light"],
+.light {
+  /* Canvas & Base Surfaces */
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-navbar: #ffffff;
+  --bg-input: #ffffff;
+  --bg-muted: #f1f5f9;
+  --bg-accent-subtle: #eff6ff;
+
+  /* High Contrast Typography */
+  --text-primary: #0f172a;       /* 15.6:1 contrast on white (WCAG AAA) */
+  --text-secondary: #334155;     /* 9.4:1 contrast on white */
+  --text-muted: #475569;         /* 5.9:1 contrast on white */
+  --text-inverse: #ffffff;
+  --text-brand: #2563eb;
+  --text-brand-hover: #1d4ed8;
+
+  /* Border & Divider System */
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+  --border-focus: #2563eb;
+
+  /* Brand Accents */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #eff6ff;
+  --color-primary-text: #1e40af;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  /* --------------------------------------------------------------------------
+     Sidebar High-Contrast Visual Separation (Light Mode: Deep Executive Slate)
+     Provides distinct, crisp boundary between navigation and main workspace.
+     -------------------------------------------------------------------------- */
+  --sidebar-bg: #0b1120;
+  --sidebar-header-bg: #070c18;
+  --sidebar-footer-bg: #070c18;
+  --sidebar-border: #1e293b;
+  --sidebar-text-primary: #f8fafc;
+  --sidebar-text-secondary: #94a3b8;
+  --sidebar-text-muted: #64748b;
+  --sidebar-hover-bg: #1e293b;
+  --sidebar-hover-text: #ffffff;
+  --sidebar-active-bg: #2563eb;
+  --sidebar-active-text: #ffffff;
+  --sidebar-search-bg: #131d31;
+  --sidebar-search-border: #1e293b;
+  --sidebar-search-text: #f1f5f9;
+  --sidebar-portal-btn-bg: #172554;
+  --sidebar-portal-btn-text: #93c5fd;
+  --sidebar-portal-btn-border: #1e3a8a;
+  --sidebar-copilot-bg: linear-gradient(135deg, #172554 0%, #1e1b4b 100%);
+  --sidebar-copilot-border: #1e3a8a;
+  --sidebar-card-text: #e2e8f0;
+  --sidebar-card-muted: #94a3b8;
+
+  /* Consistent Spacing Tokens */
+  --space-0: 0px;
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+  --space-12: 3rem;    /* 48px */
+  --space-16: 4rem;    /* 64px */
+
+  /* Radius & Shadows */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  --shadow-elevated: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-popover: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"],
+.dark {
+  /* Canvas & Base Surfaces */
+  --bg-canvas: #090d16;
+  --bg-surface: #111827;
+  --bg-surface-elevated: #1e293b;
+  --bg-card: #131b2e;
+  --bg-card-hover: #1a243b;
+  --bg-navbar: #0f172a;
+  --bg-input: #0f172a;
+  --bg-muted: #1e293b;
+  --bg-accent-subtle: rgba(37, 99, 235, 0.15);
+
+  /* High Contrast Typography */
+  --text-primary: #f8fafc;       /* 16.5:1 contrast on #090d16 (WCAG AAA) */
+  --text-secondary: #cbd5e1;     /* 11.2:1 contrast */
+  --text-muted: #94a3b8;         /* 6.8:1 contrast */
+  --text-inverse: #0f172a;
+  --text-brand: #60a5fa;
+  --text-brand-hover: #93c5fd;
+
+  /* Border & Divider System */
+  --border-subtle: #1e293b;
+  --border-default: #334155;
+  --border-strong: #475569;
+  --border-focus: #3b82f6;
+
+  /* Brand Accents */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #60a5fa;
+  --color-primary-light: rgba(59, 130, 246, 0.15);
+  --color-primary-text: #93c5fd;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+
+  /* --------------------------------------------------------------------------
+     Sidebar High-Contrast Visual Separation (Dark Mode: Pure Obsidian)
+     Provides sharp contrast against cards and canvas in dark mode.
+     -------------------------------------------------------------------------- */
+  --sidebar-bg: #050811;
+  --sidebar-header-bg: #020408;
+  --sidebar-footer-bg: #020408;
+  --sidebar-border: #131b2e;
+  --sidebar-text-primary: #ffffff;
+  --sidebar-text-secondary: #94a3b8;
+  --sidebar-text-muted: #64748b;
+  --sidebar-hover-bg: #0f172a;
+  --sidebar-hover-text: #ffffff;
+  --sidebar-active-bg: #1d4ed8;
+  --sidebar-active-text: #ffffff;
+  --sidebar-search-bg: #090d16;
+  --sidebar-search-border: #1e293b;
+  --sidebar-search-text: #f8fafc;
+  --sidebar-portal-btn-bg: #0f172a;
+  --sidebar-portal-btn-text: #60a5fa;
+  --sidebar-portal-btn-border: #1e293b;
+  --sidebar-copilot-bg: linear-gradient(135deg, #09132b 0%, #0d0e24 100%);
+  --sidebar-copilot-border: #1e3a8a;
+  --sidebar-card-text: #f1f5f9;
+  --sidebar-card-muted: #94a3b8;
+
+  color-scheme: dark;
+}
+
+/* Global Application Baseline */
+html,
+body,
+#root {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom Adaptive Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* High Contrast Sidebar Styling */
+#clientum-sidebar {
+  background-color: var(--sidebar-bg) !important;
+  border-right-color: var(--sidebar-border) !important;
+  color: var(--sidebar-text-primary);
+}
+
+#clientum-sidebar .sidebar-header {
+  background-color: var(--sidebar-header-bg) !important;
+  border-color: var(--sidebar-border) !important;
+}
+
+#clientum-sidebar .sidebar-footer {
+  background-color: var(--sidebar-footer-bg) !important;
+  border-color: var(--sidebar-border) !important;
+}
+
+/* Form element focus states */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
