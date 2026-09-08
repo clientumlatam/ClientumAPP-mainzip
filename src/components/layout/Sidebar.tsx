@@ -75,7 +75,7 @@ export const Sidebar: React.FC = () => {
     { id: 'dashboard', label: 'Resumen Ejecutivo', icon: Home },
     { id: 'featureHub', label: 'Centro de funciones', icon: ScanSearch, badge: '6', badgeColor: 'bg-violet-100 text-violet-800 font-semibold' },
     { id: 'opportunities', label: 'Pipeline Negocios', icon: Briefcase, badge: 'Kanban', badgeColor: 'bg-blue-100 text-blue-800' },
-    { id: 'webmail', label: 'Webmail Cloudflare (D1)', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'D1', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-emerald-100 text-emerald-800 font-semibold' },
+    { id: 'webmail', label: 'Webmail SMTP + Routing', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'SMTP', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-semibold' },
     { id: 'companies', label: 'Empresas', icon: Building2 },
     { id: 'people', label: 'Contactos', icon: Users2 },
     { id: 'tasks', label: 'Tareas & Actividades', icon: CheckSquare, badge: 7, badgeColor: 'bg-amber-100 text-amber-800' },

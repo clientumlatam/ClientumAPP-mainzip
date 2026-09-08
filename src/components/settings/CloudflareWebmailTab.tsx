@@ -40,7 +40,6 @@ interface WebmailMessage {
 export const CloudflareWebmailTab: React.FC = () => {
   const { showToast, currentUser } = useCRM();
 
-  const [copiedClone, setCopiedClone] = useState(false);
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<WebmailMessage | null>(null);
   const [isSimulatingSend, setIsSimulatingSend] = useState(false);
@@ -91,16 +90,6 @@ export const CloudflareWebmailTab: React.FC = () => {
       isRead: true,
     },
   ]);
-
-  const cloneCommand =
-    'git clone https://x:art_v2_x_2da869fca4fe8452d50390aeba31184e432ae715@31b91e7f9954ad8aa334d46f012bd8ed.artifacts.cloudflare.net/git/lee-production/lee-clientumos-webmail-330414a2.git clientumos-webmail';
-
-  const handleCopyClone = () => {
-    navigator.clipboard.writeText(cloneCommand);
-    setCopiedClone(true);
-    showToast('Comando git clone copiado al portapapeles', 'success');
-    setTimeout(() => setCopiedClone(false), 2500);
-  };
 
   const handleCopySnippet = (cmd: string, id: string) => {
     navigator.clipboard.writeText(cmd);
@@ -384,7 +373,7 @@ export const CloudflareWebmailTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Cloudflare Worker Deployment & Git Clone Hub */}
+      {/* Cloudflare Worker Deployment & Wrangler CLI Hub */}
       <div className="bg-[#121620] border border-[#1e2434] rounded-xl p-5 space-y-4 shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1e2434]">
           <div className="flex items-center gap-2">
@@ -393,28 +382,23 @@ export const CloudflareWebmailTab: React.FC = () => {
             </div>
             <div>
               <h4 className="text-sm font-bold text-white">
-                Repositorio de Deploy & Guía Wrangler CLI
+                Guía de Deploy & Wrangler CLI
               </h4>
               <p className="text-xs text-slate-400">
-                Comandos oficiales para clonar, configurar D1 y publicar el Worker en tu cuenta de Cloudflare.
+                Comandos oficiales para configurar D1 y publicar el Worker. Las credenciales deben gestionarse fuera del código.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Git Clone Box */}
+        {/* Secure setup note */}
         <div className="space-y-1.5">
-          <span className="text-xs font-semibold text-slate-300">Clonar Repositorio Completo:</span>
-          <div className="flex items-center gap-2 bg-[#0a0d14] border border-[#2b354c] rounded-lg p-2.5 font-mono text-xs text-slate-200">
-            <span className="text-purple-400 select-none">$</span>
-            <span className="flex-1 truncate text-slate-300">{cloneCommand}</span>
-            <button
-              onClick={handleCopyClone}
-              className="px-2.5 py-1 rounded bg-[#1e2434] hover:bg-[#283247] text-slate-200 text-xs flex items-center gap-1 shrink-0 transition-colors"
-            >
-              {copiedClone ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedClone ? 'Copiado' : 'Copiar Git Clone'}</span>
-            </button>
+          <span className="text-xs font-semibold text-slate-300">Acceso seguro al repositorio:</span>
+          <div className="flex items-start gap-2 bg-[#0a0d14] border border-amber-500/20 rounded-lg p-3 text-xs text-slate-300">
+            <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              No se muestran comandos con tokens embebidos. Usa un repositorio autenticado mediante tu proveedor Git o configura Wrangler con secretos administrados por Cloudflare.
+            </p>
           </div>
         </div>
 
