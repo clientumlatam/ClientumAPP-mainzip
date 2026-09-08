@@ -50,6 +50,8 @@ import { UserProfileModal } from './components/auth/UserProfileModal';
 import { PublicSite } from './components/public/PublicSite';
 import { WebmailInboxView } from './components/webmail/WebmailInboxView';
 import { ComposeEmailModal } from './components/webmail/ComposeEmailModal';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { isPrivateAppPath } from './lib/navigation';
 
 const MainContent: React.FC = () => {
   const {
@@ -145,34 +147,63 @@ const MainContent: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const { resolvedTheme } = useTheme();
-  const { isPublicSiteVisible, isAuthenticated, openPublicSite } = useCRM();
+  const { isPublicSiteVisible, isAuthenticated, openPublicSite, enterApp } = useCRM();
+  const [pathname, setPathname] = React.useState(() =>
+    typeof window === 'undefined' ? '/' : window.location.pathname,
+  );
+  const isPrivateRoute = isPrivateAppPath(pathname);
 
-  // Treat the private workspace as protected even when an old session flag
-  // requests app mode after the authentication state has expired or been cleared.
+  // Keep browser navigation and the context's environment state in sync.
   React.useEffect(() => {
-    if (!isPublicSiteVisible && !isAuthenticated) {
-      openPublicSite();
+    const handlePopState = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  React.useEffect(() => {
+    if (isPrivateRoute && isAuthenticated) {
+      if (isPublicSiteVisible) enterApp();
+      return;
     }
-  }, [isPublicSiteVisible, isAuthenticated, openPublicSite]);
 
-  if (isPublicSiteVisible || !isAuthenticated) {
-    return (
-      <div data-theme={resolvedTheme} className="min-h-screen w-screen overflow-x-hidden bg-[var(--bg-canvas)] text-[var(--text-primary)]">
-        <PublicSite />
-        <AuthModal />
-        <ToastContainer />
-      </div>
-    );
-  }
+    if (isPrivateRoute && !isAuthenticated) {
+      // Replace an unauthorized deep link so Back does not return to a
+      // private URL that can never be rendered.
+      window.history.replaceState({}, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      openPublicSite();
+      return;
+    }
 
-  return (
+    // A public URL always renders the public environment, even if a stale
+    // sessionStorage view flag says "app".
+    if (!isPrivateRoute && !isPublicSiteVisible) openPublicSite();
+  }, [enterApp, isAuthenticated, isPrivateRoute, isPublicSiteVisible, openPublicSite]);
+
+  const publicEnvironment = (
+    <div data-theme={resolvedTheme} className="min-h-screen w-screen overflow-x-hidden bg-[var(--bg-canvas)] text-[var(--text-primary)]">
+      <PublicSite />
+      <AuthModal />
+      <ToastContainer />
+    </div>
+  );
+
+  const privateEnvironment = (
     <div
-      data-theme={resolvedTheme}
       className="flex h-screen w-screen overflow-hidden bg-[var(--bg-canvas)] text-[var(--text-primary)] font-['Plus_Jakarta_Sans',sans-serif]"
     >
       <Sidebar />
       <MainContent />
     </div>
+  );
+
+  return (
+    <ProtectedRoute
+      isAuthenticated={isPrivateRoute && isAuthenticated}
+      fallback={publicEnvironment}
+    >
+      {privateEnvironment}
+    </ProtectedRoute>
   );
 };
 

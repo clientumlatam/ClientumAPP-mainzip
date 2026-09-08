@@ -74,6 +74,7 @@ import {
   INITIAL_INVENTORY,
   INITIAL_EXPENSES,
 } from '../data/erpInitialData';
+import { isPrivateAppPath, navigateEnvironment } from '../lib/navigation';
 
 export interface ToastMessage {
   id: string;
@@ -499,6 +500,9 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isPublicSiteVisible, setIsPublicSiteVisible] = useState<boolean>(() => {
     try {
       const mode = sessionStorage.getItem('clientum_view_mode');
+      if (typeof window !== 'undefined' && isPrivateAppPath(window.location.pathname)) {
+        return false;
+      }
       if (mode === 'app') return false;
       return true; // Show public site at the beginning by default
     } catch (e) {
@@ -569,6 +573,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setIsPublicSiteVisible(false);
     setActiveTab('dashboard');
+    navigateEnvironment('/app');
     try {
       sessionStorage.setItem('clientum_view_mode', 'app');
     } catch (e) {}
@@ -576,6 +581,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const openPublicSite = () => {
     setIsPublicSiteVisible(true);
+    navigateEnvironment('/');
     try {
       sessionStorage.setItem('clientum_view_mode', 'public');
     } catch (e) {}

@@ -8,13 +8,11 @@ import {
   Menu,
   X,
   Store,
-  DollarSign,
   Search,
   Zap,
   Layers,
   FileSpreadsheet,
   MessageSquare,
-  Users,
   BarChart3,
   Globe,
   GraduationCap,
@@ -28,14 +26,13 @@ import {
   HardHat,
   Car,
   Phone,
-  HelpCircle,
-  CheckCircle2,
-  Command,
-  ExternalLink
 } from 'lucide-react';
 import { ClientumLogo } from '../common/ClientumLogo';
 import { useCRM } from '../../context/CRMContext';
 import { PublicRoutePath, PRODUCT_SUBNAV, INDUSTRIES_SUBNAV } from './publicRoutes';
+import { PublicSearchDialog } from './PublicSearchDialog';
+import { PUBLIC_SEARCH_ITEMS } from './publicNavData';
+import { PublicMobileMenu } from './PublicMobileMenu';
 
 interface PublicNavbarProps {
   currentPath: string;
@@ -61,7 +58,6 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
   // Dropdown states
   const [activeMenu, setActiveMenu] = useState<'product' | 'industries' | 'resources' | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [mobileSection, setMobileSection] = useState<'product' | 'industries' | 'resources' | null>('product');
 
   // Interactive Quick Search / Command Palette in header
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -109,34 +105,6 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
     setIsSearchOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  // Search results calculation
-  const allSearchableItems = [
-    { title: 'CRM 360° Comercial', category: 'Producto', path: '/clientum-crm' as PublicRoutePath, desc: 'Pipeline Kanban, gestión de tratos y forecast' },
-    { title: 'WhatsApp Multiagente & Baileys', category: 'Producto', path: '/producto/whatsapp-ia' as PublicRoutePath, desc: 'Centraliza números comerciales con QR' },
-    { title: 'Facturación AFIP con CAE', category: 'Fiscal & ERP', path: '/producto/erp' as PublicRoutePath, desc: 'Facturas A, B, C automáticas con QR fiscal' },
-    { title: 'Agente OS Autónomo (Gemini 3.7)', category: 'Inteligencia Artificial', path: '/producto/agentes-ia' as PublicRoutePath, desc: '14 roles IA para ventas, soporte y finanzas' },
-    { title: 'Planes y Precios', category: 'Comercial', path: '/precios' as PublicRoutePath, desc: 'Tarifas transparentes en ARS y USD' },
-    { title: 'Casos de Éxito Reales', category: 'Empresa', path: '/casos' as PublicRoutePath, desc: 'PyMEs y corporativos que escalaron con Clientum' },
-    { title: 'Academia LMS & Certificaciones', category: 'Educación', path: '/academia' as PublicRoutePath, desc: 'Cursos interactivos con diploma digital' },
-    { title: 'Agroindustria & Acopios', category: 'Industrias', path: '/industrias/agro' as PublicRoutePath, desc: 'Solución para maquinaria, insumos y acopios' },
-    { title: 'Distribuidoras Mayoristas', category: 'Industrias', path: '/industrias/distribuidoras' as PublicRoutePath, desc: 'Ventas por volumen, listas de precios y logística' },
-    { title: 'Estudios Contables & Jurídicos', category: 'Industrias', path: '/industrias/estudios-contables' as PublicRoutePath, desc: 'Gestión masiva de clientes y AFIP' },
-    { title: 'Salud & Clínicas Médicas', category: 'Industrias', path: '/industrias/salud' as PublicRoutePath, desc: 'Turnos automáticos y recordatorios de citas' },
-    { title: 'Inmobiliarias & Desarrollos', category: 'Industrias', path: '/industrias/inmobiliaria' as PublicRoutePath, desc: 'Tasaciones, propiedades y contratos' },
-    { title: 'Tienda Digital Oficial', category: 'Herramientas', path: '/tienda/central' as PublicRoutePath, desc: 'Catálogo público con cotización y checkout' },
-    { title: 'Gestor de Dominios & DNS Cloudflare', category: 'Herramientas', path: '/dominios' as PublicRoutePath, desc: 'Zona DNS, SSL y auditoría SEO On-Page' },
-    { title: 'Servicios Profesionales de Migración', category: 'Servicios', path: '/servicios' as PublicRoutePath, desc: 'Puesta en marcha e integración llave en mano' },
-    { title: 'Contacto & Agendar Demostración', category: 'Contacto', path: '/contacto' as PublicRoutePath, desc: 'Habla con un consultor comercial sénior' }
-  ];
-
-  const searchResults = searchQuery.trim()
-    ? allSearchableItems.filter(item =>
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : allSearchableItems.slice(0, 6);
 
   // Industry icons map
   const getIndustryIcon = (path: string) => {
@@ -720,307 +688,37 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
 
         {/* 3. MOBILE INTERACTIVE DRAWER / ACCORDION */}
         {isMobileMenuOpen && (
-          <div className="xl:hidden bg-white border-b border-slate-200 px-4 py-4 max-h-[85vh] overflow-y-auto space-y-4 shadow-xl animate-in fade-in slide-in-from-top-2">
-            
-            {/* Mobile Search Bar */}
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar módulo, industria o solución..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600"
-              />
-            </div>
-
-            {/* Quick Mobile Category Tabs */}
-            <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
-              <button
-                onClick={() => setMobileSection('product')}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-colors cursor-pointer ${
-                  mobileSection === 'product' ? 'bg-white text-blue-700 font-bold shadow-2xs' : 'text-slate-600'
-                }`}
-              >
-                Producto
-              </button>
-              <button
-                onClick={() => setMobileSection('industries')}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-colors cursor-pointer ${
-                  mobileSection === 'industries' ? 'bg-white text-blue-700 font-bold shadow-2xs' : 'text-slate-600'
-                }`}
-              >
-                Industrias (10)
-              </button>
-              <button
-                onClick={() => setMobileSection('resources')}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-colors cursor-pointer ${
-                  mobileSection === 'resources' ? 'bg-white text-blue-700 font-bold shadow-2xs' : 'text-slate-600'
-                }`}
-              >
-                Recursos
-              </button>
-            </div>
-
-            {/* Mobile Content Based on Selected Tab */}
-            {mobileSection === 'product' && (
-              <div className="space-y-1.5">
-                <button
-                  onClick={() => handleNavClick('/clientum-crm')}
-                  className="w-full p-2.5 rounded-xl bg-blue-50/60 border border-blue-200 text-left flex items-center justify-between text-xs font-bold text-blue-900"
-                >
-                  <span className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-blue-600" />
-                    CRM 360° Omnicanal
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-200 text-blue-800">Ver Demo</span>
-                </button>
-                <button
-                  onClick={() => handleNavClick('/producto/whatsapp-ia')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs text-slate-800 font-semibold"
-                >
-                  <MessageSquare className="w-4 h-4 text-emerald-600" />
-                  WhatsApp Multiagente & Baileys
-                </button>
-                <button
-                  onClick={() => handleNavClick('/producto/erp')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs text-slate-800 font-semibold"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-blue-600" />
-                  Facturación AFIP con CAE (WSFE)
-                </button>
-                <button
-                  onClick={() => handleNavClick('/producto/agentes-ia')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs text-slate-800 font-semibold"
-                >
-                  <Bot className="w-4 h-4 text-purple-600" />
-                  Agente OS Autónomo (Gemini 3.7)
-                </button>
-                <button
-                  onClick={() => handleNavClick('/producto/automatizaciones')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs text-slate-800 font-semibold"
-                >
-                  <Zap className="w-4 h-4 text-amber-600" />
-                  Automatizaciones & Flujos DAG
-                </button>
-                <button
-                  onClick={() => handleNavClick('/producto/bi')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs text-slate-800 font-semibold"
-                >
-                  <BarChart3 className="w-4 h-4 text-blue-600" />
-                  Business Intelligence & Forecast
-                </button>
-              </div>
-            )}
-
-            {mobileSection === 'industries' && (
-              <div className="grid grid-cols-2 gap-1.5">
-                {INDUSTRIES_SUBNAV.map((ind) => (
-                  <button
-                    key={ind.path}
-                    onClick={() => handleNavClick(ind.path)}
-                    className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-left text-xs font-semibold text-slate-800 flex items-center gap-2 truncate"
-                  >
-                    {getIndustryIcon(ind.path)}
-                    <span className="truncate">{ind.label.split(' ')[0]}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {mobileSection === 'resources' && (
-              <div className="space-y-1.5">
-                <button
-                  onClick={() => handleNavClick('/precios')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center justify-between text-xs font-semibold text-slate-800"
-                >
-                  <span>🏷️ Planes & Precios</span>
-                  <span className="text-[10px] text-blue-600 font-bold">Desde $15.000</span>
-                </button>
-                <button
-                  onClick={() => handleNavClick('/casos')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs font-semibold text-slate-800"
-                >
-                  <Award className="w-4 h-4 text-blue-600" />
-                  Casos de Éxito & Clientes
-                </button>
-                <button
-                  onClick={() => handleNavClick('/academia')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs font-semibold text-slate-800"
-                >
-                  <GraduationCap className="w-4 h-4 text-amber-600" />
-                  Academia LMS Clientum
-                </button>
-                <button
-                  onClick={() => handleNavClick('/servicios')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs font-semibold text-slate-800"
-                >
-                  <Briefcase className="w-4 h-4 text-blue-600" />
-                  Servicios de Implementación
-                </button>
-                <button
-                  onClick={() => handleNavClick('/tienda/central')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs font-semibold text-slate-800"
-                >
-                  <Store className="w-4 h-4 text-emerald-600" />
-                  Tienda Digital Oficial
-                </button>
-                <button
-                  onClick={() => handleNavClick('/dominios')}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-left flex items-center gap-2 text-xs font-semibold text-slate-800"
-                >
-                  <Globe className="w-4 h-4 text-blue-600" />
-                  Gestor de Dominios & Cloudflare
-                </button>
-              </div>
-            )}
-
-            {/* Quick Interactive Tool Cards in Mobile */}
-            <div className="pt-2 border-t border-slate-200">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                Herramientas Interactivas Gratuitas
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onOpenWizard();
-                  }}
-                  className="p-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-center text-[11px] font-bold flex flex-col items-center gap-1 cursor-pointer"
-                >
-                  <Calculator className="w-4 h-4 text-blue-600" />
-                  <span>Cotizador</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onOpenSimulator();
-                  }}
-                  className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-center text-[11px] font-bold flex flex-col items-center gap-1 cursor-pointer"
-                >
-                  <Bot className="w-4 h-4 text-emerald-600" />
-                  <span>Simulador</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onOpenAudit();
-                  }}
-                  className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-center text-[11px] font-bold flex flex-col items-center gap-1 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-600" />
-                  <span>Auditoría</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile Footer CTAs */}
-            <div className="pt-2 border-t border-slate-200 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 font-medium">Moneda de visualización:</span>
-                <button
-                  onClick={onToggleCurrency}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 font-bold text-slate-800"
-                >
-                  {currency === 'ARS' ? '🇦🇷 Pesos (ARS)' : '🇺🇸 Dólares (USD)'}
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                {!isAuthenticated && (
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsAuthModalOpen(true);
-                    }}
-                    className="py-2.5 rounded-xl border border-slate-300 font-bold text-xs text-slate-700 text-center"
-                  >
-                    Iniciar Sesión
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    enterApp();
-                  }}
-                  className={`py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs text-center shadow-md shadow-blue-600/20 ${
-                    isAuthenticated ? 'col-span-2' : ''
-                  }`}
-                >
-                  {isAuthenticated ? 'Ir al Dashboard' : 'Ingresar al CRM'}
-                </button>
-              </div>
-            </div>
-
-          </div>
+          <PublicMobileMenu
+            currency={currency}
+            isAuthenticated={isAuthenticated}
+            onNavigate={handleNavClick}
+            onClose={() => setIsMobileMenuOpen(false)}
+            onToggleCurrency={onToggleCurrency}
+            onOpenWizard={onOpenWizard}
+            onOpenSimulator={onOpenSimulator}
+            onOpenAudit={onOpenAudit}
+            onOpenLogin={() => {
+              setIsMobileMenuOpen(false);
+              setIsAuthModalOpen(true);
+            }}
+            onEnterApp={() => {
+              setIsMobileMenuOpen(false);
+              enterApp();
+            }}
+          />
         )}
       </header>
 
       {/* 4. COMMAND PALETTE / QUICK FINDER MODAL (⌘K) */}
-      {isSearchOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-start justify-center pt-20 p-4 font-['Plus_Jakarta_Sans',sans-serif]">
-          <div className="max-w-xl w-full bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            
-            {/* Input Bar */}
-            <div className="p-3.5 border-b border-slate-200 flex items-center gap-3">
-              <Search className="w-5 h-5 text-blue-600 shrink-0" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Escribe para buscar cualquier módulo, industria o herramienta..."
-                className="flex-1 bg-transparent text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none"
-              />
-              <button
-                onClick={() => setIsSearchOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Results list */}
-            <div className="max-h-[380px] overflow-y-auto p-2 space-y-1">
-              <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                {searchQuery.trim() ? `Resultados (${searchResults.length})` : 'Sugerencias Populares'}
-              </div>
-
-              {searchResults.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  No se encontraron resultados para "{searchQuery}". Prueba con "AFIP", "WhatsApp", "Agro" o "Precios".
-                </div>
-              ) : (
-                searchResults.map((item, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleNavClick(item.path)}
-                    className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50/70 border border-transparent hover:border-blue-200 transition-all flex items-center justify-between group cursor-pointer"
-                  >
-                    <div>
-                      <div className="font-bold text-xs text-slate-900 group-hover:text-blue-700 flex items-center gap-2">
-                        <span>{item.title}</span>
-                        <span className="text-[10px] font-normal px-2 py-0.2 rounded-full bg-slate-100 text-slate-600">
-                          {item.category}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{item.desc}</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 shrink-0 ml-2" />
-                  </button>
-                ))
-              )}
-            </div>
-
-            {/* Footer tips */}
-            <div className="bg-slate-50 p-2.5 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-500">
-              <span>Presiona <strong>ESC</strong> para cerrar</span>
-              <span>Clientum Suite Latam</span>
-            </div>
-
-          </div>
-        </div>
-      )}
+      <PublicSearchDialog
+        isOpen={isSearchOpen}
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
+        onClose={() => setIsSearchOpen(false)}
+        onSelect={handleNavClick}
+        items={PUBLIC_SEARCH_ITEMS}
+        inputRef={searchInputRef}
+      />
     </>
   );
 };

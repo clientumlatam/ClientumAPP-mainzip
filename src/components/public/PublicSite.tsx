@@ -18,6 +18,7 @@ import { CampusLMSView } from '../power/CampusLMSView';
 import { QuoteWizardModal } from './QuoteWizardModal';
 import { WhatsAppSimulatorModal } from './WhatsAppSimulatorModal';
 import { ExpressAuditModal } from './ExpressAuditModal';
+import { PublicSessionBanner } from './PublicSessionBanner';
 import { PublicRoutePath } from './publicRoutes';
 
 export const PublicSite: React.FC = () => {
@@ -221,6 +222,7 @@ export const PublicSite: React.FC = () => {
         onOpenSimulator={() => setIsWhatsAppSimOpen(true)}
         onOpenAudit={() => setIsExpressAuditOpen(true)}
       />
+      <PublicSessionBanner />
 
       {/* 2. Main Page Content */}
       <main className="flex-1">

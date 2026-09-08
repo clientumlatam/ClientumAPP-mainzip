@@ -119,6 +119,13 @@ async function assertPublicSite(description) {
   });
 }
 
+async function assertCanonicalPublicUrl(description) {
+  await waitFor(description, () => {
+    const text = document.body?.innerText || '';
+    return window.location.pathname === '/' && text.includes('Pedir Demo') && !text.includes('Resumen Ejecutivo');
+  });
+}
+
 async function assertPrivateWorkspace(description) {
   await waitFor(description, () => {
     const text = document.body?.innerText || '';
@@ -134,6 +141,12 @@ async function run() {
   await evaluate('localStorage.clear(); sessionStorage.clear(); location.reload()');
   await assertPublicSite('the unauthenticated public site');
   console.log('✓ unauthenticated visit renders the public site');
+
+  for (const privatePath of ['/app', '/dashboard', '/crm', '/erp']) {
+    await navigate(new URL(privatePath, baseUrl).toString());
+    await assertCanonicalPublicUrl(`the protected redirect from ${privatePath}`);
+    console.log(`✓ unauthenticated ${privatePath} redirects to the public URL`);
+  }
 
   await clickButton('Ingresar al CRM');
   await assertPrivateWorkspace('the demo/login action to enter the dashboard');
