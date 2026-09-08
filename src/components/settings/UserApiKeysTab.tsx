@@ -60,6 +60,7 @@ export const UserApiKeysTab: React.FC = () => {
   const {
     users,
     currentUser,
+    hasPermission,
     apiKeys,
     createAPIKey,
     revokeAPIKey,
@@ -70,8 +71,11 @@ export const UserApiKeysTab: React.FC = () => {
   const [keyName, setKeyName] = useState('');
   const [selectedModules, setSelectedModules] = useState<string[]>(['propuestas', 'googleMaps']);
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+  const [revealedToken, setRevealedToken] = useState<{ keyName: string; token: string } | null>(null);
+  const canManageUserKeys = hasPermission('integrations', 'manage');
+  const visibleUsers = canManageUserKeys ? users : [currentUser];
 
-  const selectedUser = users.find((user) => user.id === selectedUserId) || currentUser;
+  const selectedUser = visibleUsers.find((user) => user.id === selectedUserId) || currentUser;
   const userKeys = useMemo(
     () => apiKeys.filter((key) => keyOwnerId(key, currentUser.id) === selectedUser.id),
     [apiKeys, currentUser.id, selectedUser.id],
@@ -93,17 +97,22 @@ export const UserApiKeysTab: React.FC = () => {
       return;
     }
 
-    createAPIKey(
+    const createdKey = createAPIKey(
       keyName.trim(),
       selectedModules.map((moduleId) => `module:${moduleId}`),
-      selectedUser.id,
+      canManageUserKeys ? selectedUser.id : currentUser.id,
     );
+    if (createdKey.token) setRevealedToken({ keyName: createdKey.name, token: createdKey.token });
     setKeyName('');
     setSelectedModules(['propuestas', 'googleMaps']);
     setIsCreateOpen(false);
   };
 
   const handleCopy = async (key: APIKey) => {
+    if (!key.token) {
+      showToast('Por seguridad, el token completo solo se puede copiar durante su creación', 'warning');
+      return;
+    }
     await navigator.clipboard.writeText(key.token);
     setCopiedKeyId(key.id);
     showToast(`Token ${key.keyPrefix}... copiado al portapapeles`, 'success');
@@ -126,7 +135,7 @@ export const UserApiKeysTab: React.FC = () => {
                 </span>
               </h3>
               <p className="mt-1 max-w-2xl text-xs text-slate-400">
-                Asigna tokens independientes a cada integrante y limita el acceso a los módulos avanzados de Clientum.
+                 Asigna tokens independientes a cada integrante y limita el acceso a los módulos del menú. El token completo solo se muestra una vez.
               </p>
             </div>
           </div>
@@ -143,7 +152,7 @@ export const UserApiKeysTab: React.FC = () => {
         </div>
 
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-          {users.map((user) => {
+           {visibleUsers.map((user) => {
             const count = apiKeys.filter((key) => keyOwnerId(key, currentUser.id) === user.id && key.status === 'active').length;
             return (
               <button
@@ -170,6 +179,40 @@ export const UserApiKeysTab: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+        {revealedToken && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 xl:col-span-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="flex items-center gap-2 text-xs font-semibold text-amber-200">
+                  <ShieldCheck className="h-4 w-4 text-amber-400" />
+                  Token generado para {revealedToken.keyName}
+                </p>
+                <p className="mt-1 text-[11px] text-amber-100/70">
+                  Cópialo ahora. Por seguridad no volverá a mostrarse después de recargar o cerrar esta vista.
+                </p>
+              </div>
+              <div className="flex min-w-0 items-center gap-2">
+                <code className="max-w-[360px] truncate rounded-lg border border-amber-500/30 bg-[#0e121a] px-3 py-2 text-[11px] text-amber-100">
+                  {revealedToken.token}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(revealedToken.token);
+                    showToast('Token copiado al portapapeles', 'success');
+                  }}
+                  className="rounded-lg border border-amber-500/30 px-2.5 py-2 text-[11px] font-semibold text-amber-200 hover:bg-amber-500/10"
+                >
+                  Copiar
+                </button>
+                <button type="button" onClick={() => setRevealedToken(null)} className="rounded-lg p-2 text-amber-200/70 hover:bg-amber-500/10" aria-label="Ocultar token">
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-xl border border-[#1e2434] bg-[#121620] p-5">
           <div className="mb-3 flex items-center justify-between">
             <div>
@@ -207,7 +250,7 @@ export const UserApiKeysTab: React.FC = () => {
                     </div>
                     <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-slate-400">
                       <span>{key.keyPrefix}••••••••••••••••</span>
-                      {key.status === 'active' && (
+                       {key.status === 'active' && key.token && (
                         <button type="button" onClick={() => handleCopy(key)} className="rounded p-0.5 text-slate-400 hover:text-white" title="Copiar token">
                           {copiedKeyId === key.id ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                         </button>
@@ -308,7 +351,7 @@ export const UserApiKeysTab: React.FC = () => {
 
               <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-[11px] text-amber-200/80">
                 <LockKeyhole className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-                El token completo se muestra solo al generarlo y se almacena localmente en este demo. En producción debe guardarse en un vault del servidor.
+                 El token completo se muestra una sola vez. En producción, el hash debe guardarse en el backend y el valor original no debe persistirse en el navegador.
               </div>
 
               <div className="flex justify-end gap-2 border-t border-[#1e2434] pt-3">

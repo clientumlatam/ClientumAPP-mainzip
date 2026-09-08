@@ -18,21 +18,26 @@ import {
   Auth,
 } from 'firebase/auth';
 
-// User live Firebase configuration with fallback support
+// Firebase client configuration comes only from the platform environment.
+// VITE_* values are public client configuration, not server secrets.
 const metaEnv = (import.meta as any)?.env || {};
 
 export const firebaseConfig = {
-  apiKey: metaEnv.VITE_FIREBASE_API_KEY || "AIzaSyCKnJbv8XaLFICeTSyol10_sTNOGQakxyQ",
-  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || "applied-nation-gmvz5.firebaseapp.com",
-  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || "applied-nation-gmvz5",
-  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || "applied-nation-gmvz5.firebasestorage.app",
-  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || "316487915762",
-  appId: metaEnv.VITE_FIREBASE_APP_ID || "1:316487915762:web:c5bd11dc90da8a04ac986b",
-  measurementId: metaEnv.VITE_FIREBASE_MEASUREMENT_ID || ""
+  apiKey: metaEnv.VITE_FIREBASE_API_KEY || "",
+  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: metaEnv.VITE_FIREBASE_APP_ID || "",
+  measurementId: metaEnv.VITE_FIREBASE_MEASUREMENT_ID || "",
 };
 
-// Check if live custom credentials are provided
-export const isLiveFirebaseConfigured = true;
+export const isLiveFirebaseConfigured = Boolean(
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.appId,
+);
 
 // Safe cross-platform singleton initialization
 let app: FirebaseApp;
@@ -44,11 +49,16 @@ try {
 }
 
 export { app };
-export const auth: Auth = getAuth(app);
+// Auth validates the API key during initialization. Keep the public app
+// bootable while platform configuration is being propagated, and let the
+// auth helpers use their existing local fallback until it is configured.
+export const auth: Auth = isLiveFirebaseConfigured
+  ? getAuth(app)
+  : (null as unknown as Auth);
 
 // Safe Analytics initialization
 export let analytics: Analytics | null = null;
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && isLiveFirebaseConfigured) {
   isSupported().then((supported) => {
     if (supported) {
       try {
@@ -406,7 +416,7 @@ export async function confirmPasswordResetWithToken(
  */
 export async function firebaseSignOut(): Promise<void> {
   try {
-    await signOut(auth);
+    if (isLiveFirebaseConfigured) await signOut(auth);
   } catch (e) {
     console.warn('Signout note:', e);
   }

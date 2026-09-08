@@ -9,6 +9,18 @@
 
 ## Estado actual del proyecto
 
+### Regla de separación
+
+- **Secretos de la plataforma:** viven en Replit Secrets o en variables de
+  entorno del backend. Son compartidos por la aplicación completa y nunca se
+  cargan en el tab de API Keys de un usuario.
+- **API Keys de usuario:** se crean y revocan desde
+  `Configuración → Integraciones & API Hub → API Keys por usuario`. Pertenecen
+  a un `user_id`, tienen scopes de módulos y no son variables de entorno.
+- **Token de API:** el valor completo se muestra una sola vez al generarlo.
+  La interfaz no lo persiste en `localStorage`; en producción debe guardarse
+  únicamente su hash en el backend.
+
 | Variable | Estado | Uso actual |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | **No configurada** | Es la única clave que el backend consume actualmente. Habilita Copilot, CMO, GTM, Ad Copy, prospección y agentes IA. |

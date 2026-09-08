@@ -1,0 +1,1 @@
+- [Firebase environment propagation](firebase-env.md) — inject only public Firebase config into Vite and guard Auth/Analytics when it is unavailable.

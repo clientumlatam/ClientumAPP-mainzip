@@ -467,7 +467,11 @@ export interface APIKey {
   id: string;
   name: string;
   keyPrefix: string;
-  token: string;
+  /**
+   * Full token is available only during the creation response.
+   * Persisted records should contain metadata and no raw secret.
+   */
+  token?: string;
   ownerUserId?: string;
   ownerUserName?: string;
   scopes: string[];

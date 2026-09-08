@@ -352,8 +352,8 @@ export const INITIAL_CALENDAR_SYNC_STATE: GoogleCalendarSyncState = {
 };
 
 export const INITIAL_SLACK_INTEGRATION_STATE: SlackIntegrationState = {
-  isConnected: true,
-  webhookUrl: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX',
+  isConnected: false,
+  webhookUrl: '',
   botName: 'Clientum CRM Bot',
   defaultChannel: '#ventas-notificaciones',
   messagesSentCount: 142,
@@ -371,8 +371,9 @@ export const INITIAL_API_KEYS: APIKey[] = [
   {
     id: 'key-prod-1',
     name: 'Sync Backend Production Key',
-    keyPrefix: 'clm_live_9f8a',
-    token: 'clm_live_9f8a4e81b2c730491d6e82a938fc7140',
+    keyPrefix: 'clm_platform',
+    ownerUserId: 'platform',
+    ownerUserName: 'ClientumCRM Platform',
     scopes: ['read:all', 'write:opportunities', 'write:contacts', 'read:invoices'],
     createdAt: '2024-02-15T14:20:00Z',
     lastUsedAt: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
@@ -381,8 +382,9 @@ export const INITIAL_API_KEYS: APIKey[] = [
   {
     id: 'key-dev-1',
     name: 'Zapier & Make Automation Webhook Key',
-    keyPrefix: 'clm_live_3c2d',
-    token: 'clm_live_3c2de714f09a8421b19902c6114e99bb',
+    keyPrefix: 'clm_platform',
+    ownerUserId: 'platform',
+    ownerUserName: 'ClientumCRM Platform',
     scopes: ['read:contacts', 'write:tasks'],
     createdAt: '2024-03-01T09:00:00Z',
     lastUsedAt: new Date(Date.now() - 1000 * 60 * 95).toISOString(),
@@ -394,10 +396,10 @@ export const INITIAL_WEBHOOKS: WebhookConfig[] = [
   {
     id: 'wh-1',
     name: 'Slack Deal Won Broadcast',
-    url: 'https://hooks.slack.com/services/T0000/B0000/webhook-sales',
+    url: 'https://example.invalid/webhooks/slack-deal-won',
     events: ['opportunity.won', 'opportunity.stage_change'],
-    secret: 'whsec_98f12a84bce10839a7b93478912389a',
-    isActive: true,
+    secret: '',
+    isActive: false,
     lastTriggeredAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     lastResponseCode: 200,
     createdAt: '2024-01-20T10:00:00Z',
@@ -407,10 +409,10 @@ export const INITIAL_WEBHOOKS: WebhookConfig[] = [
   {
     id: 'wh-2',
     name: 'ERP Billing Notification Sync',
-    url: 'https://api.clientumerp.internal/v1/billing/sync',
+    url: 'https://example.invalid/webhooks/erp-billing',
     events: ['invoice.created', 'invoice.paid'],
-    secret: 'whsec_71ac3980bcdef1098239048123490aa',
-    isActive: true,
+    secret: '',
+    isActive: false,
     lastTriggeredAt: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
     lastResponseCode: 200,
     createdAt: '2024-02-10T12:30:00Z',

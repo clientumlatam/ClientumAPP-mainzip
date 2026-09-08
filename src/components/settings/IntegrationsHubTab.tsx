@@ -57,6 +57,7 @@ export const IntegrationsHubTab: React.FC = () => {
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [selectedScopes, setSelectedScopes] = useState<string[]>(['deals:read', 'deals:write', 'contacts:read']);
+  const [revealedPlatformToken, setRevealedPlatformToken] = useState<{ keyName: string; token: string } | null>(null);
 
   // Webhook creation modal
   const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
@@ -83,6 +84,10 @@ export const IntegrationsHubTab: React.FC = () => {
   };
 
   const handleCopyKey = (key: APIKey) => {
+    if (!key.token) {
+      showToast('Esta clave no tiene un token recuperable. Genera una nueva para obtenerlo una sola vez.', 'warning');
+      return;
+    }
     navigator.clipboard.writeText(key.token);
     setCopiedKeyId(key.id);
     showToast(`Token ${key.keyPrefix}... copiado al portapapeles`, 'success');
@@ -92,7 +97,10 @@ export const IntegrationsHubTab: React.FC = () => {
   const handleCreateAPIKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeyName.trim()) return;
-    createAPIKey(newKeyName.trim(), selectedScopes);
+    const createdKey = createAPIKey(newKeyName.trim(), selectedScopes, 'platform');
+    if (createdKey.token) {
+      setRevealedPlatformToken({ keyName: createdKey.name, token: createdKey.token });
+    }
     setIsKeyModalOpen(false);
     setNewKeyName('');
   };
@@ -164,7 +172,7 @@ export const IntegrationsHubTab: React.FC = () => {
           }`}
         >
           <Key className="w-3.5 h-3.5" />
-          <span>API Keys REST ({apiKeys.filter((k) => k.status === 'active').length})</span>
+          <span>API Keys REST (Plataforma) ({apiKeys.filter((k) => k.status === 'active' && (k.ownerUserId || 'platform') === 'platform').length})</span>
         </button>
 
         <button
@@ -433,6 +441,22 @@ export const IntegrationsHubTab: React.FC = () => {
       {/* SECTION 3: REST API KEYS */}
       {activeSection === 'apikeys' && (
         <div id="section-api-keys" className="space-y-4">
+          {revealedPlatformToken && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-amber-200">Token de plataforma generado: {revealedPlatformToken.keyName}</p>
+                  <p className="mt-1 text-[11px] text-amber-100/70">Cópialo ahora. No se persiste en el navegador ni se vuelve a mostrar después de recargar.</p>
+                </div>
+                <div className="flex min-w-0 items-center gap-2">
+                  <code className="max-w-[420px] truncate rounded-lg border border-amber-500/30 bg-[#0e121a] px-3 py-2 text-[11px] text-amber-100">{revealedPlatformToken.token}</code>
+                  <button type="button" onClick={() => { navigator.clipboard.writeText(revealedPlatformToken.token); showToast('Token copiado al portapapeles', 'success'); }} className="rounded-lg border border-amber-500/30 px-2.5 py-2 text-[11px] font-semibold text-amber-200 hover:bg-amber-500/10">Copiar</button>
+                  <button type="button" onClick={() => setRevealedPlatformToken(null)} className="rounded-lg p-2 text-amber-200/70 hover:bg-amber-500/10" aria-label="Ocultar token">×</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="bg-[#121620] border border-[#1e2434] rounded-xl p-5">
             <div className="flex items-center justify-between pb-4 border-b border-[#1e2434]">
               <div>
@@ -472,7 +496,7 @@ export const IntegrationsHubTab: React.FC = () => {
 
                     <div className="flex items-center gap-2 mt-1 font-mono text-[11px] text-slate-400">
                       <span>{key.keyPrefix}••••••••••••••••</span>
-                      {key.status === 'active' && (
+                       {key.status === 'active' && key.token && (
                         <button
                           onClick={() => handleCopyKey(key)}
                           className="text-slate-400 hover:text-white p-0.5 rounded"

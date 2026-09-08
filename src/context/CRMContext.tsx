@@ -481,11 +481,28 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // API Keys & Webhooks State
   const [apiKeys, setApiKeys] = useState<APIKey[]>(() => {
     const saved = localStorage.getItem('clientum_crm_api_keys');
-    return saved ? JSON.parse(saved) : INITIAL_API_KEYS;
+    if (!saved) return INITIAL_API_KEYS;
+
+    try {
+      const parsed = JSON.parse(saved) as APIKey[];
+      return parsed.map((key) =>
+        ({
+          ...key,
+          ownerUserId: key.ownerUserId || 'platform',
+          ownerUserName: key.ownerUserName || (key.ownerUserId ? undefined : 'ClientumCRM Platform'),
+          token: undefined,
+        }),
+      );
+    } catch {
+      return INITIAL_API_KEYS;
+    }
   });
 
   useEffect(() => {
-    localStorage.setItem('clientum_crm_api_keys', JSON.stringify(apiKeys));
+    // Never persist raw API tokens in browser storage. A production API should
+    // hash and store them server-side; this demo keeps only metadata locally.
+    const safeApiKeys = apiKeys.map(({ token: _token, ...metadata }) => metadata);
+    localStorage.setItem('clientum_crm_api_keys', JSON.stringify(safeApiKeys));
   }, [apiKeys]);
 
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>(() => {
@@ -2018,9 +2035,13 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const createAPIKey = (name: string, scopes: string[], ownerUserId = currentUser.id): APIKey => {
-    const randomHex = Array.from({ length: 24 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
+    const randomBytes = new Uint8Array(24);
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      crypto.getRandomValues(randomBytes);
+    } else {
+      for (let i = 0; i < randomBytes.length; i += 1) randomBytes[i] = Math.floor(Math.random() * 256);
+    }
+    const randomHex = Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
     const newKey: APIKey = {
       id: 'key-' + Date.now(),
       name,
