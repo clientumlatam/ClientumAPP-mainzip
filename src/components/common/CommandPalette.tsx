@@ -180,6 +180,15 @@ export const CommandPalette: React.FC = () => {
   // Navigation
   items.push(
     {
+      id: 'nav-feature-hub',
+      category: 'Navigation',
+      title: 'Abrir Centro de funciones',
+      subtitle: 'Diagnóstico, pagos, IA, SMS, datos y acceso',
+      icon: Sparkles,
+      badge: '6',
+      onSelect: () => setActiveTab('featureHub'),
+    },
+    {
       id: 'nav-opps',
       category: 'Navigation',
       title: 'Go to Opportunities',

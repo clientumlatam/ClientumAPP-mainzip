@@ -45,6 +45,7 @@ import { AuthModal } from '../auth/AuthModal';
 import { UserProfileModal } from '../auth/UserProfileModal';
 import { WebmailInboxView } from '../webmail/WebmailInboxView';
 import { ComposeEmailModal } from '../webmail/ComposeEmailModal';
+import { FeatureHubView } from '../features/FeatureHubView';
 import { ToastContainer } from '../common/ToastContainer';
 
 const MainContent: React.FC = () => {
@@ -68,6 +69,7 @@ const MainContent: React.FC = () => {
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden relative bg-[#f8fafc] text-slate-900">
         {activeTab === 'dashboard' && <ExecutiveDashboardView />}
+        {activeTab === 'featureHub' && <FeatureHubView />}
         {activeTab === 'opportunities' && (viewMode === 'kanban' ? <KanbanView /> : <TableView />)}
         {activeTab === 'companies' && <CompaniesView />}
         {activeTab === 'people' && <PeopleView />}

@@ -122,6 +122,7 @@ export interface Activity {
 
 export type ActiveTab = 
   | 'dashboard'
+  | 'featureHub'
   | 'opportunities' 
   | 'companies' 
   | 'people' 

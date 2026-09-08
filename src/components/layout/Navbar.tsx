@@ -49,6 +49,8 @@ export const Navbar: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return { name: 'Resumen Ejecutivo', count: undefined, desc: 'Pipeline de ventas y métricas clave' };
+      case 'featureHub':
+        return { name: 'Centro de funciones', count: 6, desc: 'Conecta, protege y amplía tu espacio de trabajo' };
       case 'opportunities':
         return { name: t('opportunities') || 'Negocios', count: opportunities.length, desc: t('pipeline') || 'Embudo comercial' };
       case 'companies':
