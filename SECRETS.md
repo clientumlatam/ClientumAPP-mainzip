@@ -9,11 +9,17 @@
 
 ## Estado actual del proyecto
 
-> **Auditoría actualizada el 2026-09-08:** los nombres de las variables
-> disponibles fueron contrastados con el código. Por seguridad, nunca se
-> inspeccionan ni se imprimen valores de Secrets desde esta documentación.
-> Consulta `docs/secrets-audit.md` para la matriz completa de variables
-> usadas, credenciales por usuario y trabajo pendiente.
+> **Auditoría actualizada el 2026-09-08:** se contrastaron los nombres y usos
+> con `server.ts`, `src/data/moduleCredentials.ts`, `vite.config.ts`, la
+> migración y los scripts. No se inspeccionaron ni imprimieron valores reales.
+> Consulta `docs/secrets-audit.md` para la matriz compacta de runtime.
+
+La regla importante es distinguir entre:
+
+- **Activa:** el runtime actual lee la variable y tiene una ruta que la usa.
+- **Tenant-scoped:** se introduce desde el módulo y se cifra por workspace.
+- **Planificada:** aparece en el inventario, pero todavía no hay cliente o
+  endpoint proveedor activo.
 
 ### Regla de separación
 
@@ -29,10 +35,13 @@
 
 | Variable | Estado | Uso actual |
 | --- | --- | --- |
-| `GEMINI_API_KEY` | **Registrada; validar valor** | El backend la consume en `/api/ai/*`. Los placeholders se consideran no configurados y activan solo el resultado demo/fallback. |
-| `SESSION_SECRET` | **Registrada; reservada** | El servidor no usa sesiones Express. Solo participa como último fallback técnico del cifrado interno si no existe `WORKFLOW_ENCRYPTION_KEY` ni `API_KEY_PEPPER`. |
-| `VITE_FIREBASE_*` | **Registradas como configuración pública** | Se inyectan en el bundle cliente. Firebase no se inicializa con valores vacíos y los fallbacks de autenticación están limitados a desarrollo. |
-| `DATABASE_URL` / `PG*` | **Administradas por Replit** | El servidor usa PostgreSQL para credenciales por usuario y API Keys internas. No deben solicitarse ni configurarse manualmente. |
+| `GEMINI_API_KEY` | **Activa y opcional** | El backend la consume en `/api/ai/*` y gastos. Los placeholders se consideran no configurados y activan el fallback explícito. |
+| `WORKFLOW_ENCRYPTION_KEY`, `API_KEY_PEPPER`, `SESSION_SECRET` | **Activas para cifrado** | Se usa la primera clave real disponible para el vault; `SESSION_SECRET` no implementa sesiones Express. |
+| `CLIENTUM_API_KEY_ADMIN_IDS` | **Activa** | IDs Firebase separados por coma con permiso para administrar API Keys de otros usuarios. |
+| `VITE_FIREBASE_*` | **Activas como configuración pública** | Se inyectan en el bundle cliente y también se usan para verificar ID tokens. Firebase no se inicializa con valores vacíos. |
+| `DATABASE_URL` / `PG*` | **Administradas por Replit** | El servidor usa PostgreSQL para credenciales y API Keys internas. No deben solicitarse ni configurarse manualmente. |
+| `SMTP_*`, `MAIL_FROM_*` | **Activas si están completas** | `/api/email/status` y `/api/email/send` validan placeholders y requieren identidad Firebase en producción. |
+| `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | **Activas para webhook** | Validan firma y challenge de Meta. El envío saliente todavía no está implementado. |
 
 ## Reglas de seguridad
 
@@ -117,8 +126,8 @@ No enviar `CLOUDFLARE_API_TOKEN` al navegador.
 
 ### WhatsApp CRM
 
-El módulo actual funciona como vista de CRM/demo. Para Meta WhatsApp Cloud
-API, configurar únicamente en backend:
+El módulo actual tiene vista CRM y un webhook Meta con verificación real. El
+runtime consume únicamente estas variables de plataforma:
 
 | Variable | Tipo | Propósito |
 | --- | --- | --- |
@@ -129,8 +138,12 @@ API, configurar únicamente en backend:
 | `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Secreto | Token usado durante la verificación del webhook. |
 | `WHATSAPP_WEBHOOK_URL` | Configuración | URL pública registrada en Meta. |
 
-`WHATSAPP_ACCESS_TOKEN` y `WHATSAPP_APP_SECRET` nunca deben aparecer en
-componentes React.
+`WHATSAPP_APP_SECRET` y `WHATSAPP_WEBHOOK_VERIFY_TOKEN` del webhook deben vivir
+en las variables de plataforma. Los campos con esos mismos nombres que ofrece
+el modal son tenant-scoped y están reservados para outbound; el webhook actual
+no los consulta. `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` y
+`WHATSAPP_BUSINESS_ACCOUNT_ID` se guardan por workspace, pero todavía no
+habilitan envío Cloud API.
 
 ### Facturación AFIP (CAE)
 
@@ -170,14 +183,11 @@ Si se habilita envío real de propuestas por correo:
 
 ### Prospección Maps B2B
 
-La app tiene fallback/demo y el backend de prospección no requiere Google Maps
-para el resultado de demostración. Para geocodificación o Places real:
-
-- `VITE_GOOGLE_MAPS_API_KEY` — clave pública restringida por dominio y APIs.
-- `GOOGLE_MAPS_SERVER_API_KEY` — clave privada para llamadas server-side,
-  si se necesita separar el consumo backend.
-
-No utilizar una clave con acceso irrestricto en el frontend.
+La búsqueda usa `GOOGLE_MAPS_SERVER_API_KEY` del workspace para llamar a
+Google Places. Si no está configurada, devuelve el resultado demo/fallback.
+`VITE_GOOGLE_MAPS_API_KEY` figura como opción futura para un mapa del navegador,
+pero no es consumida por el runtime actual. No utilizar una clave irrestricta
+en el frontend.
 
 ### Lead Scoring MEDDIC
 
@@ -231,7 +241,9 @@ con `VITE_GEMINI_API_KEY`.
 
 ### Cobros Mercado Pago
 
-La UI actual genera links simulados. Para pagos reales:
+La UI actual genera links simulados y el vault puede guardar credenciales del
+workspace. Todavía no existe un cliente backend de Mercado Pago. Para una
+implementación futura:
 
 | Variable | Tipo | Propósito |
 | --- | --- | --- |
@@ -241,8 +253,9 @@ La UI actual genera links simulados. Para pagos reales:
 | `MERCADOPAGO_ENVIRONMENT` | Configuración | `sandbox` o `production`. |
 | `MERCADOPAGO_SELLER_ID` | Configuración sensible | Identificador de la cuenta receptora, si el flujo lo requiere. |
 
-`MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_WEBHOOK_SECRET` deben permanecer en
-backend. Para este proyecto no están conectados todavía.
+`MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_WEBHOOK_SECRET` deben permanecer
+cifrados en backend. No se consideran conectados hasta implementar
+preferencias, pagos, webhooks con firma e idempotencia.
 
 ### Tienda Digital WhatsApp
 
@@ -331,8 +344,8 @@ No colocar una cuenta de servicio en `VITE_*`.
 - `SESSION_SECRET` — secreto server-side para firmar sesiones, cookies o
   CSRF si se incorpora un middleware de sesiones.
 
-Actualmente ClientumCRM usa Firebase y flags de sesión del navegador; no hay
-middleware Express que consuma `SESSION_SECRET`.
+Actualmente ClientumCRM usa Firebase y estado de sesión del cliente; no hay
+middleware Express que consuma `SESSION_SECRET` para firmar cookies.
 
 #### Integraciones y API Hub
 
@@ -361,20 +374,24 @@ que administrar manualmente `GOOGLE_CLIENT_SECRET` o tokens de refresco.
 
 ## 5. Menú lateral y asignación rápida
 
+La siguiente tabla es un inventario funcional. “Tenant” significa que el valor
+se introduce desde el módulo y no se configura como Secret de plataforma.
+“Planificado” significa que todavía no existe una integración activa.
+
 | Ítem del menú | Variables que realmente necesita |
 | --- | --- |
 | Resumen Ejecutivo | Ninguna |
 | Centro de funciones | Reutiliza las del módulo elegido |
 | Pipeline Negocios | Ninguna |
-| Webmail Cloudflare (D1) | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_EMAIL_WORKER_SECRET` |
+| Webmail Cloudflare (D1) | Planificado; configuración de plataforma |
 | Empresas | Ninguna |
 | Contactos | Ninguna |
 | Tareas & Actividades | Ninguna |
 | Reportes & BI | Ninguna; analítica futura según proveedor |
-| WhatsApp CRM | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` |
-| Facturación AFIP (CAE) | `AFIP_CERTIFICATE_P12_BASE64`, `AFIP_PRIVATE_KEY`, `AFIP_PRIVATE_KEY_PASSWORD`, `AFIP_CUIT` |
+| WhatsApp CRM | Webhook activo: `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN`; outbound planificado; resto tenant |
+| Facturación AFIP (CAE) | Tenant; emisión CAE planificada |
 | Propuestas & Presupuestos | Ninguna; email futuro: `RESEND_API_KEY` o `SENDGRID_API_KEY` |
-| Prospección Maps B2B | `VITE_GOOGLE_MAPS_API_KEY` y, si aplica, `GOOGLE_MAPS_SERVER_API_KEY` |
+| Prospección Maps B2B | Tenant `GOOGLE_MAPS_SERVER_API_KEY`; browser key no conectada |
 | Lead Scoring MEDDIC | Ninguna; IA opcional: `GEMINI_API_KEY` |
 | Chatbot WhatsApp 24/7 | Variables de WhatsApp + `GEMINI_API_KEY` opcional |
 | Campañas Masivas | WhatsApp o `RESEND_API_KEY`/`SENDGRID_API_KEY` |
@@ -382,13 +399,13 @@ que administrar manualmente `GOOGLE_CLIENT_SECRET` o tokens de refresco.
 | Asistente Gemini | `GEMINI_API_KEY` |
 | Estrategias GTM | `GEMINI_API_KEY` |
 | Agente SDR Outreach | `GEMINI_API_KEY` + canal de envío elegido |
-| Cobros Mercado Pago | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `VITE_MERCADOPAGO_PUBLIC_KEY` |
+| Cobros Mercado Pago | Tenant; pagos reales planificados |
 | Tienda Digital WhatsApp | WhatsApp + Mercado Pago; Shopify solo si se conecta |
 | Campus Academia LMS | Ninguna en la versión actual |
 | Workflows & Flujos | `WORKFLOW_ENCRYPTION_KEY` + secretos del proveedor conectado |
 | Custom Objects Studio | Ninguna |
 | CSV Import & Export | Ninguna |
-| Gestor de Dominios | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID` |
+| Gestor de Dominios | Planificado; configuración de plataforma |
 | Configuración General | Firebase `VITE_*`, `SESSION_SECRET` si se agregan sesiones |
 
 ---
@@ -425,12 +442,12 @@ debe vivir en backend.
 - [x] Firebase consume `VITE_FIREBASE_*` y no inicializa con valores vacíos.
 - [ ] Verificar que las reglas de Firebase Auth/Firestore no permitan acceso
       público accidental.
-- [ ] Elegir un proveedor de pagos y validar webhooks con firma.
+- [ ] Elegir un proveedor de pagos e implementar sus endpoints con firma e idempotencia.
 - [ ] Elegir un único proveedor SMS y configurar sus credenciales en backend.
-- [ ] Conectar WhatsApp mediante Meta antes de habilitar envíos.
+- [ ] Implementar el envío WhatsApp mediante Meta antes de habilitar envíos.
 - [ ] Separar homologación/producción para AFIP.
 - [ ] Rotar cualquier token que haya sido expuesto en código o logs.
-- [ ] No solicitar manualmente `DATABASE_URL` ni otras variables administradas
+- [x] No solicitar manualmente `DATABASE_URL` ni otras variables administradas
       por Replit.
 - [ ] Revisar permisos por rol antes de habilitar cobros, exportaciones,
       facturación o administración de credenciales.

@@ -1,85 +1,104 @@
 # Arquitectura de secretos y credenciales
 
-## Regla principal
+## Alcance real
 
-`.env` y Replit Secrets contienen los secretos y la configuración necesarios
-para que funcione la **plataforma como sistema**. Las credenciales que
-pertenecen a una empresa o usuario concreto viven cifradas en PostgreSQL y se
-asocian a un `tenant_id`. La configuración `VITE_*` llega al navegador y nunca
-debe contener tokens privados, certificados, claves privadas ni contraseñas.
+Este documento describe la separación que implementa actualmente ClientumCRM.
+El inventario funcional puede mencionar proveedores futuros, pero un nombre en
+Replit Secrets no activa por sí solo una integración.
 
 ## Tres niveles
 
-| Nivel | Almacenamiento | Ejemplos |
+| Nivel | Almacenamiento | Regla |
 | --- | --- | --- |
-| Plataforma | Replit Secrets / entorno | `WORKFLOW_ENCRYPTION_KEY`, Firebase, Cloudflare, Gemini, SMTP, sesión |
-| Tenant | `clientum_tenant_credentials` cifrada | WhatsApp, AFIP, Mercado Pago, Maps server, proveedores de workflows |
-| Público | Bundle del frontend | `VITE_FIREBASE_*`, `VITE_GOOGLE_MAPS_API_KEY`, una public key pública restringida |
+| Plataforma | Replit Secrets y variables del proceso | Capacidades compartidas del servidor: cifrado, Gemini, SMTP, Firebase y webhook de WhatsApp. |
+| Workspace/tenant | `clientum_tenant_credentials` cifrada | Credenciales que pertenecen a una empresa: WhatsApp, AFIP, Mercado Pago y Maps server-side. |
+| Público | Bundle del frontend | Solo `VITE_*` que sean configuración pública y estén restringidas por dominio/API. |
 
-La clave maestra (`WORKFLOW_ENCRYPTION_KEY`) no se guarda en la base de datos
-ni se muestra en el panel de credenciales. El backend deriva una clave AES-256
-para cifrar cada payload con AES-256-GCM y guarda únicamente `iv`, `auth_tag` y
-`encrypted_data`.
+Las variables `VITE_*` llegan al navegador. Nunca deben contener tokens privados,
+certificados, claves privadas, contraseñas ni secretos de webhook.
 
-## Tenants y membresías
+## Cifrado y respuesta de la API
 
-La primera versión crea un workspace personal estable por usuario autenticado:
+`WORKFLOW_ENCRYPTION_KEY` es la clave preferida. Si no existe, el backend usa
+`API_KEY_PEPPER` y luego `SESSION_SECRET` como fallback técnico. Debe existir
+al menos una clave real y no un placeholder.
+
+La clave no se guarda en PostgreSQL ni se muestra en el panel. Cada payload se
+cifra con AES-256-GCM y solo se persisten `iv`, `auth_tag` y
+`encrypted_data`. Las respuestas del navegador contienen metadatos enmascarados
+(`configured` y una máscara), nunca el valor descifrado.
+
+Una actualización parcial se fusiona con los campos ya guardados; una rotación
+envía un valor nuevo; eliminar el módulo elimina el registro del workspace.
+
+## Identidad, tenants y aislamiento
+
+En producción, el servidor obtiene el usuario desde un Firebase ID token
+verificado con Firebase Identity Toolkit. En desarrollo, el header
+`x-clientum-user-id` existe únicamente para la demo local.
+
+El primer workspace personal se deriva de la identidad:
 
 ```text
-tenant_<sha256(user_id)[0:32]>
+tenant_<md5(user_id)[0:32]>
 ```
 
-La tabla `clientum_tenant_memberships` ya permite agregar más usuarios al mismo
-workspace sin cambiar el modelo de credenciales. El servidor calcula el tenant
-a partir de la identidad verificada; el cliente no puede elegir un `tenant_id`
-arbitrario para leer o modificar secretos.
+El cliente no puede elegir un `tenant_id` arbitrario. El servidor resuelve la
+membresía antes de leer, fusionar o eliminar credenciales.
 
-## Tablas
+Tablas principales:
 
 - `clientum_tenants`: identidad del workspace.
-- `clientum_tenant_memberships`: relación usuario/tenant y rol.
-- `clientum_tenant_credentials`: una fila por `tenant_id` + `module_id`.
-- `clientum_user_api_keys`: API Keys REST internas, separadas del vault de
-  credenciales de proveedores y almacenadas por usuario.
+- `clientum_tenant_memberships`: usuarios, membresías y roles.
+- `clientum_tenant_credentials`: una fila cifrada por tenant y módulo.
+- `clientum_user_api_keys`: API Keys REST internas, separadas del vault de proveedores.
 
-La migración `migrations/001_tenant_credentials.sql` crea estas tablas y
-traslada las filas antiguas de `clientum_user_credentials` sin descifrar el
-payload. El servidor también inicializa el esquema de forma idempotente al
-arrancar para mantener el entorno de desarrollo operativo.
+La migración y la inicialización idempotente conservan también las filas
+históricas de `clientum_user_credentials` sin descifrar su payload.
 
-## Variables de plataforma
+## Variables de plataforma consumidas hoy
 
-Se administran en Replit Secrets, no desde Configuración del CRM:
+| Grupo | Variables | Uso |
+| --- | --- | --- |
+| Servidor | `PORT`, `NODE_ENV` | Puerto y separación entre demo local y producción. |
+| Persistencia | `DATABASE_URL` o `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` | PostgreSQL administrado; el pool prefiere `DATABASE_URL` y luego el entorno `PG*`. |
+| Seguridad | `WORKFLOW_ENCRYPTION_KEY`, `API_KEY_PEPPER`, `SESSION_SECRET`, `CLIENTUM_API_KEY_ADMIN_IDS` | Cifrado del vault, hash de API Keys internas y administración restringida. |
+| IA | `GEMINI_API_KEY` | Backend `/api/ai/*` y categorización de gastos; usa fallback explícito si no es usable. |
+| Firebase | `VITE_FIREBASE_*` | Configuración pública del cliente y verificación server-side del ID token. |
+| Email | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Estado y envío SMTP desde backend. |
+| WhatsApp webhook | `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Firma `x-hub-signature-256` y challenge de verificación. |
+| Desarrollo | `DISABLE_HMR`, `USER_CREDENTIAL_STORE_PATH`, `USER_API_KEY_STORE_PATH` | Vite y fallback cifrado local cuando no hay PostgreSQL. |
 
-- Seguridad: `WORKFLOW_ENCRYPTION_KEY`, `SESSION_SECRET`, `API_KEY_PEPPER`,
-  `WEBHOOK_SIGNING_SECRET`.
-- Firebase público: `VITE_FIREBASE_*`.
-- IA central: `GEMINI_API_KEY`.
-- Cloudflare y almacenamiento: `CLOUDFLARE_*`, `R2_*`.
-- Email de plataforma: `SMTP_*`, `MAIL_FROM_*`, `RESEND_API_KEY` o
-  `SENDGRID_API_KEY`.
-- Configuración pública restringida: `VITE_GOOGLE_MAPS_API_KEY` y, si se
-  utiliza una cuenta de pagos compartida, `VITE_MERCADOPAGO_PUBLIC_KEY`.
+El backend valida placeholders y valores vacíos antes de marcar Gemini, SMTP o
+el cifrado como utilizables. La presencia de un secret nunca equivale a una
+conexión válida.
 
-Los valores se validan en el backend: que un secret exista no implica que sea
-usable. No se deben aceptar placeholders como `your_key`, `replace_me`,
-`example.com` o valores vacíos.
+## Credenciales por workspace
 
-## Credenciales por tenant
+El catálogo permite guardar, por módulo:
 
-Se introducen desde la configuración del módulo y se cifran server-side:
-
-- WhatsApp/Meta: access token, app secret, phone number, business account y
-  token de verificación.
+- WhatsApp/Meta por workspace: access token, app secret, phone number,
+  business account y token de verificación, reservados para integración
+  outbound.
 - AFIP: CUIT, ambiente, certificado P12, clave privada y contraseña.
 - Mercado Pago: access token, webhook secret y public key de la cuenta.
-- Google Maps server-side, cuando cada tenant usa su propio proyecto.
-- Secretos de proveedores conectados a Workflows.
+- Google Maps: `GOOGLE_MAPS_SERVER_API_KEY`.
 
-La API responde solo metadatos enmascarados. Nunca devuelve el valor
-descifrado al navegador ni lo escribe en logs. Para rotar una credencial se
-guarda un nuevo payload completo; para revocarla se elimina la fila del
-módulo.
+El endpoint de prospección usa la clave server-side del workspace cuando existe.
+El resto de proveedores está preparado en el vault y en la UI, pero Mercado
+Pago, AFIP y WhatsApp outbound todavía requieren sus endpoints reales,
+validación de firma, idempotencia y autorización antes de habilitar envíos.
+El webhook de WhatsApp actualmente valida únicamente las variables de
+plataforma `WHATSAPP_APP_SECRET` y `WHATSAPP_WEBHOOK_VERIFY_TOKEN`; no toma
+esas credenciales desde el vault del workspace.
+
+## Qué no debe confundirse con runtime activo
+
+Cloudflare D1/R2, Shopify, Slack, Google OAuth, Resend, SendGrid, SMS,
+N8N/Make/Zapier, PostHog, analítica externa, `APP_URL` y claves públicas de
+Maps/Mercado Pago aparecen en el inventario funcional o en el catálogo, pero no
+son consumidos por un cliente proveedor activo en el runtime actual. No deben
+documentarse como “conectados” solo porque tengan un nombre de variable.
 
 ## Operación
 
@@ -87,10 +106,9 @@ módulo.
 npm run db:migrate
 ```
 
-El comando usa `DATABASE_URL` o las variables administradas `PGHOST`,
-`PGPORT`, `PGUSER`, `PGPASSWORD` y `PGDATABASE`. No se deben copiar secretos de
-tenant al `.env.example` ni solicitar `DATABASE_URL` manualmente.
+La migración usa `DATABASE_URL` o las variables administradas `PG*`. No se deben
+solicitar ni copiar credenciales de tenant al `.env.example`.
 
-En desarrollo sin PostgreSQL se conserva un fallback local cifrado para no
-bloquear la demo. En producción la persistencia esperada es PostgreSQL; el
-archivo local no debe usarse como almacenamiento multi-tenant.
+Si no hay PostgreSQL en desarrollo, el servidor conserva un fallback local
+cifrado. Ese archivo es solo para la demo y no es almacenamiento multi-tenant
+válido para producción.

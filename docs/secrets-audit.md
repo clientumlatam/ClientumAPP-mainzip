@@ -1,112 +1,107 @@
 # Auditoría de secretos e integraciones
 
 **Fecha de revisión:** 2026-09-08  
-**Alcance:** inventario adjunto, `.env.example`, `SECRETS.md`, backend Express,
-cliente React y flujo de credenciales por tenant.
+**Alcance:** `.env.example`, `SECRETS.md`, arquitectura de credenciales,
+backend Express, cliente React, migración y scripts de operación.
 
 ## Resumen ejecutivo
 
-- Los nombres de las variables del inventario están registrados en el entorno
-  de trabajo. No se inspeccionaron valores secretos, por lo que su existencia
-  no se considera una prueba de que el proveedor esté listo.
-- Las credenciales introducidas desde `Configuración` se guardan por
-  `tenant_id` y `module_id`, cifradas en PostgreSQL cuando está disponible. El
-  navegador recibe únicamente metadatos enmascarados.
-- **Prospección Maps B2B** ya tiene configuración visible dentro del módulo.
-  Cuando el usuario guarda `GOOGLE_MAPS_SERVER_API_KEY`, la búsqueda utiliza
-  la clave de ese usuario contra Google Places. Si no existe, conserva el
-  resultado demo/fallback.
-- Gemini, correo y endpoints que pueden consumir servicios pagos requieren una
-  identidad Firebase verificada en producción. El modo demo continúa limitado al
-  entorno de desarrollo.
+- Se revisaron nombres y rutas de uso, no valores de Secrets. Que una variable
+  exista no demuestra que contenga una configuración válida.
+- PostgreSQL es la persistencia preferida cuando existe `DATABASE_URL` o el
+  entorno administrado `PG*`. Sin PostgreSQL, solo desarrollo usa el fallback
+  cifrado local.
+- Las credenciales del workspace se guardan cifradas por `tenant_id` y
+  `module_id`; el navegador recibe únicamente metadatos enmascarados.
+- Maps B2B es el único proveedor externo tenant-scoped que hoy realiza una
+  llamada real: usa `GOOGLE_MAPS_SERVER_API_KEY` contra Google Places.
+- Gemini, SMTP y las rutas con potencial de consumo pago exigen identidad
+  Firebase verificada en producción. El fallback demo solo existe en desarrollo.
 
-## Matriz de uso real
+## Variables consumidas por el runtime
 
-### Variables de plataforma consumidas por el runtime
-
-| Grupo | Variables | Uso |
+| Grupo | Variables | Estado |
 | --- | --- | --- |
-| IA | `GEMINI_API_KEY` | Backend para `/api/ai/*` y categorización de gastos. Se rechazan valores vacíos o de documentación. |
-| Firebase público | `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_MEASUREMENT_ID` | Configuración pública del bundle y verificación server-side del ID token mediante Firebase Identity Toolkit. |
-| Persistencia | `DATABASE_URL` o `PGHOST`, `PGUSER`, `PGDATABASE` | PostgreSQL para credenciales por tenant y API Keys internas. Se prioriza la conexión administrada. |
-| Cifrado/API Keys internas | `WORKFLOW_ENCRYPTION_KEY`, `API_KEY_PEPPER`, `SESSION_SECRET` | Se usa la primera disponible para cifrar el vault y generar hashes HMAC. `SESSION_SECRET` sigue siendo fallback técnico, no una sesión Express. |
-| SMTP | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Estado y envío de correo desde backend. La configuración se valida contra placeholders. |
-| WhatsApp webhook | `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Firma `x-hub-signature-256` y challenge de verificación de Meta. |
-| Administración | `NODE_ENV`, `CLIENTUM_API_KEY_ADMIN_IDS` | Separación demo/producción y autorización de administración de API Keys de otros usuarios. |
+| Servidor | `PORT`, `NODE_ENV` | Activas: puerto y separación demo/producción. |
+| Persistencia | `DATABASE_URL`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` | Activas: pool PostgreSQL; `DATABASE_URL` tiene prioridad. |
+| Vault/API Keys | `WORKFLOW_ENCRYPTION_KEY`, `API_KEY_PEPPER`, `SESSION_SECRET`, `CLIENTUM_API_KEY_ADMIN_IDS` | Activas: cifrado, hashes y autorización administrativa. `SESSION_SECRET` no firma sesiones Express. |
+| IA | `GEMINI_API_KEY` | Activa y opcional: `/api/ai/*` y `/api/expense/categorize`; placeholders se rechazan. |
+| Firebase | `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_MEASUREMENT_ID` | Activas: bundle público y verificación del ID token mediante Identity Toolkit. |
+| Email | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Activas: estado y envío SMTP; se valida que no sean placeholders. |
+| WhatsApp webhook | `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Activas: firma `x-hub-signature-256` y challenge de Meta. |
+| Desarrollo | `DISABLE_HMR`, `USER_CREDENTIAL_STORE_PATH`, `USER_API_KEY_STORE_PATH` | Activas solo para Vite o fallback local. |
 
-### Credenciales por tenant
+## Credenciales por workspace
 
-Se aceptan desde la configuración del módulo y no son variables globales:
+El catálogo y el backend aceptan estos campos tenant-scoped:
 
-- `GOOGLE_MAPS_SERVER_API_KEY` en `moduleId=googleMaps`, cuando cada empresa
-  utiliza su propio proyecto de Google.
-- Campos de WhatsApp, Mercado Pago, AFIP y Google Maps definidos en
-  `src/data/moduleCredentials.ts`.
+- `GOOGLE_MAPS_SERVER_API_KEY` para `moduleId=googleMaps`.
+- Campos de WhatsApp para `whatsapp`, `chatbot`, `campaigns`, `sdrOutreach` y
+  `tiendaDigital`; están preparados para outbound, pero el webhook actual lee
+  las variables de plataforma directamente.
+- Campos de AFIP para `erp`.
+- Campos de Mercado Pago para `payments` y `tiendaDigital`.
 
-La separación es efectiva en producción porque el usuario se obtiene del
-Firebase ID token y el servidor resuelve su membresía en
-`clientum_tenant_memberships`. El header `x-clientum-user-id` solo sirve para
-la demo local. El endpoint rechaza campos que pertenecen a la plataforma, como
-`GEMINI_API_KEY` o `CLOUDFLARE_API_TOKEN`.
+El endpoint rechaza campos no permitidos, como `GEMINI_API_KEY` o
+`CLOUDFLARE_API_TOKEN`. En producción, el tenant se resuelve desde la
+membresía del usuario verificado; `x-clientum-user-id` solo funciona en demo.
 
-### Declaradas, pero todavía no conectadas al runtime
+## Declaradas, almacenadas o planificadas, pero no conectadas
 
-Estas variables aparecen en el inventario o catálogo, pero no tienen un
-endpoint de proveedor real implementado todavía:
+Estas capacidades no deben mostrarse como “conectadas” por el solo hecho de
+tener un nombre en el inventario o en Secrets:
 
-- Mercado Pago: `MERCADOPAGO_ACCESS_TOKEN`,
-  `MERCADOPAGO_WEBHOOK_SECRET`, `VITE_MERCADOPAGO_PUBLIC_KEY`,
-  `MERCADOPAGO_ENVIRONMENT`.
-- AFIP: certificado, clave privada, contraseña, CUIT y endpoints WSAA/WSFE.
-- WhatsApp outbound: `WHATSAPP_ACCESS_TOKEN`,
-  `WHATSAPP_PHONE_NUMBER_ID` y `WHATSAPP_BUSINESS_ACCOUNT_ID`.
+- Mercado Pago: access token, webhook, public key y entorno; aún no hay cliente
+  de preferencias/pagos/reembolsos.
+- AFIP: certificado, clave privada, CUIT, entorno y servicios WSAA/WSFE; la UI
+  y el vault están listos, pero no hay emisión de CAE.
+- WhatsApp outbound: el webhook valida firmas, pero no hay envío Cloud API.
 - Cloudflare D1/Workers, R2, Shopify, Slack, Google OAuth y proveedores SMS.
-- `APP_URL` y `SESSION_SECRET` no habilitan por sí solos una sesión o dominio
-  canónico; esas funciones todavía no están implementadas.
+- Resend, SendGrid, N8N, Make, Zapier, PostHog y analítica externa.
+- `APP_URL`, `VITE_GOOGLE_MAPS_API_KEY` y `VITE_MERCADOPAGO_PUBLIC_KEY` no son
+  consumidos por un cliente activo en el runtime actual.
 
-No deben marcarse como “conectadas” en la UI solo porque el nombre exista en
-Secrets.
+## Controles verificados en el código
 
-## Cambios de seguridad aplicados
-
-1. Firebase ya no intenta inicializarse con una configuración vacía.
-2. Los fallbacks de login, registro y recuperación solo existen en Vite
-   development. En producción, una configuración Firebase ausente o un error
-   de autenticación falla de forma cerrada.
-3. La recuperación demo ya no acepta cualquier cadena de seis caracteres:
-   solo acepta el token generado y guardado localmente en el preview.
-4. Se eliminaron valores iniciales de email/contraseña demo de los formularios
-   y el botón de acceso rápido solo aparece en desarrollo.
-5. IA, categorización de gastos y envío SMTP requieren autenticación Firebase
-   en producción.
-6. La validación de Gemini y SMTP rechaza placeholders, no solo valores
-   presentes.
-7. Cada módulo del catálogo tiene acceso al mismo modal seguro desde el menú
-   lateral o la barra superior. El modal distingue credenciales del workspace,
-   configuración pública y secretos/conexiones administrados por la plataforma.
-8. Las actualizaciones parciales de credenciales se fusionan en el backend para
-   no borrar otros campos cifrados ya configurados.
-9. Prospección Maps B2B usa la credencial cifrada del tenant. La clave nunca
-   se devuelve al cliente ni se registra.
-10. Si Google Places rechaza una búsqueda con una clave configurada, se devuelve
-   un error explícito en vez de presentar resultados demo como si fueran reales.
+1. Firebase no se inicializa con configuración vacía.
+2. Los fallbacks de login, registro y recuperación están limitados a Vite
+   development; credenciales Firebase inválidas no crean una sesión demo.
+3. IA, categorización de gastos y envío SMTP requieren autenticación Firebase
+   verificada cuando `NODE_ENV=production`.
+4. Gemini, SMTP y el cifrado rechazan valores vacíos o placeholders.
+5. Las claves de proveedores no se devuelven completas al navegador ni se
+   escriben en logs.
+6. Actualizaciones parciales conservan los campos cifrados no enviados.
+7. La navegación muestra “Configurar API” solo en módulos con credenciales
+   propias del workspace, no en módulos con configuración de plataforma.
+8. Las API Keys REST internas se separan del vault de proveedores, se muestran
+   completas una sola vez y se persisten como hash.
+9. Maps devuelve un error explícito si Google Places rechaza una clave
+   configurada; no presenta datos demo como si fueran reales.
 
 ## Riesgos y trabajo pendiente
 
-- `firestore.rules` permite leer y escribir cualquier documento a cualquier
-  usuario autenticado. Si la aplicación comienza a usar Firestore, hay que
-  reemplazarlo por reglas por usuario/organización antes de producción.
-- Mercado Pago, AFIP y envío saliente de WhatsApp requieren implementación
-  backend, validación de firma/idempotencia y pruebas específicas antes de
-  habilitar sus pantallas como “reales”.
-- La membresía multiusuario ya tiene tablas y resolución server-side, pero aún
-  falta una pantalla administrativa para invitar y retirar miembros del tenant.
+- `firestore.rules` permite leer y escribir cualquier documento a un usuario
+  autenticado. Si la aplicación vuelve a usar Firestore, deben agregarse reglas
+  por usuario u organización antes de producción.
+- Mercado Pago, AFIP y WhatsApp outbound requieren endpoints backend,
+  validación de firma, idempotencia, permisos y pruebas específicas.
+- La membresía multiusuario ya se resuelve server-side, pero falta la pantalla
+  administrativa para invitar y retirar miembros del workspace.
+- El fallback de archivos cifrados debe permanecer deshabilitado en producción.
 
-## Verificación ejecutada
+## Verificación
 
-- `npm run lint` — correcto.
-- `npm run build` — correcto.
-- Workflow `Start application` — servidor iniciado en puerto 5000 con
-  persistencia PostgreSQL.
-- `npm run smoke:navigation` — correcto: valida portada, redirecciones,
-  login demo, API Keys por usuario, logout y protección del modo app.
+La auditoría documental debe acompañarse con:
+
+```bash
+npm run lint
+npm run build
+npm run smoke:navigation
+npm run smoke:credentials
+git diff --check
+```
+
+El workflow debe arrancar con persistencia PostgreSQL cuando el entorno
+administrado esté disponible. No se imprimen valores de Secrets durante estas
+comprobaciones.
