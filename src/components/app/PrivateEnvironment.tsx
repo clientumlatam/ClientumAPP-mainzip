@@ -67,7 +67,7 @@ const MainContent: React.FC = () => {
     <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
       <Navbar />
 
-      <main className="flex-1 flex flex-col min-h-0 overflow-hidden relative bg-[#f8fafc] text-slate-900">
+      <main className="crm-main-content flex-1 flex flex-col min-h-0 overflow-hidden relative">
         {activeTab === 'dashboard' && <ExecutiveDashboardView />}
         {activeTab === 'featureHub' && <FeatureHubView />}
         {activeTab === 'opportunities' && (viewMode === 'kanban' ? <KanbanView /> : <TableView />)}

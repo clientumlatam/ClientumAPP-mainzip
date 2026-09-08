@@ -82,7 +82,7 @@ export const Navbar: React.FC = () => {
   return (
     <header
       id="clientum-top-navbar"
-      className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 gap-4 shrink-0 z-10 select-none text-slate-800"
+      className="crm-top-navbar h-14 flex items-center justify-between px-4 gap-4 shrink-0 z-10 select-none"
     >
       {/* Left Title & Breadcrumb */}
       <div className="flex items-center gap-3 min-w-0">

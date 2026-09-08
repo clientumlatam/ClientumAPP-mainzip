@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
 import dotenv from "dotenv";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
@@ -70,10 +71,10 @@ function getSmtpConfig() {
   };
 }
 
-let smtpTransporter: nodemailer.Transporter | null = null;
+let smtpTransporter: Transporter | null = null;
 let smtpTransporterKey = "";
 
-function getSmtpTransporter(): nodemailer.Transporter {
+function getSmtpTransporter(): Transporter {
   const smtp = getSmtpConfig();
   if (!smtp.configured) {
     throw new Error(
