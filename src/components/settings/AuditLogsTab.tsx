@@ -217,13 +217,13 @@ export const AuditLogsTab: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <h5 className="text-xs font-bold text-white">{anomaly.title}</h5>
                       <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider ${
-                        anomaly.riskLevel === 'critical'
+                        anomaly.severity === 'critical'
                           ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                          : anomaly.riskLevel === 'high'
+                          : anomaly.severity === 'high'
                           ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                           : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                       }`}>
-                        Riesgo {anomaly.riskLevel}
+                        Riesgo {anomaly.severity}
                       </span>
                       <span className="text-[10px] text-slate-400">
                         {new Date(anomaly.detectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -231,9 +231,9 @@ export const AuditLogsTab: React.FC = () => {
                     </div>
                     <p className="text-xs text-slate-300 mt-1 leading-relaxed">{anomaly.description}</p>
                     <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-slate-400">
-                      <span><strong>Actor:</strong> {anomaly.actorName}</span>
-                      {anomaly.ipAddress && <span><strong>IP:</strong> {anomaly.ipAddress}</span>}
-                      <span><strong>Eventos Asociados:</strong> {anomaly.matchedEventIds.length}</span>
+                      <span><strong>Actor:</strong> {anomaly.affectedUser?.name || 'Sistema de seguridad'}</span>
+                      {anomaly.affectedUser?.email && <span><strong>Usuario:</strong> {anomaly.affectedUser.email}</span>}
+                      <span><strong>Eventos Asociados:</strong> {anomaly.triggerEventIds?.length || 0}</span>
                     </div>
                   </div>
                 </div>

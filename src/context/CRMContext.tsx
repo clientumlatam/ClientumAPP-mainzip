@@ -280,6 +280,26 @@ const STORAGE_KEYS = {
   EXPENSES: 'clientum_crm_expenses',
 };
 
+const ensureUniqueIds = <T extends { id: string }>(items: T[], prefix: string): T[] => {
+  const seen = new Set<string>();
+
+  return items.map((item, index) => {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      return item;
+    }
+
+    let replacementId = `${prefix}-${item.id}-${index}`;
+    let suffix = 1;
+    while (seen.has(replacementId)) {
+      replacementId = `${prefix}-${item.id}-${index}-${suffix}`;
+      suffix += 1;
+    }
+    seen.add(replacementId);
+    return { ...item, id: replacementId };
+  });
+};
+
 export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { theme, resolvedTheme, setTheme: setContextTheme, toggleTheme: toggleContextTheme } = useTheme();
 
@@ -322,7 +342,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const [opportunities, setOpportunities] = useState<Opportunity[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.OPPORTUNITIES);
-    return saved ? JSON.parse(saved) : INITIAL_OPPORTUNITIES;
+    return saved ? ensureUniqueIds(JSON.parse(saved), 'opp') : INITIAL_OPPORTUNITIES;
   });
 
   const [companies, setCompanies] = useState<Company[]>(() => {
@@ -776,7 +796,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const stageConf = STAGES.find((s) => s.id === data.stage);
     const newOpp: Opportunity = {
       ...data,
-      id: 'opp-' + Date.now(),
+      id: `opp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       probability: data.probability ?? stageConf?.probability ?? 50,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

@@ -162,6 +162,9 @@ async function run() {
   await clickButton('Módulos Avanzados');
   await clickButton('Configuración General');
   await waitFor('the settings view', () => document.body?.innerText?.includes('Integraciones & API Hub'));
+  await clickButton('Auditoría & Logs');
+  await waitFor('the audit logs view', () => document.body?.innerText?.includes('Eventos Registrados'));
+  console.log('✓ audit logs view renders security anomalies safely');
   await clickButton('Integraciones & API Hub');
   await clickButton('API Keys por usuario');
   await assertUserApiKeysTab('the per-user API keys configuration tab');
