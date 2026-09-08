@@ -1,0 +1,829 @@
+Transcripción completa y detallada de los elementos del menú lateral de la interfaz:
+
+GESTIÓN COMERCIAL
+
+    Resumen Ejecutivo
+
+    Centro de Funciones (con indicador visual/badge)
+
+    Pipeline Negocios (con etiqueta Kanban)
+
+    Webmail Cloudflare (GTM) (con notificador 2)
+
+    Empresas
+
+    Contactos
+
+    Tareas & Actividades (con notificador 1)
+
+    Reportes & BI
+
+    WhatsApp CRM (destacado/activo, con etiqueta LIVE)
+
+    Facturación AFIP (CAE) (con etiqueta WS AFIP)
+
+Módulos Avanzados (18+) (menú desplegable)
+
+VENTAS & CIERRE
+
+    Propuestas & Presupuestos (con etiqueta PDF)
+
+    Prospección Mapa B2B (con etiqueta Maps)
+
+    Lead Scoring MEDDIC
+
+    Chatbot WhatsApp 24/7
+
+    Campañas Masivas
+
+INTELIGENCIA ARTIFICIAL
+
+    Agent OS (14 Agentes) (con etiqueta v2)
+
+    Asistente Gemini 1.5
+
+    Estrategias GTM
+
+    Agente SDR Outreach
+
+OPERACIONES & SISTEMA
+
+    Cobros MercadoPago
+
+    Tienda Digital WhatsApp (con etiqueta Catálogo)
+
+    Campus Academia LMS (con etiqueta LMS UI)
+
+    Workflows & Flujos
+
+    Custom Objects Studio
+
+    CSV Import & Export
+
+    Gestor de Dominios
+
+    Configuración General
+
+Clientum Copilot (Tarjeta flotante/módulo inferior)
+
+    Estado: IA ACTIVA
+
+    Descripción: Inteligencia de cuentas, redacción de propuestas y resúmenes de reuniones.
+
+Transcripción completa y organizada de los datos visibles en el panel de control:
+
+Navegación Lateral Izquierda
+
+    Resumen
+
+    Contactos
+
+    Empresas
+
+    Negocios (activo)
+
+    Actividades
+
+    Tareas (notificación: 7)
+
+    Calendario
+
+    Reportes
+
+    Automatizaciones
+
+    Mensajes (notificación: 12)
+
+    Configuración
+
+    Usuario: Fernando Díaz (Administrador)
+
+Pipeline de ventas
+
+    Nuevo (8 negocios - $ 24.500)
+
+        Importación de equipos | TechGlobal S.A. | $ 7.500
+
+        Consultoría SAP | DataLogic | $ 6.000
+
+        Software licencias | Innovatech | $ 5.000
+
+        Servicios en la nube | CloudWare | $ 6.000
+
+    Calificación (6 negocios - $ 42.300)
+
+        Desarrollo a medida | SoftBuild | $ 12.000
+
+        Integración de sistemas | NetSolutions | $ 9.800
+
+        Soporte 24/7 | AdminCorp | $ 7.500
+
+        Renovación de licencias | CompuStore | $ 6.000
+
+    Propuesta (5 negocios - $ 67.300)
+
+        Plataforma e-learning | EduSmart | $ 18.000
+
+        App móvil | MoviLab | $ 15.000
+
+        Ciberseguridad | SecureIT | $ 17.500
+
+        Data Analytics | MetricsPlus | $ 17.300
+
+    Negociación (5 negocios - $ 38.000)
+
+        ERP Implementación | GlobalTech | $ 22.000
+
+        Outsourcing TI | BusinessCore | $ 10.000
+
+        Infraestructura cloud | SkyNet | $ 6.000
+
+    Cerrado (4 negocios - $ 57.200)
+
+        CRM Corporativo | SalesPro | $ 18.000 (Ganado)
+
+        Mesa de ayuda | HelpDesk | $ 12.000 (Ganado)
+
+        Capacitación | Formación IT | $ 8.200 (Ganado)
+
+        Mantenimiento anual | FactorySoft | $ 19.000 (Ganado)
+
+Métricas Clave (Este mes)
+
+    Ingresos totales: $ 124.800 (+18.8% vs mes anterior)
+
+    Negocios activos: 22 (+15.8% vs mes anterior)
+
+    Tasa de cierre: 32.4% (+6.2% vs mes anterior)
+
+    Ticket promedio: $ 6.218 (+9.3% vs mes anterior)
+
+Gráfico de Ingresos (Este año)
+
+    Ingresos totales acumulados: $ 1.024.600 (+22.4% vs año anterior)
+
+    Pico destacado: Agosto ($ 124.800)
+
+Fuentes de negocio (126 Total)
+
+    Referidos: 35% (44)
+
+    Web: 25% (22)
+
+    Redes sociales: 20% (25)
+
+    Eventos: 10% (13)
+
+    Otros: 10% (12)
+
+Asistente IA (Chat en línea)
+
+    Resumen semanal de negocios:
+
+        Negocios creados: 18
+
+        En negociación: 7
+
+        Monto en negociación: $ 38.000
+
+        Ganados: 4
+
+        Ingresos ganados: $ 57.200
+
+    Actividades pendientes para hoy (5):
+
+        10:00 Llamada con TechGlobal
+
+        11:30 Reunión con SoftBuild
+
+        14:00 Enviar propuesta a MoviLab
+
+        15:30 Seguimiento a NetSolutions
+
+        17:00 Demo con EduSmart
+
+Transcripción completa y detallada de los elementos del menú lateral de la interfaz:
+
+
+
+GESTIÓN COMERCIAL
+
+
+
+Resumen Ejecutivo
+
+
+Centro de Funciones (con indicador visual/badge)
+
+
+Pipeline Negocios (con etiqueta Kanban)
+
+
+Webmail Cloudflare (GTM) (con notificador 2)
+
+
+Empresas
+
+
+Contactos
+
+
+Tareas & Actividades (con notificador 1)
+
+
+Reportes & BI
+
+
+WhatsApp CRM (destacado/activo, con etiqueta LIVE)
+
+
+Facturación AFIP (CAE) (con etiqueta WS AFIP)
+
+
+Módulos Avanzados (18+) (menú desplegable)
+
+
+
+VENTAS & CIERRE
+
+
+
+Propuestas & Presupuestos (con etiqueta PDF)
+
+
+Prospección Mapa B2B (con etiqueta Maps)
+
+
+Lead Scoring MEDDIC
+
+
+Chatbot WhatsApp 24/7
+
+
+Campañas Masivas
+
+
+INTELIGENCIA ARTIFICIAL
+
+
+
+Agent OS (14 Agentes) (con etiqueta v2)
+
+
+Asistente Gemini 1.5
+
+
+Estrategias GTM
+
+
+Agente SDR Outreach
+
+
+OPERACIONES & SISTEMA
+
+
+
+Cobros MercadoPago
+
+
+Tienda Digital WhatsApp (con etiqueta Catálogo)
+
+
+Campus Academia LMS (con etiqueta LMS UI)
+
+
+Workflows & Flujos
+
+
+Custom Objects Studio
+
+
+CSV Import & Export
+
+
+Gestor de Dominios
+
+
+Configuración General
+
+
+Clientum Copilot (Tarjeta flotante/módulo inferior)
+
+
+
+Estado: IA ACTIVA
+
+
+Descripción: Inteligencia de cuentas, redacción de propuestas y resúmenes de reuniones.
+
+Transcripción completa y detallada de los elementos del menú lateral visible en la imagen:
+
+    Resumen
+
+    Contactos
+
+    Empresas
+
+    Negocios (elemento activo / seleccionado)
+
+    Actividades
+
+    Tareas (con notificador 7)
+
+    Calendario
+
+    Reportes
+
+    Automatizaciones
+
+    Mensajes (con notificador 12)
+
+    Configuración
+
+
+
+Transcripción completa y detallada de los elementos del menú lateral visible en la imagen:
+
+
+
+Resumen
+
+
+Contactos
+
+
+Empresas
+
+
+Negocios (elemento activo / seleccionado)
+
+
+Actividades
+
+
+Tareas (con notificador 7)
+
+
+Calendario
+
+
+Reportes
+
+
+Automatizaciones
+
+
+Mensajes (con notificador 12)
+
+
+Configuración
+
+
+
+Resumen Ejecutivo
+
+
+Centro de Funciones (con indicador visual/badge)
+
+
+Pipeline Negocios (con etiqueta Kanban)
+
+
+Webmail Cloudflare (GTM) (con notificador 2)
+
+
+Empresas
+
+
+Contactos
+
+
+Tareas & Actividades (con notificador 1)
+
+
+Reportes & BI
+
+
+WhatsApp CRM (destacado/activo, con etiqueta LIVE)
+
+
+Facturación AFIP (CAE) (con etiqueta WS AFIP)
+
+
+Módulos Avanzados (18+) (menú desplegable)
+
+
+
+VENTAS & CIERRE
+
+
+
+Propuestas & Presupuestos (con etiqueta PDF)
+
+
+Prospección Mapa B2B (con etiqueta Maps)
+
+
+Lead Scoring MEDDIC
+
+
+Chatbot WhatsApp 24/7
+
+
+Campañas Masivas
+
+
+INTELIGENCIA ARTIFICIAL
+
+
+
+Agent OS (14 Agentes) (con etiqueta v2)
+
+
+Asistente Gemini 1.5
+
+
+Estrategias GTM
+
+
+Agente SDR Outreach
+
+
+OPERACIONES & SISTEMA
+
+
+
+Cobros MercadoPago
+
+
+Tienda Digital WhatsApp (con etiqueta Catálogo)
+
+
+Campus Academia LMS (con etiqueta LMS UI)
+
+
+Workflows & Flujos
+
+
+Custom Objects Studio
+
+
+CSV Import & Export
+
+
+Gestor de Dominios
+
+
+Configuración General
+
+
+Clientum Copilot (Tarjeta flotante/módulo inferior)
+
+
+
+Estado: IA ACTIVA
+
+
+Descripción: Inteligencia de cuentas, redacción de propuestas y resúmenes de reuniones.
+
+Transcripción completa y consolidada de los elementos del menú lateral presentados:
+
+    Resumen / Resumen Ejecutivo
+
+    Centro de Funciones (con indicador visual / badge)
+
+    Pipeline Negocios / Negocios (con etiqueta Kanban)
+
+    Webmail Cloudflare (GTM) (con notificador 2)
+
+    Empresas
+
+    Contactos
+
+    Tareas & Actividades (con notificador 1 o 7)
+
+    Calendario
+
+    Reportes & BI
+
+    Automatizaciones
+
+    Mensajes (con notificador 12)
+
+    WhatsApp CRM (destacado / activo, con etiqueta LIVE)
+
+    Facturación AFIP (CAE) (con etiqueta WS AFIP)
+
+Módulos Avanzados (18+) (menú desplegable)
+
+VENTAS & CIERRE
+
+    Propuestas & Presupuestos (con etiqueta PDF)
+
+    Prospección Mapa B2B (con etiqueta Maps)
+
+    Lead Scoring MEDDIC
+
+    Chatbot WhatsApp 24/7
+
+    Campañas Masivas
+
+INTELIGENCIA ARTIFICIAL
+
+    Agent OS (14 Agentes) (con etiqueta v2)
+
+    Asistente Gemini 1.5
+
+    Estrategias GTM
+
+    Agente SDR Outreach
+
+OPERACIONES & SISTEMA
+
+    Cobros MercadoPago
+
+    Tienda Digital WhatsApp (con etiqueta Catálogo)
+
+    Campus Academia LMS (con etiqueta LMS UI)
+
+    Workflows & Flujos
+
+    Custom Objects Studio
+
+    CSV Import & Export
+
+    Gestor de Dominios
+
+    Configuración General
+
+Clientum Copilot (Tarjeta flotante / módulo inferior)
+
+    Estado: IA ACTIVA
+
+    Descripción: Inteligencia de cuentas, redacción de propuestas y resúmenes de reuniones.
+
+ORDENA Y REORG TODOS
+
+Estructura reorganizada y jerarquizada de todos los módulos y opciones del sistema:
+
+MENÚ PRINCIPAL
+
+Gestión Comercial & Pipeline
+
+    Resumen Ejecutivo
+
+    Centro de Funciones (indicador visual)
+
+    Pipeline Negocios (etiqueta Kanban)
+
+    Empresas
+
+    Contactos
+
+    Tareas & Actividades (notificadores 1 / 7)
+
+    Calendario
+
+    Reportes & BI
+
+Comunicación & Canales
+
+    WhatsApp CRM (destacado / activo, etiqueta LIVE)
+
+    Webmail Cloudflare (GTM) (notificador 2)
+
+    Mensajes (notificador 12)
+
+MÓDULOS AVANZADOS (18+) (Desplegable)
+
+Ventas & Cierre
+
+    Propuestas & Presupuestos (etiqueta PDF)
+
+    Prospección Mapa B2B (etiqueta Maps)
+
+    Lead Scoring MEDDIC
+
+    Chatbot WhatsApp 24/7
+
+    Campañas Masivas
+
+Inteligencia Artificial
+
+    Agent OS (14 Agentes) (etiqueta v2)
+
+    Asistente Gemini 1.5
+
+    Estrategias GTM
+
+    Agente SDR Outreach
+
+Operaciones & Sistema
+
+    Facturación AFIP (CAE) (etiqueta WS AFIP)
+
+    Cobros MercadoPago
+
+    Tienda Digital WhatsApp (etiqueta Catálogo)
+
+    Campus Academia LMS (etiqueta LMS UI)
+
+    Automatizaciones / Workflows & Flujos
+
+    Custom Objects Studio
+
+    CSV Import & Export
+
+    Gestor de Dominios
+
+    Configuración General
+
+CLIENTUM COPILOT (Módulo inferior / flotante)
+
+    Estado: IA ACTIVA
+
+    Descripción: Inteligencia de cuentas, redacción de propuestas y resúmenes de reuniones.
+
+AGRUPA MAS
+
+Propuesta de arquitectura simplificada en 4 grandes bloques:
+
+COMERCIAL & CLIENTES
+
+    Panel Principal: Resumen Ejecutivo, Centro de Funciones, Reportes & BI.
+
+    Gestión de Ventas: Pipeline Negocios Kanban, Empresas, Contactos, Tareas & Actividades (7), Calendario.
+
+    Herramientas de Cierre: Propuestas & Presupuestos PDF, Prospección Mapa B2B Maps, Lead Scoring MEDDIC, Chatbot WhatsApp 24/7, Campañas Masivas.
+
+COMUNICACIÓN
+
+    Canales Unificados: WhatsApp CRM LIVE, Webmail Cloudflare (GTM) (2), Mensajes (12).
+
+AGENTES & IA
+
+    Ecosistema IA: Agent OS (14 Agentes) v2, Asistente Gemini 1.5, Agente SDR Outreach, Estrategias GTM.
+
+    Clientum Copilot: IA ACTIVA — Inteligencia de cuentas, redacción de propuestas y resúmenes de reuniones.
+
+OPERACIONES & CONFIGURACIÓN
+
+    Cobros y Facturación: Facturación AFIP (CAE) WS AFIP, Cobros MercadoPago, Tienda Digital WhatsApp Catálogo.
+
+    Plataforma & Datos: Workflows & Automatizaciones, Custom Objects Studio, CSV Import & Export, Gestor de Dominios, Campus Academia LMS LMS UI, Configuración General.
+
+FALTA ALGO?
+
+La estructura cubre todos los elementos identificados en las imágenes. Para validar que no quede nada fuera, la siguiente verificación cruza cada ítem capturado con su ubicación en los 4 grandes bloques:
+Elemento capturado	Ubicación en la nueva estructura	Estado
+Resumen / Resumen Ejecutivo	Comercial & Clientes → Panel Principal	Incluido
+Centro de Funciones	Comercial & Clientes → Panel Principal	Incluido
+Pipeline Negocios / Negocios Kanban	Comercial & Clientes → Gestión de Ventas	Incluido
+Empresas	Comercial & Clientes → Gestión de Ventas	Incluido
+Contactos	Comercial & Clientes → Gestión de Ventas	Incluido
+Tareas & Actividades	Comercial & Clientes → Gestión de Ventas	Incluido
+Calendario	Comercial & Clientes → Gestión de Ventas	Incluido
+Reportes & BI	Comercial & Clientes → Panel Principal	Incluido
+Propuestas & Presupuestos PDF	Comercial & Clientes → Herramientas de Cierre	Incluido
+Prospección Mapa B2B Maps	Comercial & Clientes → Herramientas de Cierre	Incluido
+Lead Scoring MEDDIC	Comercial & Clientes → Herramientas de Cierre	Incluido
+Chatbot WhatsApp 24/7	Comercial & Clientes → Herramientas de Cierre	Incluido
+Campañas Masivas	Comercial & Clientes → Herramientas de Cierre	Incluido
+WhatsApp CRM LIVE	Comunicación → Canales Unificados	Incluido
+Webmail Cloudflare (GTM)	Comunicación → Canales Unificados	Incluido
+Mensajes	Comunicación → Canales Unificados	Incluido
+Agent OS (14 Agentes) v2	Agentes & IA → Ecosistema IA	Incluido
+Asistente Gemini 1.5	Agentes & IA → Ecosistema IA	Incluido
+Estrategias GTM	Agentes & IA → Ecosistema IA	Incluido
+Agente SDR Outreach	Agentes & IA → Ecosistema IA	Incluido
+Clientum Copilot IA ACTIVA	Agentes & IA → Clientum Copilot	Incluido
+Facturación AFIP (CAE) WS AFIP	Operaciones & Configuración → Cobros y Facturación	Incluido
+Cobros MercadoPago	Operaciones & Configuración → Cobros y Facturación	Incluido
+Tienda Digital WhatsApp Catálogo	Operaciones & Configuración → Cobros y Facturación	Incluido
+Campus Academia LMS LMS UI	Operaciones & Configuración → Plataforma & Datos	Incluido
+Workflows & Flujos / Automatizaciones	Operaciones & Configuración → Plataforma & Datos	Incluido
+Custom Objects Studio	Operaciones & Configuración → Plataforma & Datos	Incluido
+CSV Import & Export	Operaciones & Configuración → Plataforma & Datos	Incluido
+Gestor de Dominios	Operaciones & Configuración → Plataforma & Datos	Incluido
+Configuración General	Operaciones & Configuración → Plataforma & Datos	Incluido
+
+Todos los módulos, submódulos, etiquetas y notificadores están contenidos en la propuesta.
+
+CUALES NECESITAS API KEYS PARA OBETENR DATOS REALES
+
+Los módulos que requieren integración mediante API Key o credenciales de conexión externa para sincronizar y obtener datos en tiempo real son:
+
+COMUNICACIÓN Y CRM
+
+    WhatsApp CRM & Chatbot 24/7: Requiere API Key / Access Token de la WhatsApp Business Platform API (Meta Graph API) o proveedor de BSP (como Twilio, MessageBird, etc.).
+
+    Webmail Cloudflare (GTM): Requiere Cloudflare API Token para gestión de registros DNS/Email Routing y credenciales SMTP/IMAP para correo.
+
+OPERACIONES & CONFIGURACIÓN
+
+    Facturación AFIP (CAE): Requiere certificado digital (.crt), clave privada (.key) y autenticación vía Web Services de AFIP (WSAA / WSFEv1).
+
+    Cobros MercadoPago: Requiere AccessToken / Secret Key de la API de MercadoPago (producción o Sandbox).
+
+    Prospección Mapa B2B: Requiere API Key de Google Maps Platform (Places API / Geocoding API).
+
+    Gestor de Dominios: Requiere API Keys del registrador de dominios (Cloudflare API, GoDaddy, Namecheap, etc.).
+
+INTELIGENCIA ARTIFICIAL
+
+    Asistente Gemini 1.5 & Agent OS: Requieren Google AI Studio API Key (para Gemini) o claves de proveedores LLM según el modelo utilizado (OpenAI, Anthropic, etc.).
+
+Módulos que NO requieren API Keys externas (operan directamente con la base de datos interna del sistema):
+
+    Resumen Ejecutivo, Pipeline Negocios, Empresas, Contactos, Tareas, Calendario, Reportes, Lead Scoring, Workflows internos, Custom Objects, CSV Import/Export y Configuración General.
+
+Los módulos que requieren integración mediante API Key o credenciales de conexión externa para sincronizar y obtener datos en tiempo real son:
+
+
+
+COMUNICACIÓN Y CRM
+
+
+
+WhatsApp CRM & Chatbot 24/7: Requiere API Key / Access Token de la WhatsApp Business Platform API (Meta Graph API) o proveedor de BSP (como Twilio, MessageBird, etc.).
+
+
+Webmail Cloudflare (GTM): Requiere Cloudflare API Token para gestión de registros DNS/Email Routing y credenciales SMTP/IMAP para correo.
+
+
+OPERACIONES & CONFIGURACIÓN
+
+
+
+Facturación AFIP (CAE): Requiere certificado digital (.crt), clave privada (.key) y autenticación vía Web Services de AFIP (WSAA / WSFEv1).
+
+
+Cobros MercadoPago: Requiere AccessToken / Secret Key de la API de MercadoPago (producción o Sandbox).
+
+
+Prospección Mapa B2B: Requiere API Key de Google Maps Platform (Places API / Geocoding API).
+
+
+Gestor de Dominios: Requiere API Keys del registrador de dominios (Cloudflare API, GoDaddy, Namecheap, etc.).
+
+
+INTELIGENCIA ARTIFICIAL
+
+
+
+Asistente Gemini 1.5 & Agent OS: Requieren Google AI Studio API Key (para Gemini) o claves de proveedores LLM según el modelo utilizado (OpenAI, Anthropic, etc.).
+
+
+Módulos que NO requieren API Keys externas (operan directamente con la base de datos interna del sistema):
+
+Propuesta de arquitectura simplificada en 4 grandes bloques:
+
+
+
+COMERCIAL & CLIENTES
+
+
+
+Panel Principal: Resumen Ejecutivo, Centro de Funciones, Reportes & BI.
+
+
+Gestión de Ventas: Pipeline Negocios Kanban, Empresas, Contactos, Tareas & Actividades (7), Calendario.
+
+
+Herramientas de Cierre: Propuestas & Presupuestos PDF, Prospección Mapa B2B Maps, Lead Scoring MEDDIC, Chatbot WhatsApp 24/7, Campañas Masivas.
+
+
+COMUNICACIÓN
+
+
+
+Canales Unificados: WhatsApp CRM LIVE, Webmail Cloudflare (GTM) (2), Mensajes (12).
+
+
+AGENTES & IA
+
+
+
+Ecosistema IA: Agent OS (14 Agentes) v2, Asistente Gemini 1.5, Agente SDR Outreach, Estrategias GTM.
+
+
+Clientum Copilot: IA ACTIVA — Inteligencia de cuentas, redacción de propuestas y resúmenes de reuniones.
+
+
+OPERACIONES & CONFIGURACIÓN
+
+
+
+Cobros y Facturación: Facturación AFIP (CAE) WS AFIP, Cobros MercadoPago, Tienda Digital WhatsApp Catálogo.
+
+
+Plataforma & Datos: Workflows & Automatizaciones, Custom Objects Studio, CSV Import & Export, Gestor de Dominios, Campus Academia LMS LMS UI, Configuración General.
+
+
+Resumen Ejecutivo, Pipeline Negocios, Empresas, Contactos, Tareas, Calendario, Reportes, Lead Scoring, Workflows internos, Custom Objects, CSV Import/Export y Configuración General.
+
+Dos módulos adicionales de la lista requieren credenciales o API Keys para sincronizar datos reales con plataformas externas:
+
+    Campus Academia LMS: Si se vincula con plataformas de aprendizaje de terceros o procesadores de pago para venta de cursos (por ejemplo, Teachable, Thinkific, Vimeo API para streaming seguro de video, o Webhooks de pago), requiere sus respectivas API Keys/Tokens.
+
+    Tienda Digital WhatsApp (Catálogo): Sincronizar el catálogo en tiempo real con Meta Commerce Manager o plataformas de e-commerce (como WooCommerce o Shopify) requiere la Meta Graph API Key o las claves de API REST del e-commerce integrado.
