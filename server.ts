@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
+import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -9,7 +10,190 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+
+type EmailAddressInput = string | string[] | undefined;
+
+function normalizeEmailAddresses(value: EmailAddressInput): string[] {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values
+    .flatMap((item) => item.split(","))
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function isValidEmailAddress(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function isPlaceholderValue(value: string | undefined): boolean {
+  if (!value) return true;
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized.startsWith("tu_") ||
+    normalized.startsWith("your_") ||
+    normalized.startsWith("replace_") ||
+    normalized.includes("example.com") ||
+    normalized.includes("dominio.com") ||
+    normalized.includes("placeholder")
+  );
+}
+
+function getSmtpConfig() {
+  const host = process.env.SMTP_HOST?.trim();
+  const user = process.env.SMTP_USER?.trim();
+  const password = process.env.SMTP_PASSWORD;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const fromAddress = process.env.MAIL_FROM_ADDRESS?.trim();
+  const fromName = process.env.MAIL_FROM_NAME?.trim() || "ClientumCRM";
+
+  return {
+    host,
+    port: Number.isFinite(port) && port > 0 ? port : 587,
+    user,
+    password,
+    fromAddress,
+    fromName,
+    configured: Boolean(
+      host &&
+      user &&
+      password &&
+      fromAddress &&
+      ![host, user, password, fromAddress].some(isPlaceholderValue),
+    ),
+  };
+}
+
+let smtpTransporter: nodemailer.Transporter | null = null;
+let smtpTransporterKey = "";
+
+function getSmtpTransporter(): nodemailer.Transporter {
+  const smtp = getSmtpConfig();
+  if (!smtp.configured) {
+    throw new Error(
+      "SMTP is not configured. Add SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and MAIL_FROM_ADDRESS to Replit Secrets.",
+    );
+  }
+
+  const currentKey = `${smtp.host}:${smtp.port}:${smtp.user}`;
+  if (!smtpTransporter || smtpTransporterKey !== currentKey) {
+    smtpTransporter = nodemailer.createTransport({
+      host: smtp.host,
+      port: smtp.port,
+      secure: smtp.port === 465,
+      auth: {
+        user: smtp.user,
+        pass: smtp.password,
+      },
+    });
+    smtpTransporterKey = currentKey;
+  }
+
+  return smtpTransporter;
+}
+
+// Transactional email delivery through the configured SMTP provider.
+// Credentials stay server-side; the browser only receives delivery status.
+app.get("/api/email/status", (_req, res) => {
+  const smtp = getSmtpConfig();
+  res.json({
+    configured: smtp.configured,
+    fromAddress: smtp.configured ? smtp.fromAddress : null,
+    fromName: smtp.fromName,
+  });
+});
+
+app.post("/api/email/send", async (req, res) => {
+  try {
+    const {
+      from,
+      fromName,
+      to,
+      cc,
+      bcc,
+      replyTo,
+      subject,
+      text,
+      html,
+    } = req.body ?? {};
+
+    const toAddresses = normalizeEmailAddresses(to);
+    const ccAddresses = normalizeEmailAddresses(cc);
+    const bccAddresses = normalizeEmailAddresses(bcc);
+    const replyToAddress = typeof replyTo === "string" ? replyTo.trim() : "";
+    const smtp = getSmtpConfig();
+    const requestedFrom = typeof from === "string" ? from.trim() : "";
+    const senderAddress = requestedFrom || smtp.fromAddress || "";
+
+    if (!toAddresses.length || toAddresses.some((address) => !isValidEmailAddress(address))) {
+      res.status(400).json({ error: "At least one valid recipient is required." });
+      return;
+    }
+    if (ccAddresses.some((address) => !isValidEmailAddress(address)) ||
+        bccAddresses.some((address) => !isValidEmailAddress(address))) {
+      res.status(400).json({ error: "All CC and BCC recipients must be valid email addresses." });
+      return;
+    }
+    if (!senderAddress || !isValidEmailAddress(senderAddress)) {
+      res.status(400).json({ error: "A valid sender address is required." });
+      return;
+    }
+    if (replyToAddress && !isValidEmailAddress(replyToAddress)) {
+      res.status(400).json({ error: "Reply-to must be a valid email address." });
+      return;
+    }
+    if (typeof subject !== "string" || !subject.trim()) {
+      res.status(400).json({ error: "Subject is required." });
+      return;
+    }
+    if (typeof text !== "string" || !text.trim()) {
+      res.status(400).json({ error: "Email body is required." });
+      return;
+    }
+    if (!smtp.configured) {
+      res.status(503).json({
+        error: "SMTP delivery is not configured.",
+        code: "SMTP_NOT_CONFIGURED",
+      });
+      return;
+    }
+
+    // SMTP providers commonly reject arbitrary From addresses. Keep the
+    // authenticated mailbox as the envelope sender and preserve a requested
+    // alternate address only when it matches the configured mailbox.
+    const effectiveFrom = senderAddress === smtp.fromAddress
+      ? senderAddress
+      : smtp.fromAddress;
+    const displayName = typeof fromName === "string" && fromName.trim()
+      ? fromName.trim()
+      : smtp.fromName;
+
+    const info = await getSmtpTransporter().sendMail({
+      from: `"${displayName.replace(/"/g, "")}" <${effectiveFrom}>`,
+      to: toAddresses,
+      cc: ccAddresses.length ? ccAddresses : undefined,
+      bcc: bccAddresses.length ? bccAddresses : undefined,
+      replyTo: replyToAddress || undefined,
+      subject: subject.trim(),
+      text: text.trim(),
+      html: typeof html === "string" && html.trim() ? html : undefined,
+    });
+
+    res.json({
+      success: true,
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      fromAddress: effectiveFrom,
+    });
+  } catch (error: any) {
+    console.error("SMTP email delivery error:", error?.message || error);
+    res.status(502).json({
+      error: "SMTP provider rejected the email.",
+      code: "SMTP_DELIVERY_FAILED",
+    });
+  }
+});
 
 // Lazy-initialization of Gemini client for security and robustness
 let aiClient: GoogleGenAI | null = null;

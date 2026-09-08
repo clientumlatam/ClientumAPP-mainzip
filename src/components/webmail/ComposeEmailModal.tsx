@@ -51,6 +51,8 @@ export const ComposeEmailModal: React.FC<ComposeEmailModalProps> = ({
   const [selectedCrmType, setSelectedCrmType] = useState<'opportunity' | 'company' | 'person' | 'none'>('none');
   const [selectedCrmId, setSelectedCrmId] = useState<string>('');
   const [isAiPolishing, setIsAiPolishing] = useState(false);
+  const [smtpConfigured, setSmtpConfigured] = useState<boolean | null>(null);
+  const [smtpFromAddress, setSmtpFromAddress] = useState<string | null>(null);
 
   // Initialize or reset form when modal opens with defaults
   useEffect(() => {
@@ -94,6 +96,32 @@ export const ComposeEmailModal: React.FC<ComposeEmailModalProps> = ({
       }
     }
   }, [isOpen, initialDefaults]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let cancelled = false;
+    fetch('/api/email/status')
+      .then((response) => response.json())
+      .then((status) => {
+        if (cancelled) return;
+        setSmtpConfigured(status.configured === true);
+        setSmtpFromAddress(status.fromAddress || null);
+        if (status.fromAddress) {
+          setFromAddress(status.fromAddress);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSmtpConfigured(false);
+          setSmtpFromAddress(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -166,15 +194,9 @@ export const ComposeEmailModal: React.FC<ComposeEmailModalProps> = ({
     }, 700);
   };
 
-  // Simulated attachment add
+  // Attachments require the R2 upload flow; do not create fake attachment records.
   const handleAddAttachment = () => {
-    const mockFiles: WebmailAttachment[] = [
-      { id: 'att-' + Date.now(), name: 'Propuesta_Clientum_Enterprise_2026.pdf', size: 1850000, type: 'application/pdf' },
-      { id: 'att-' + (Date.now() + 1), name: 'Especificacion_Tecnica_Worker_D1.pdf', size: 920000, type: 'application/pdf' },
-    ];
-    const picked = mockFiles[Math.floor(Math.random() * mockFiles.length)];
-    setAttachments([...attachments, picked]);
-    showToast(`Archivo adjunto: ${picked.name}`, 'info');
+    showToast('Los adjuntos se habilitarán al conectar el almacenamiento R2.', 'info');
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -230,10 +252,10 @@ export const ComposeEmailModal: React.FC<ComposeEmailModalProps> = ({
         workerId: 'webmail-clientum-worker-edge-1',
       });
 
-      showToast(`Correo enviado exitosamente vía send_email binding a ${finalTo.join(', ')}`, 'success');
+      showToast(`Correo enviado exitosamente vía SMTP a ${finalTo.join(', ')}`, 'success');
       onClose();
     } catch (err) {
-      showToast('Error al despachar el correo por el Worker', 'error');
+      showToast(err instanceof Error ? err.message : 'Error al despachar el correo por SMTP', 'error');
     } finally {
       setIsSending(false);
     }
@@ -253,11 +275,17 @@ export const ComposeEmailModal: React.FC<ComposeEmailModalProps> = ({
             </div>
             <div>
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Redactar Correo • Webmail Cloudflare
+                 Redactar Correo • SMTP transaccional
               </h3>
-              <span className="text-[10px] text-emerald-600 font-mono flex items-center gap-1 font-semibold">
+               <span className={`text-[10px] font-mono flex items-center gap-1 font-semibold ${
+                 smtpConfigured === false ? 'text-amber-600' : 'text-emerald-600'
+               }`}>
                 <ShieldCheck className="w-3 h-3" />
-                send_email binding activo (clientum.com.ar)
+                 {smtpConfigured === null
+                   ? 'verificando configuración SMTP...'
+                   : smtpConfigured
+                     ? `SMTP listo${smtpFromAddress ? ` • ${smtpFromAddress}` : ''}`
+                     : 'SMTP no configurado'}
               </span>
             </div>
           </div>
@@ -521,11 +549,11 @@ export const ComposeEmailModal: React.FC<ComposeEmailModalProps> = ({
           <div className="flex items-center justify-between pt-3 border-t border-slate-200">
             <button
               type="button"
-              onClick={handleAddAttachment}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer border border-slate-200"
+               onClick={handleAddAttachment}
+               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer border border-slate-200"
             >
               <Paperclip className="w-3.5 h-3.5 text-blue-600" />
-              <span>Adjuntar Archivo</span>
+               <span>Adjuntar Archivo (R2)</span>
             </button>
 
             <div className="flex items-center gap-2">
@@ -543,7 +571,7 @@ export const ComposeEmailModal: React.FC<ComposeEmailModalProps> = ({
                 className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-md transition-all disabled:opacity-50 cursor-pointer"
               >
                 <Send className={`w-3.5 h-3.5 ${isSending ? 'animate-spin' : ''}`} />
-                <span>{isSending ? 'Despachando vía Worker...' : 'Enviar Correo (send_email)'}</span>
+                 <span>{isSending ? 'Despachando vía SMTP...' : 'Enviar Correo (SMTP)'}</span>
               </button>
             </div>
           </div>

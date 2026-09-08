@@ -2177,12 +2177,37 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const sendWebmailEmail = async (
     emailData: Omit<WebmailEmail, 'id' | 'timestamp' | 'messageId' | 'direction'>
   ): Promise<boolean> => {
+    if (emailData.attachments?.length) {
+      throw new Error('Los adjuntos reales se habilitarán al conectar el almacenamiento R2.');
+    }
+
+    const deliveryResponse = await fetch('/api/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: emailData.from,
+        fromName: emailData.fromName,
+        to: emailData.to,
+        cc: emailData.cc,
+        bcc: emailData.bcc,
+        replyTo: emailData.replyTo,
+        subject: emailData.subject,
+        text: emailData.bodyText,
+        html: emailData.bodyHtml,
+      }),
+    });
+    const deliveryResult = await deliveryResponse.json().catch(() => ({}));
+    if (!deliveryResponse.ok) {
+      throw new Error(deliveryResult.error || 'No se pudo entregar el correo por SMTP.');
+    }
+
     const newId = 'd1-msg-' + Date.now();
-    const newMsgId = `<${Date.now()}.d1.clientum.outbound@clientum.com.ar>`;
+    const newMsgId = deliveryResult.messageId || `<${Date.now()}.smtp.clientum.outbound>`;
     const timestamp = new Date().toISOString();
 
     const newEmail: WebmailEmail = {
       ...emailData,
+      from: deliveryResult.fromAddress || emailData.from,
       id: newId,
       messageId: newMsgId,
       timestamp,
@@ -2223,7 +2248,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       entityType: 'webmail',
       entityId: newId,
       entityName: emailData.subject,
-      details: `Correo enviado a ${emailData.to.join(', ')} desde ${emailData.from} firmado con DKIM por Cloudflare Worker.`,
+      details: `Correo entregado por SMTP a ${emailData.to.join(', ')} desde ${deliveryResult.fromAddress || emailData.from}.`,
       severity: 'info',
       status: 'success',
     });

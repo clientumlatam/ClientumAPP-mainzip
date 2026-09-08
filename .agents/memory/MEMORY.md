@@ -1,1 +1,2 @@
 - [Firebase environment propagation](firebase-env.md) — inject only public Firebase config into Vite and guard Auth/Analytics when it is unavailable.
+- [Provider configuration validation](provider-config-validation.md) — secret existence does not prove a usable value; reject documentation placeholders before enabling delivery.
