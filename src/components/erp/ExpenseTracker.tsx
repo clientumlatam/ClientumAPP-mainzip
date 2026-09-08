@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 import { useCRM } from '../../context/CRMContext';
 import { ExpenseItem } from '../../types';
+import { getClientumAuthJsonHeaders } from '../../lib/api';
 
 const CATEGORY_COLORS: Record<string, string> = {
   Software: '#3b82f6',
@@ -41,7 +42,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export const ExpenseTracker: React.FC = () => {
-  const { expenses, addExpense, deleteExpense, showToast } = useCRM();
+  const { expenses, addExpense, deleteExpense, showToast, currentUser } = useCRM();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -73,7 +74,7 @@ export const ExpenseTracker: React.FC = () => {
     try {
       const res = await fetch('/api/expense/categorize', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getClientumAuthJsonHeaders(currentUser),
         body: JSON.stringify({ description: queryDesc, vendor: vendorText || vendor }),
       });
 

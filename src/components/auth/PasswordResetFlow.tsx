@@ -71,9 +71,7 @@ export const PasswordResetFlow: React.FC<PasswordResetFlowProps> = ({
       setIsLoading(false);
 
       if (result.success) {
-        // Generate a friendly demo token for instant simulation if in preview
-        const generatedDemo = 'CLM-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-        setDemoToken(generatedDemo);
+        setDemoToken(result.demoToken || null);
         setStep('verify');
         showToast('Enlace y código de recuperación enviados a tu correo.', 'success');
       } else {

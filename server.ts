@@ -55,9 +55,11 @@ const userApiKeyStorePath = process.env.USER_API_KEY_STORE_PATH ||
 console.log(`Credential persistence: ${credentialDatabase ? "PostgreSQL" : "development file fallback"}`);
 
 function getCredentialEncryptionKey(): Buffer {
-  const configuredKey = process.env.WORKFLOW_ENCRYPTION_KEY ||
+  const configuredKey = (
+    process.env.WORKFLOW_ENCRYPTION_KEY ||
     process.env.API_KEY_PEPPER ||
-    process.env.SESSION_SECRET;
+    process.env.SESSION_SECRET
+  )?.trim();
   if (!configuredKey || isPlaceholderValue(configuredKey)) {
     throw new Error("A server encryption secret is required to manage user credentials.");
   }
@@ -157,6 +159,24 @@ async function getRequestUserId(req: express.Request): Promise<string | null> {
   return null;
 }
 
+const requireProductionAuthentication: express.RequestHandler = async (req, res, next) => {
+  if (process.env.NODE_ENV !== "production") {
+    next();
+    return;
+  }
+
+  const userId = await getRequestUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: "A verified user session is required." });
+    return;
+  }
+  next();
+};
+
+// AI and outbound email can consume paid provider credentials. Keep the local
+// demo usable, but require a Firebase-verified identity in production.
+app.use(["/api/ai", "/api/expense", "/api/email/send"], requireProductionAuthentication);
+
 const ADMIN_ROLE_NAMES = new Set([
   "admin",
   "administrator",
@@ -217,11 +237,16 @@ async function getUserCredentialValues(userId: string, moduleId: string): Promis
 async function getUserGeminiKey(userId: string | null, moduleId = "aiAssistant"): Promise<string | undefined> {
   if (userId) {
     const moduleValues = await getUserCredentialValues(userId, moduleId);
-    if (moduleValues.GEMINI_API_KEY) return moduleValues.GEMINI_API_KEY;
+    if (moduleValues.GEMINI_API_KEY && !isPlaceholderValue(moduleValues.GEMINI_API_KEY)) {
+      return moduleValues.GEMINI_API_KEY.trim();
+    }
     const sharedValues = await getUserCredentialValues(userId, "aiAssistant");
-    if (sharedValues.GEMINI_API_KEY) return sharedValues.GEMINI_API_KEY;
+    if (sharedValues.GEMINI_API_KEY && !isPlaceholderValue(sharedValues.GEMINI_API_KEY)) {
+      return sharedValues.GEMINI_API_KEY.trim();
+    }
   }
-  return process.env.GEMINI_API_KEY || undefined;
+  const platformKey = process.env.GEMINI_API_KEY?.trim();
+  return platformKey && !isPlaceholderValue(platformKey) ? platformKey : undefined;
 }
 
 app.get("/api/user-credentials", async (req, res) => {
@@ -501,9 +526,18 @@ function isPlaceholderValue(value: string | undefined): boolean {
   if (!value) return true;
   const normalized = value.trim().toLowerCase();
   return (
+    normalized.length < 4 ||
     normalized.startsWith("tu_") ||
     normalized.startsWith("your_") ||
     normalized.startsWith("replace_") ||
+    normalized.startsWith("change_") ||
+    normalized.startsWith("changeme") ||
+    normalized.startsWith("dummy") ||
+    normalized.startsWith("sample") ||
+    normalized.startsWith("test_") ||
+    normalized.includes("<") ||
+    normalized.includes(">") ||
+    normalized.includes("••") ||
     normalized.includes("example.com") ||
     normalized.includes("dominio.com") ||
     normalized.includes("placeholder")
@@ -670,7 +704,7 @@ app.post("/api/email/send", async (req, res) => {
 // and gets its own client cache entry, separate from the platform key.
 const aiClients = new Map<string, GoogleGenAI>();
 function getGeminiClient(apiKey = process.env.GEMINI_API_KEY): GoogleGenAI {
-  if (!apiKey) {
+  if (!apiKey || isPlaceholderValue(apiKey)) {
     throw new Error("A Gemini API key is required");
   }
   const cacheKey = createHash("sha256").update(apiKey).digest("hex");
@@ -693,7 +727,7 @@ function getGeminiClient(apiKey = process.env.GEMINI_API_KEY): GoogleGenAI {
 
 // Helper to check if API key is present
 function isApiKeyPresent(apiKey = process.env.GEMINI_API_KEY): boolean {
-  return Boolean(apiKey);
+  return Boolean(apiKey && !isPlaceholderValue(apiKey));
 }
 
 // Helper function to call Gemini with retries and model fallbacks
@@ -945,13 +979,95 @@ app.post("/api/ai/adcopy", async (req, res) => {
 // 5. Maps Prospecting Endpoint (Structured JSON mode)
 app.post("/api/ai/prospect", async (req, res) => {
   try {
-    const { city, niche } = req.body;
+    const city = typeof req.body?.city === "string" ? req.body.city.trim() : "";
+    const niche = typeof req.body?.niche === "string" ? req.body.niche.trim() : "";
+    const radiusKm = Number(req.body?.radiusKm);
     if (!city || !niche) {
       res.status(400).json({ error: "city and niche are required" });
       return;
     }
+    if (city.length > 160 || niche.length > 120) {
+      res.status(400).json({ error: "city and niche are too long" });
+      return;
+    }
 
-    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req), "googleMaps");
+    const userId = await getRequestUserId(req);
+    const mapCredentials = userId
+      ? await getUserCredentialValues(userId, "googleMaps")
+      : {};
+    const googleMapsKey = typeof mapCredentials.GOOGLE_MAPS_SERVER_API_KEY === "string" &&
+      !isPlaceholderValue(mapCredentials.GOOGLE_MAPS_SERVER_API_KEY)
+      ? mapCredentials.GOOGLE_MAPS_SERVER_API_KEY.trim()
+      : undefined;
+
+    // Only the user's server-side credential can call Places from this route.
+    // The public browser key is intentionally not accepted here because its
+    // domain restrictions are not meaningful for a server-to-server request.
+    if (googleMapsKey) {
+      const placesResponse = await fetch("https://places.googleapis.com/v1/places:searchText", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": googleMapsKey,
+          "X-Goog-FieldMask": [
+            "places.id",
+            "places.displayName",
+            "places.formattedAddress",
+            "places.nationalPhoneNumber",
+            "places.rating",
+            "places.userRatingCount",
+            "places.websiteUri",
+            "places.googleMapsUri",
+          ].join(","),
+        },
+        body: JSON.stringify({
+          textQuery: `${niche} en ${city}`,
+          languageCode: "es",
+          regionCode: "AR",
+          maxResultCount: 20,
+        }),
+      });
+
+      if (!placesResponse.ok) {
+        console.warn("Google Places search failed with status:", placesResponse.status);
+        res.status(502).json({
+          error: "Google Places rechazó la búsqueda. Verifica la clave del usuario, APIs habilitadas y restricciones.",
+          code: "GOOGLE_PLACES_REQUEST_FAILED",
+        });
+        return;
+      }
+
+      const placesPayload = await placesResponse.json() as {
+        places?: Array<{
+          id?: string;
+          displayName?: { text?: string };
+          formattedAddress?: string;
+          nationalPhoneNumber?: string;
+          rating?: number;
+          userRatingCount?: number;
+          websiteUri?: string;
+          googleMapsUri?: string;
+        }>;
+      };
+      const places = (placesPayload.places || []).map((place, index) => ({
+        id: place.id || `google-place-${index}`,
+        name: place.displayName?.text || "Lugar sin nombre",
+        phone: place.nationalPhoneNumber || "",
+        address: place.formattedAddress || city,
+        website: place.websiteUri || place.googleMapsUri || "",
+        rating: place.rating || 0,
+        reviewsCount: place.userRatingCount || 0,
+        status: (place.rating || 0) >= 4.7
+          ? "Alta Intención"
+          : (place.rating || 0) >= 4.3
+            ? "Excelente Prospecto"
+            : "Calificación Media",
+      }));
+      res.json({ results: places, source: "google_places", radiusKm: Number.isFinite(radiusKm) ? Math.min(Math.max(radiusKm, 1), 100) : 25 });
+      return;
+    }
+
+    const requestGeminiKey = await getUserGeminiKey(userId, "googleMaps");
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({

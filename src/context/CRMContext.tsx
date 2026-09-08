@@ -34,6 +34,7 @@ import {
 } from '../types';
 import { getTranslation, TranslationKey } from '../i18n/translations';
 import { useTheme } from './ThemeContext';
+import { getClientumAuthJsonHeaders } from '../lib/api';
 import { INITIAL_WEBMAIL_EMAILS } from '../data/webmailInitialData';
 import {
   INITIAL_ACTIVITIES,
@@ -2183,7 +2184,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const deliveryResponse = await fetch('/api/email/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getClientumAuthJsonHeaders(currentUser),
       body: JSON.stringify({
         from: emailData.from,
         fromName: emailData.fromName,

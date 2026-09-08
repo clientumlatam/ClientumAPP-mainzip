@@ -14,10 +14,12 @@ import {
   Filter,
   Layers,
   Compass,
-  Check
+  Check,
+  Settings2
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
 import { getClientumAuthJsonHeaders } from '../../lib/api';
+import { ModuleCredentialsModal } from '../settings/ModuleCredentialsModal';
 
 interface ScrapedLead {
   id: string;
@@ -35,6 +37,7 @@ interface ScrapedLead {
 
 export const CrmFullGoogleMaps: React.FC = () => {
   const { addCompany, addOpportunity, showToast, triggerConfetti } = useCRM();
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
 
   const [keyword, setKeyword] = useState('Distribuidora Mayorista');
   const [city, setCity] = useState('General Roca, Río Negro');
@@ -122,7 +125,7 @@ export const CrmFullGoogleMaps: React.FC = () => {
       const res = await fetch('/api/ai/prospect', {
         method: 'POST',
          headers: await getClientumAuthJsonHeaders(),
-        body: JSON.stringify({ niche: keyword, city })
+        body: JSON.stringify({ niche: keyword, city, radiusKm })
       });
 
       if (res.ok) {
@@ -135,16 +138,24 @@ export const CrmFullGoogleMaps: React.FC = () => {
             city: city,
             phone: r.phone || '+54 11 4000-0000',
             address: r.address || `${city} Centro`,
-            website: `www.${r.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com.ar`,
-            rating: parseFloat(r.rating) || 4.7,
-            reviewsCount: Math.floor(Math.random() * 90) + 15,
+            website: r.website || `www.${r.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com.ar`,
+            rating: parseFloat(String(r.rating)) || 4.7,
+            reviewsCount: Number(r.reviewsCount) || 0,
             status: r.status || 'Alta Intención',
             isImported: false
           }));
 
           setLeads(prev => [...formatted, ...prev]);
-          showToast(`Se localizaron ${formatted.length} prospectos en ${city}`, 'success');
+          showToast(
+            data.source === 'google_places'
+              ? `Google Maps encontró ${formatted.length} prospectos en ${city}`
+              : `Se localizaron ${formatted.length} prospectos demo en ${city}`,
+            'success',
+          );
         }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.error || 'No se pudo consultar Google Maps', 'error');
       }
     } catch (err) {
       console.warn('Fallback search used:', err);
@@ -245,6 +256,14 @@ export const CrmFullGoogleMaps: React.FC = () => {
 
         <div className="flex items-center gap-2.5">
           <button
+            type="button"
+            onClick={() => setIsConfigOpen(true)}
+            className="px-3.5 py-2 rounded-lg bg-[#111a2a] hover:bg-[#182640] text-cyan-200 border border-cyan-400/25 font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Settings2 className="w-4 h-4" />
+            <span>Configurar API</span>
+          </button>
+          <button
             onClick={handleImportAll}
             className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-emerald-600/20"
           >
@@ -253,6 +272,10 @@ export const CrmFullGoogleMaps: React.FC = () => {
           </button>
         </div>
       </div>
+      <ModuleCredentialsModal
+        moduleId={isConfigOpen ? 'googleMaps' : null}
+        onClose={() => setIsConfigOpen(false)}
+      />
 
       {/* Search Bar */}
       <form onSubmit={handleSearch} className="p-4 rounded-xl bg-[#0d121c] border border-[#1b253b] space-y-3">

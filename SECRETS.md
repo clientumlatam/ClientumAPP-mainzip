@@ -9,6 +9,12 @@
 
 ## Estado actual del proyecto
 
+> **Auditoría actualizada el 2026-09-08:** los nombres de las variables
+> disponibles fueron contrastados con el código. Por seguridad, nunca se
+> inspeccionan ni se imprimen valores de Secrets desde esta documentación.
+> Consulta `docs/secrets-audit.md` para la matriz completa de variables
+> usadas, credenciales por usuario y trabajo pendiente.
+
 ### Regla de separación
 
 - **Secretos de la plataforma:** viven en Replit Secrets o en variables de
@@ -23,10 +29,10 @@
 
 | Variable | Estado | Uso actual |
 | --- | --- | --- |
-| `GEMINI_API_KEY` | **No configurada** | Es la única clave que el backend consume actualmente. Habilita Copilot, CMO, GTM, Ad Copy, prospección y agentes IA. |
-| `SESSION_SECRET` | **Disponible** | Está registrada en Replit Secrets, pero el servidor actual no usa sesiones Express. Reservarla para una futura sesión server-side. |
-| `VITE_FIREBASE_*` | **No configuradas como Secrets** | Son configuración cliente de Firebase. El código actual tiene valores de fallback; para producción deben definirse como variables `VITE_` y quitar los fallbacks hardcodeados. |
-| `DATABASE_URL` | **Administrada por Replit** | No debe solicitarse ni configurarse manualmente. La aplicación actual no consume PostgreSQL directamente. |
+| `GEMINI_API_KEY` | **Registrada; validar valor** | El backend la consume en `/api/ai/*`. Los placeholders se consideran no configurados y activan solo el resultado demo/fallback. |
+| `SESSION_SECRET` | **Registrada; reservada** | El servidor no usa sesiones Express. Solo participa como último fallback técnico del cifrado interno si no existe `WORKFLOW_ENCRYPTION_KEY` ni `API_KEY_PEPPER`. |
+| `VITE_FIREBASE_*` | **Registradas como configuración pública** | Se inyectan en el bundle cliente. Firebase no se inicializa con valores vacíos y los fallbacks de autenticación están limitados a desarrollo. |
+| `DATABASE_URL` / `PG*` | **Administradas por Replit** | El servidor usa PostgreSQL para credenciales por usuario y API Keys internas. No deben solicitarse ni configurarse manualmente. |
 
 ## Reglas de seguridad
 
@@ -415,8 +421,8 @@ debe vivir en backend.
 
 ## 7. Checklist antes de producción
 
-- [ ] Configurar `GEMINI_API_KEY` en Replit Secrets para habilitar IA real.
-- [ ] Reemplazar los fallbacks hardcodeados de Firebase por `VITE_FIREBASE_*`.
+- [ ] Validar que `GEMINI_API_KEY` tenga un valor real en Replit Secrets para habilitar IA real.
+- [x] Firebase consume `VITE_FIREBASE_*` y no inicializa con valores vacíos.
 - [ ] Verificar que las reglas de Firebase Auth/Firestore no permitan acceso
       público accidental.
 - [ ] Elegir un proveedor de pagos y validar webhooks con firma.

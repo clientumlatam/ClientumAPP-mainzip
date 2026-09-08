@@ -1,5 +1,5 @@
 import { User } from '../types';
-import { auth, isLiveFirebaseConfigured } from '../firebase';
+import { auth, isLiveFirebaseReady } from '../firebase';
 
 export const getClientumUserHeaders = (user?: Pick<User, 'id' | 'role'>): Record<string, string> => {
   let userId = user?.id;
@@ -26,7 +26,7 @@ export const getClientumJsonHeaders = (user?: Pick<User, 'id' | 'role'>): Record
 
 export const getClientumAuthHeaders = async (user?: Pick<User, 'id' | 'role'>): Promise<Record<string, string>> => {
   const headers = getClientumUserHeaders(user);
-  if (isLiveFirebaseConfigured && auth.currentUser) {
+  if (isLiveFirebaseReady && auth?.currentUser) {
     try {
       headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
     } catch {

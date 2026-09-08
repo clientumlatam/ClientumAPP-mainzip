@@ -39,30 +39,33 @@ export const isLiveFirebaseConfigured = Boolean(
   firebaseConfig.appId,
 );
 
-// Safe cross-platform singleton initialization
-let app: FirebaseApp;
-try {
-  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-} catch (error) {
-  console.warn('Firebase initialization note (using safe fallback):', error);
-  app = initializeApp(firebaseConfig, 'clientum-crm-app');
+export const isDemoAuthFallbackEnabled = Boolean(metaEnv.DEV);
+
+// Never initialize Firebase with an empty configuration. Firebase validates
+// the API key during initialization, so doing so can crash the entire app
+// before the local demo fallback has a chance to render.
+let app: FirebaseApp | null = null;
+if (isLiveFirebaseConfigured) {
+  try {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  } catch (error) {
+    console.warn('Firebase initialization failed:', error);
+  }
 }
 
 export { app };
-// Auth validates the API key during initialization. Keep the public app
-// bootable while platform configuration is being propagated, and let the
-// auth helpers use their existing local fallback until it is configured.
-export const auth: Auth = isLiveFirebaseConfigured
-  ? getAuth(app)
+export const isLiveFirebaseReady = Boolean(isLiveFirebaseConfigured && app);
+export const auth: Auth = isLiveFirebaseReady
+  ? getAuth(app as FirebaseApp)
   : (null as unknown as Auth);
 
 // Safe Analytics initialization
 export let analytics: Analytics | null = null;
-if (typeof window !== 'undefined' && isLiveFirebaseConfigured) {
+if (typeof window !== 'undefined' && isLiveFirebaseReady && app) {
   isSupported().then((supported) => {
     if (supported) {
       try {
-        analytics = getAnalytics(app);
+        analytics = getAnalytics(app as FirebaseApp);
       } catch (e) {
         console.warn('Analytics init note:', e);
       }
@@ -108,7 +111,7 @@ export interface AuthResult {
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
   try {
-    if (isLiveFirebaseConfigured) {
+    if (isLiveFirebaseReady) {
       const cred = await signInWithPopup(auth, googleProvider);
       const credential = GoogleAuthProvider.credentialFromResult(cred);
       const token = credential?.accessToken;
@@ -129,9 +132,16 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     if (err.code === 'auth/popup-closed-by-user') {
       return { success: false, error: 'Inicio de sesión cancelado por el usuario.' };
     }
+    if (!isDemoAuthFallbackEnabled) {
+      return { success: false, error: 'No se pudo iniciar sesión con Google.' };
+    }
   }
 
-  // Graceful fallback simulation for demo/preview without API key configuration
+  if (!isDemoAuthFallbackEnabled) {
+    return { success: false, error: 'La autenticación de Firebase no está configurada.' };
+  }
+
+  // Graceful fallback simulation for local demo/preview only.
   return {
     success: true,
     user: {
@@ -149,7 +159,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
  */
 export async function signInWithFacebook(): Promise<AuthResult> {
   try {
-    if (isLiveFirebaseConfigured) {
+    if (isLiveFirebaseReady) {
       const cred = await signInWithPopup(auth, facebookProvider);
       return {
         success: true,
@@ -167,9 +177,16 @@ export async function signInWithFacebook(): Promise<AuthResult> {
     if (err.code === 'auth/popup-closed-by-user') {
       return { success: false, error: 'Acceso con Facebook cancelado.' };
     }
+    if (!isDemoAuthFallbackEnabled) {
+      return { success: false, error: 'No se pudo iniciar sesión con Facebook.' };
+    }
   }
 
-  // Graceful fallback
+  if (!isDemoAuthFallbackEnabled) {
+    return { success: false, error: 'La autenticación de Firebase no está configurada.' };
+  }
+
+  // Graceful fallback for local demo only.
   return {
     success: true,
     user: {
@@ -187,7 +204,7 @@ export async function signInWithFacebook(): Promise<AuthResult> {
  */
 export async function signInWithLinkedIn(): Promise<AuthResult> {
   try {
-    if (isLiveFirebaseConfigured) {
+    if (isLiveFirebaseReady) {
       const cred = await signInWithPopup(auth, linkedinProvider);
       return {
         success: true,
@@ -205,9 +222,16 @@ export async function signInWithLinkedIn(): Promise<AuthResult> {
     if (err.code === 'auth/popup-closed-by-user') {
       return { success: false, error: 'Acceso con LinkedIn cancelado.' };
     }
+    if (!isDemoAuthFallbackEnabled) {
+      return { success: false, error: 'No se pudo iniciar sesión con LinkedIn.' };
+    }
   }
 
-  // Graceful fallback
+  if (!isDemoAuthFallbackEnabled) {
+    return { success: false, error: 'La autenticación de Firebase no está configurada.' };
+  }
+
+  // Graceful fallback for local demo only.
   return {
     success: true,
     user: {
@@ -225,7 +249,7 @@ export async function signInWithLinkedIn(): Promise<AuthResult> {
  */
 export async function signInWithEmail(email: string, pass: string): Promise<AuthResult> {
   try {
-    if (isLiveFirebaseConfigured) {
+    if (isLiveFirebaseReady) {
       const cred = await signInWithEmailAndPassword(auth, email, pass);
       return {
         success: true,
@@ -244,9 +268,16 @@ export async function signInWithEmail(email: string, pass: string): Promise<Auth
     if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
       return { success: false, error: 'Credenciales incorrectas o usuario no encontrado.' };
     }
+    if (!isDemoAuthFallbackEnabled) {
+      return { success: false, error: 'No se pudo iniciar sesión.' };
+    }
   }
 
-  // Fallback demo
+  if (!isDemoAuthFallbackEnabled) {
+    return { success: false, error: 'La autenticación de Firebase no está configurada.' };
+  }
+
+  // Fallback demo for local development only.
   return {
     success: true,
     user: {
@@ -269,7 +300,7 @@ export async function registerWithEmail(
   company?: string
 ): Promise<AuthResult> {
   try {
-    if (isLiveFirebaseConfigured) {
+    if (isLiveFirebaseReady) {
       const cred = await createUserWithEmailAndPassword(auth, email, pass);
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, {
@@ -292,9 +323,16 @@ export async function registerWithEmail(
     if (err.code === 'auth/email-already-in-use') {
       return { success: false, error: 'El correo electrónico ya está registrado en el sistema.' };
     }
+    if (!isDemoAuthFallbackEnabled) {
+      return { success: false, error: 'No se pudo crear la cuenta.' };
+    }
   }
 
-  // Fallback
+  if (!isDemoAuthFallbackEnabled) {
+    return { success: false, error: 'La autenticación de Firebase no está configurada.' };
+  }
+
+  // Fallback for local development only.
   return {
     success: true,
     user: {
@@ -310,9 +348,9 @@ export async function registerWithEmail(
 /**
  * Send password reset email
  */
-export async function sendFirebasePasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+export async function sendFirebasePasswordReset(email: string): Promise<{ success: boolean; error?: string; demoToken?: string }> {
   try {
-    if (isLiveFirebaseConfigured) {
+    if (isLiveFirebaseReady) {
       await sendPasswordResetEmail(auth, email);
       return { success: true };
     }
@@ -321,10 +359,17 @@ export async function sendFirebasePasswordReset(email: string): Promise<{ succes
     if (err.code === 'auth/user-not-found') {
       return { success: false, error: 'No existe una cuenta registrada con este correo electrónico.' };
     }
+    if (!isDemoAuthFallbackEnabled) {
+      return { success: false, error: 'No se pudo iniciar el proceso de recuperación.' };
+    }
+  }
+
+  if (!isDemoAuthFallbackEnabled) {
+    return { success: false, error: 'La autenticación de Firebase no está configurada.' };
   }
 
   // Store in memory / local mock tokens for simulation
-  const mockToken = 'clm_' + Math.random().toString(36).substring(2, 10).toUpperCase();
+  const mockToken = 'CLM-' + Math.random().toString(36).substring(2, 7).toUpperCase();
   try {
     const existing = JSON.parse(localStorage.getItem('clientum_pending_resets') || '{}');
     existing[email.toLowerCase()] = {
@@ -336,7 +381,7 @@ export async function sendFirebasePasswordReset(email: string): Promise<{ succes
     // ignore
   }
 
-  return { success: true };
+  return { success: true, demoToken: mockToken };
 }
 
 /**
@@ -344,12 +389,19 @@ export async function sendFirebasePasswordReset(email: string): Promise<{ succes
  */
 export async function verifyResetToken(tokenOrCode: string): Promise<{ success: boolean; email?: string; error?: string }> {
   try {
-    if (isLiveFirebaseConfigured) {
+    if (isLiveFirebaseReady) {
       const email = await verifyPasswordResetCode(auth, tokenOrCode);
       return { success: true, email };
     }
   } catch (err: any) {
     console.warn('Live reset code verification error:', err);
+    if (!isDemoAuthFallbackEnabled) {
+      return { success: false, error: 'El código de recuperación es inválido o ha expirado.' };
+    }
+  }
+
+  if (!isDemoAuthFallbackEnabled) {
+    return { success: false, error: 'La autenticación de Firebase no está configurada.' };
   }
 
   // Check mock tokens
@@ -364,11 +416,6 @@ export async function verifyResetToken(tokenOrCode: string): Promise<{ success: 
     // ignore
   }
 
-  // If token is at least 6 alphanumeric chars, consider valid for testing
-  if (tokenOrCode.trim().length >= 6) {
-    return { success: true, email: 'usuario@clientum.dev' };
-  }
-
   return { success: false, error: 'El código de seguridad es inválido o ha expirado.' };
 }
 
@@ -380,7 +427,7 @@ export async function confirmPasswordResetWithToken(
   newPassword: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (isLiveFirebaseConfigured) {
+    if (isLiveFirebaseReady) {
       await confirmPasswordReset(auth, tokenOrCode, newPassword);
       return { success: true };
     }
@@ -392,15 +439,24 @@ export async function confirmPasswordResetWithToken(
     if (err.code === 'auth/invalid-action-code') {
       return { success: false, error: 'Código de recuperación inválido.' };
     }
+    if (!isDemoAuthFallbackEnabled) {
+      return { success: false, error: 'No se pudo actualizar la contraseña.' };
+    }
+  }
+
+  if (!isDemoAuthFallbackEnabled) {
+    return { success: false, error: 'La autenticación de Firebase no está configurada.' };
   }
 
   // Clear mock
+  let cleared = false;
   try {
     const existing = JSON.parse(localStorage.getItem('clientum_pending_resets') || '{}');
     for (const [em, data] of Object.entries(existing as Record<string, { token: string }>)) {
       if (data.token.toUpperCase() === tokenOrCode.trim().toUpperCase()) {
         delete existing[em];
         localStorage.setItem('clientum_pending_resets', JSON.stringify(existing));
+        cleared = true;
         break;
       }
     }
@@ -408,7 +464,9 @@ export async function confirmPasswordResetWithToken(
     // ignore
   }
 
-  return { success: true };
+  return cleared
+    ? { success: true }
+    : { success: false, error: 'Código de recuperación inválido o expirado.' };
 }
 
 /**
@@ -416,7 +474,7 @@ export async function confirmPasswordResetWithToken(
  */
 export async function firebaseSignOut(): Promise<void> {
   try {
-    if (isLiveFirebaseConfigured) await signOut(auth);
+    if (isLiveFirebaseReady) await signOut(auth);
   } catch (e) {
     console.warn('Signout note:', e);
   }

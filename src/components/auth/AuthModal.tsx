@@ -10,8 +10,8 @@ export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, setIsAuthModalOpen, login, register, showToast } = useCRM();
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
 
-  const [email, setEmail] = useState('alex.morgan@clientum.dev');
-  const [password, setPassword] = useState('clientum2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -243,7 +243,7 @@ export const AuthModal: React.FC = () => {
               {/* Social Auth SSO Buttons */}
               <SocialAuthButtons onSuccess={() => setIsAuthModalOpen(false)} />
 
-              {authMode === 'login' && (
+              {authMode === 'login' && Boolean((import.meta as any).env?.DEV) && (
                 <div className="pt-2 border-t border-[#1e2536]">
                   <button
                     id="auth-modal-demo-btn"

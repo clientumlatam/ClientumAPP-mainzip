@@ -38,8 +38,8 @@ export const AuthScreen: React.FC = () => {
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
 
   // Form states
-  const [email, setEmail] = useState('alex.morgan@clientum.dev');
-  const [password, setPassword] = useState('clientum2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -408,7 +408,7 @@ export const AuthScreen: React.FC = () => {
                   <SocialAuthButtons />
 
                   {/* Quick 1-Click Demo Button for instant testing */}
-                  {authMode === 'login' && (
+                  {authMode === 'login' && Boolean((import.meta as any).env?.DEV) && (
                     <div className="pt-2 border-t border-[#1a202d] space-y-2">
                       <button
                         id="auth-screen-demo-btn"
