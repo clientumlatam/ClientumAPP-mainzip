@@ -133,6 +133,13 @@ async function assertPrivateWorkspace(description) {
   });
 }
 
+async function assertUserApiKeysTab(description) {
+  await waitFor(description, () => {
+    const text = document.body?.innerText || '';
+    return text.includes('API Keys por usuario') && text.includes('Módulos disponibles');
+  });
+}
+
 async function run() {
   const target = await waitForDebugTarget();
   await connectToTarget(target);
@@ -151,6 +158,14 @@ async function run() {
   await clickButton('Ingresar al CRM');
   await assertPrivateWorkspace('the demo/login action to enter the dashboard');
   console.log('✓ demo/login action enters the dashboard');
+
+  await clickButton('Módulos Avanzados');
+  await clickButton('Configuración General');
+  await waitFor('the settings view', () => document.body?.innerText?.includes('Integraciones & API Hub'));
+  await clickButton('Integraciones & API Hub');
+  await clickButton('API Keys por usuario');
+  await assertUserApiKeysTab('the per-user API keys configuration tab');
+  console.log('✓ per-user API keys tab renders with module scopes');
 
   await clickButton('Ver Portal Público');
   await assertPublicSite('the dashboard action to return to the public site');

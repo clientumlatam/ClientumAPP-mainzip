@@ -27,6 +27,7 @@ import {
 import { useCRM } from '../../context/CRMContext';
 import { APIKey, WebhookConfig } from '../../types';
 import { CloudflareWebmailTab } from './CloudflareWebmailTab';
+import { UserApiKeysTab } from './UserApiKeysTab';
 
 export const IntegrationsHubTab: React.FC = () => {
   const {
@@ -47,7 +48,7 @@ export const IntegrationsHubTab: React.FC = () => {
     showToast,
   } = useCRM();
 
-  const [activeSection, setActiveSection] = useState<'calendar' | 'slack' | 'emailRouting' | 'apikeys' | 'webhooks'>('emailRouting');
+  const [activeSection, setActiveSection] = useState<'calendar' | 'slack' | 'emailRouting' | 'apikeys' | 'userApiKeys' | 'webhooks'>('emailRouting');
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
   const [isSendingSlack, setIsSendingSlack] = useState(false);
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
@@ -164,6 +165,19 @@ export const IntegrationsHubTab: React.FC = () => {
         >
           <Key className="w-3.5 h-3.5" />
           <span>API Keys REST ({apiKeys.filter((k) => k.status === 'active').length})</span>
+        </button>
+
+        <button
+          id="integration-user-api-keys-tab"
+          onClick={() => setActiveSection('userApiKeys')}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all shrink-0 ${
+            activeSection === 'userApiKeys'
+              ? 'bg-blue-600 text-white shadow-2xs font-semibold'
+              : 'bg-[#121620] text-slate-300 hover:text-white hover:bg-[#1a202c]'
+          }`}
+        >
+          <Key className="w-3.5 h-3.5 text-purple-300" />
+          <span>API Keys por usuario</span>
         </button>
 
         <button
@@ -498,6 +512,8 @@ export const IntegrationsHubTab: React.FC = () => {
           </div>
         </div>
       )}
+
+      {activeSection === 'userApiKeys' && <UserApiKeysTab />}
 
       {/* SECTION 4: OUTBOUND WEBHOOKS */}
       {activeSection === 'webhooks' && (

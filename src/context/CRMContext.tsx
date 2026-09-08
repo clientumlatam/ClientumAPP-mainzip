@@ -244,7 +244,7 @@ interface CRMContextType {
   updateSlackIntegration: (updates: Partial<SlackIntegrationState>) => void;
   sendSlackTestMessage: (channel?: string, eventType?: string) => Promise<boolean>;
   apiKeys: APIKey[];
-  createAPIKey: (name: string, scopes: string[]) => APIKey;
+  createAPIKey: (name: string, scopes: string[], ownerUserId?: string) => APIKey;
   revokeAPIKey: (id: string) => void;
   webhooks: WebhookConfig[];
   addWebhook: (wh: Omit<WebhookConfig, 'id' | 'createdAt' | 'deliverySuccessCount' | 'deliveryFailureCount'>) => WebhookConfig;
@@ -1997,7 +1997,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const createAPIKey = (name: string, scopes: string[]): APIKey => {
+  const createAPIKey = (name: string, scopes: string[], ownerUserId = currentUser.id): APIKey => {
     const randomHex = Array.from({ length: 24 }, () =>
       Math.floor(Math.random() * 16).toString(16)
     ).join('');
@@ -2006,6 +2006,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       name,
       keyPrefix: `clm_live_${randomHex.slice(0, 4)}`,
       token: `clm_live_${randomHex}`,
+      ownerUserId,
+      ownerUserName: users.find((user) => user.id === ownerUserId)?.name || currentUser.name,
       scopes,
       createdAt: new Date().toISOString(),
       status: 'active',
@@ -2023,7 +2025,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       entityType: 'integrations',
       entityId: newKey.id,
       entityName: newKey.name,
-      details: `Generada nueva clave API con scopes: ${scopes.join(', ')}.`,
+      details: `Generada nueva clave API para ${newKey.ownerUserName} con scopes: ${scopes.join(', ')}.`,
       severity: 'security',
       status: 'success',
     });

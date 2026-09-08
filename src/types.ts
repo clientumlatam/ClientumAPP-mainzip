@@ -467,6 +467,8 @@ export interface APIKey {
   name: string;
   keyPrefix: string;
   token: string;
+  ownerUserId?: string;
+  ownerUserName?: string;
   scopes: string[];
   createdAt: string;
   lastUsedAt?: string;
