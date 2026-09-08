@@ -143,7 +143,7 @@ const MainContent: React.FC = () => {
 };
 
 export const PrivateEnvironment: React.FC = () => (
-  <div className="flex h-screen w-screen overflow-hidden bg-[var(--bg-canvas)] text-[var(--text-primary)] font-['Plus_Jakarta_Sans',sans-serif]">
+  <div className="clientum-light-dashboard flex h-screen w-screen overflow-hidden bg-[var(--bg-canvas)] text-[var(--text-primary)] font-['Plus_Jakarta_Sans',sans-serif]">
     <Sidebar />
     <MainContent />
   </div>

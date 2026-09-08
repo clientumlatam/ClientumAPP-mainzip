@@ -112,6 +112,34 @@ async function clickButton(label) {
   if (!clicked) fail(`Could not find button "${label}"`);
 }
 
+async function clickAriaLabel(label) {
+  const clicked = await evaluate(`(() => {
+    const button = document.querySelector(${JSON.stringify(`button[aria-label="${label}"]`)});
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  if (!clicked) fail(`Could not find aria-labeled button "${label}"`);
+}
+
+async function assertAriaLabelMissing(label) {
+  const exists = await evaluate(
+    `!!document.querySelector(${JSON.stringify(`button[aria-label="${label}"]`)})`,
+  );
+  if (exists) {
+    fail(`Could not hide aria-labeled button "${label}"`);
+  }
+}
+
+async function assertConfigButton(shouldExist, description) {
+  const exists = await evaluate(
+    '!![...document.querySelectorAll("button")].find((button) => button.innerText.trim().includes("Configurar API"))',
+  );
+  if (exists !== shouldExist) {
+    fail(`${description}: button ${shouldExist ? 'was not found' : 'should not be visible'}`);
+  }
+}
+
 async function assertPublicSite(description) {
   await waitFor(description, () => {
     const text = document.body?.innerText || '';
@@ -175,12 +203,45 @@ async function run() {
   await assertPrivateWorkspace('the demo/login action to enter the dashboard');
   console.log('✓ unauthenticated access opens login and local demo authentication enters the dashboard');
 
+  await clickButton('Calendario');
+  await waitFor('the calendar view', () => document.body?.innerText?.includes('Calendario'));
+  await assertConfigButton(false, 'calendar does not need user credentials');
+  await assertAriaLabelMissing('Configurar credenciales de Calendario');
+
+  await clickButton('Mensajes');
+  await waitFor('the messages view', () => document.body?.innerText?.includes('Mensajes'));
+  await assertConfigButton(false, 'messages does not need user credentials');
+  await assertAriaLabelMissing('Configurar credenciales de Mensajes');
+
+  await clickButton('Asistente Gemini 1.5');
+  await waitFor('the platform-powered Gemini module', () =>
+    document.body?.innerText?.includes('Consulta Estratégica al Asistente IA CMO'),
+  );
+  await assertConfigButton(false, 'platform-powered Gemini does not need user credentials');
+  await assertAriaLabelMissing('Configurar credenciales de Asistente Gemini 1.5');
+
+  await clickButton('Prospección Mapa B2B');
+  await waitFor('the Maps prospecting view', () => document.body?.innerText?.includes('Prospección Geolocalizada con Google Maps'));
+  await assertConfigButton(true, 'Maps needs user credentials');
+  await clickAriaLabel('Configurar credenciales de Prospección Mapa B2B');
+  await waitFor('the mixed Maps credential modal', () => {
+    const text = document.body?.innerText || '';
+    return text.includes('Google Maps Server API Key') && text.includes('VITE_GOOGLE_MAPS_API_KEY') && text.includes('Configuración administrada por ClientumCRM');
+  });
+  await clickAriaLabel('Cerrar configuración');
+  console.log('✓ all-module credential modal distinguishes workspace and platform configuration');
+
   await clickButton('Configuración General');
   await waitFor('the settings view', () => document.body?.innerText?.includes('Integraciones & API Hub'));
   await clickButton('Auditoría & Logs');
   await waitFor('the audit logs view', () => document.body?.innerText?.includes('Eventos Registrados'));
   console.log('✓ audit logs view renders security anomalies safely');
   await clickButton('Integraciones & API Hub');
+  await waitFor('the user API keys-only integrations hub', () => {
+    const text = document.body?.innerText || '';
+    return text.includes('API Keys por usuario') && !text.includes('API Keys REST (Plataforma)');
+  });
+  console.log('✓ platform API keys are hidden from the dashboard');
   await clickButton('API Keys por usuario');
   await assertUserApiKeysTab('the per-user API keys configuration tab');
   console.log('✓ per-user API keys tab renders with module scopes');

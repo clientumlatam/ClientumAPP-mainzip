@@ -81,12 +81,14 @@ Secrets.
    en producción.
 6. La validación de Gemini y SMTP rechaza placeholders, no solo valores
    presentes.
-7. Cada módulo del catálogo tiene el botón **Configurar API** en la barra
-   superior y reutiliza el mismo modal seguro. Los módulos sin credenciales
-   explican que usan configuración de plataforma.
-8. Prospección Maps B2B usa la credencial cifrada del tenant. La clave nunca
+7. Cada módulo del catálogo tiene acceso al mismo modal seguro desde el menú
+   lateral o la barra superior. El modal distingue credenciales del workspace,
+   configuración pública y secretos/conexiones administrados por la plataforma.
+8. Las actualizaciones parciales de credenciales se fusionan en el backend para
+   no borrar otros campos cifrados ya configurados.
+9. Prospección Maps B2B usa la credencial cifrada del tenant. La clave nunca
    se devuelve al cliente ni se registra.
-9. Si Google Places rechaza una búsqueda con una clave configurada, se devuelve
+10. Si Google Places rechaza una búsqueda con una clave configurada, se devuelve
    un error explícito en vez de presentar resultados demo como si fueran reales.
 
 ## Riesgos y trabajo pendiente
@@ -94,9 +96,6 @@ Secrets.
 - `firestore.rules` permite leer y escribir cualquier documento a cualquier
   usuario autenticado. Si la aplicación comienza a usar Firestore, hay que
   reemplazarlo por reglas por usuario/organización antes de producción.
-- El smoke test de navegación falla al buscar el texto antiguo
-  `Módulos Avanzados`; login y redirecciones iniciales pasan, pero el script
-  necesita actualizarse para el menú vigente.
 - Mercado Pago, AFIP y envío saliente de WhatsApp requieren implementación
   backend, validación de firma/idempotencia y pruebas específicas antes de
   habilitar sus pantallas como “reales”.
@@ -109,6 +108,5 @@ Secrets.
 - `npm run build` — correcto.
 - Workflow `Start application` — servidor iniciado en puerto 5000 con
   persistencia PostgreSQL.
-- `npm run smoke:navigation` — parcial: falla únicamente por expectativa de
-  navegación desactualizada después de validar portada, redirecciones y login
-  demo.
+- `npm run smoke:navigation` — correcto: valida portada, redirecciones,
+  login demo, API Keys por usuario, logout y protección del modo app.

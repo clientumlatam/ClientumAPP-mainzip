@@ -487,15 +487,19 @@ app.put("/api/user-credentials", async (req, res) => {
       res.status(400).json({ error: `The field ${invalidField[0]} is not a tenant credential.` });
       return;
     }
-    const nextValues = Object.fromEntries(
+    const submittedValues = Object.fromEntries(
       rawEntries
         .filter(([, value]) => typeof value === "string" && value.trim().length > 0)
         .map(([fieldId, value]) => [fieldId, String(value).trim().slice(0, 10000)]),
     );
-    if (Object.keys(nextValues).length === 0) {
+    if (Object.keys(submittedValues).length === 0) {
       res.status(400).json({ error: "At least one tenant credential value is required." });
       return;
     }
+    // Merge partial updates server-side so editing one field never deletes
+    // another encrypted credential that is already configured.
+    const existingValues = await getTenantCredentialValues(userId, moduleId);
+    const nextValues = { ...existingValues, ...submittedValues };
     if (credentialDatabase) {
       const tenantId = await ensureTenantMembership(userId);
       const encrypted = encryptJson(nextValues);

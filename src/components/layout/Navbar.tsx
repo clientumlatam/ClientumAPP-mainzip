@@ -11,16 +11,13 @@ import {
   Globe,
   Menu,
   ExternalLink,
-  Sun,
-  Moon,
   Settings2,
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
-import { useTheme } from '../../context/ThemeContext';
 import { STAGES } from '../../data/initialData';
 import { Language, StageId } from '../../types';
 import { ClientumLogo } from '../common/ClientumLogo';
-import { MODULE_CREDENTIALS } from '../../data/moduleCredentials';
+import { moduleNeedsUserCredentials } from '../../data/moduleCredentials';
 import { ModuleCredentialsModal } from '../settings/ModuleCredentialsModal';
 
 export const Navbar: React.FC = () => {
@@ -46,10 +43,9 @@ export const Navbar: React.FC = () => {
     exitToPublicSite,
   } = useCRM();
 
-  const { resolvedTheme, toggleTheme } = useTheme();
   const [isConfigOpen, setIsConfigOpen] = React.useState(false);
   const configModuleId = activeTab === 'mapsProspecting' ? 'googleMaps' : activeTab;
-  const hasModuleCredentials = MODULE_CREDENTIALS.some((module) => module.id === configModuleId);
+  const hasModuleCredentials = moduleNeedsUserCredentials(configModuleId);
 
   const getTitle = () => {
     switch (activeTab) {
@@ -238,20 +234,6 @@ export const Navbar: React.FC = () => {
             <option value="pt">🇧🇷 PT</option>
           </select>
         </div>
-
-        {/* Theme Toggle Button */}
-        <button
-          id="navbar-theme-toggle-btn"
-          onClick={toggleTheme}
-          className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs transition-all cursor-pointer shadow-xs flex items-center justify-center"
-          title={resolvedTheme === 'dark' ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
-        >
-          {resolvedTheme === 'dark' ? (
-            <Sun className="w-3.5 h-3.5 text-amber-500" />
-          ) : (
-            <Moon className="w-3.5 h-3.5 text-blue-600" />
-          )}
-        </button>
 
         {/* View Mode Switcher (Kanban vs Table) */}
         {activeTab === 'opportunities' && (

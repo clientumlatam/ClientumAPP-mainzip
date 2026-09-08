@@ -43,31 +43,30 @@
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
 
-  /* --------------------------------------------------------------------------
-     Sidebar High-Contrast Visual Separation (Light Mode: Deep Executive Slate)
-     Provides distinct, crisp boundary between navigation and main workspace.
-     -------------------------------------------------------------------------- */
-  --sidebar-bg: #0b1120;
-  --sidebar-header-bg: #070c18;
-  --sidebar-footer-bg: #070c18;
-  --sidebar-border: #1e293b;
-  --sidebar-text-primary: #f8fafc;
-  --sidebar-text-secondary: #94a3b8;
-  --sidebar-text-muted: #64748b;
-  --sidebar-hover-bg: #1e293b;
-  --sidebar-hover-text: #ffffff;
+   /* --------------------------------------------------------------------------
+      Clientum Clarity navigation surfaces
+      -------------------------------------------------------------------------- */
+   --sidebar-bg: #ffffff;
+   --sidebar-header-bg: #f8fafc;
+   --sidebar-footer-bg: #f8fafc;
+   --sidebar-border: #e2e8f0;
+   --sidebar-text-primary: #0f172a;
+   --sidebar-text-secondary: #475569;
+   --sidebar-text-muted: #64748b;
+   --sidebar-hover-bg: #eff6ff;
+   --sidebar-hover-text: #1e3a8a;
   --sidebar-active-bg: #2563eb;
   --sidebar-active-text: #ffffff;
-  --sidebar-search-bg: #131d31;
-  --sidebar-search-border: #1e293b;
-  --sidebar-search-text: #f1f5f9;
-  --sidebar-portal-btn-bg: #172554;
-  --sidebar-portal-btn-text: #93c5fd;
-  --sidebar-portal-btn-border: #1e3a8a;
-  --sidebar-copilot-bg: linear-gradient(135deg, #172554 0%, #1e1b4b 100%);
-  --sidebar-copilot-border: #1e3a8a;
-  --sidebar-card-text: #e2e8f0;
-  --sidebar-card-muted: #94a3b8;
+   --sidebar-search-bg: #f8fafc;
+   --sidebar-search-border: #cbd5e1;
+   --sidebar-search-text: #0f172a;
+   --sidebar-portal-btn-bg: #eff6ff;
+   --sidebar-portal-btn-text: #1d4ed8;
+   --sidebar-portal-btn-border: #bfdbfe;
+   --sidebar-copilot-bg: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+   --sidebar-copilot-border: #c7d2fe;
+   --sidebar-card-text: #334155;
+   --sidebar-card-muted: #64748b;
 
   /* Consistent Spacing Tokens */
   --space-0: 0px;
@@ -236,84 +235,84 @@ button:focus-visible {
 }
 
 /* ==========================================================================
-   Executive dashboard — dark glass CRM workspace
+   Clientum Clarity workspace surfaces
    ========================================================================== */
 .crm-main-content {
-  background: #070d18;
-  color: #f5f8ff;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
 }
 
 .crm-top-navbar {
-  background: #080f1b;
-  border-bottom: 1px solid #1b2a3f;
-  color: #dbe8f8;
+  background: var(--bg-navbar);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
 }
 
 .crm-top-navbar #dashboard-header-brand,
 .crm-top-navbar h1 {
-  color: #f5f8ff;
+  color: var(--text-primary);
 }
 
 .crm-top-navbar #dashboard-header-brand {
-  border-color: #263850;
+  border-color: var(--border-subtle);
 }
 
 .crm-top-navbar .text-slate-900,
 .crm-top-navbar .text-slate-800 {
-  color: #f5f8ff !important;
+  color: var(--text-primary) !important;
 }
 
 .crm-top-navbar .text-slate-500,
 .crm-top-navbar .text-slate-400 {
-  color: #8496ad !important;
+  color: var(--text-muted) !important;
 }
 
 .crm-top-navbar .border-slate-200,
 .crm-top-navbar .border-slate-100 {
-  border-color: #263850 !important;
+  border-color: var(--border-subtle) !important;
 }
 
 .crm-top-navbar .bg-white,
 .crm-top-navbar .bg-slate-50,
 .crm-top-navbar .bg-slate-100 {
-  background: #101b2d !important;
+  background: #f8fafc !important;
 }
 
 .crm-top-navbar input,
 .crm-top-navbar select {
-  color: #dbe8f8 !important;
+  color: var(--text-primary) !important;
 }
 
 .crm-top-navbar input::placeholder {
-  color: #72869e !important;
+  color: var(--text-muted) !important;
 }
 
 .crm-top-navbar .text-blue-700,
 .crm-top-navbar .text-blue-600 {
-  color: #73a9ff !important;
+  color: #1d4ed8 !important;
 }
 
 .crm-top-navbar .bg-blue-50 {
-  background: rgba(47, 129, 255, 0.14) !important;
+  background: #eff6ff !important;
 }
 
 .crm-dashboard {
-  --crm-bg: #070d18;
-  --crm-surface: #0d1726;
-  --crm-surface-2: #101d2f;
-  --crm-border: #1c3048;
-  --crm-border-soft: #17273d;
-  --crm-muted: #7890aa;
-  --crm-text: #f1f7ff;
-  --crm-cyan: #1bd3c2;
+  --crm-bg: #f8fafc;
+  --crm-surface: #ffffff;
+  --crm-surface-2: #f8fafc;
+  --crm-border: #dbe4ef;
+  --crm-border-soft: #e8eef5;
+  --crm-muted: #64748b;
+  --crm-text: #0f172a;
+  --crm-cyan: #0f766e;
   min-width: 0;
   min-height: 0;
   height: 100%;
   display: flex;
   overflow: hidden;
   background:
-    radial-gradient(circle at 28% -15%, rgba(24, 102, 173, .18), transparent 38%),
-    radial-gradient(circle at 88% 110%, rgba(0, 139, 158, .08), transparent 34%),
+    radial-gradient(circle at 28% -15%, rgba(37, 99, 235, .08), transparent 38%),
+    radial-gradient(circle at 88% 110%, rgba(14, 116, 144, .06), transparent 34%),
     var(--crm-bg);
   color: var(--crm-text);
   position: relative;
@@ -1177,4 +1176,207 @@ button:focus-visible {
   .crm-panel { padding: 14px 12px 12px; }
   .crm-panel__header { gap: 8px; }
   .crm-panel__total strong { font-size: 12px; }
+}
+
+/* ==========================================================================
+   Clientum Clarity — light-only dashboard compatibility layer
+   Several older dashboard views still carry dark utility classes. Keeping
+   this layer at the end lets every menu route share the same light surface
+   while those views are gradually modernized.
+   ========================================================================== */
+html[data-theme="light"] .clientum-light-dashboard {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar {
+  background: #ffffff !important;
+  color: #0f172a;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar [class*="bg-slate-"] {
+  background-color: #f8fafc !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar [class*="bg-slate-950"],
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar [class*="bg-slate-900"] {
+  background-color: #ffffff !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar [class*="text-white"] {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar [class*="text-slate-"] {
+  color: #475569 !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar [class*="border-slate-"] {
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar [class*="hover:bg-slate-"]:hover {
+  background-color: #eff6ff !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar [class*="bg-blue-600"][class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar [class*="bg-blue-600"] [class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar #sidebar-quick-create-btn,
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar #sidebar-quick-create-btn svg {
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #sidebar-brand-logo-placeholder > div {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%) !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar #sidebar-copilot-card {
+  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%) !important;
+  border-color: #c7d2fe !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar #sidebar-copilot-card [class*="text-blue-2"],
+html[data-theme="light"] .clientum-light-dashboard #clientum-sidebar #sidebar-copilot-card [class*="text-slate-"] {
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-[#0"],
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-[#1"] {
+  background-color: #ffffff !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-[#2"] {
+  background-color: #f8fafc !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard [class*="border-[#1"],
+html[data-theme="light"] .clientum-light-dashboard [class*="border-[#2"],
+html[data-theme="light"] .clientum-light-dashboard [class*="border-[#3"] {
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard [class*="border-slate-600"],
+html[data-theme="light"] .clientum-light-dashboard [class*="border-slate-700"],
+html[data-theme="light"] .clientum-light-dashboard [class*="border-slate-800"] {
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard [class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard [class*="text-slate-100"] {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard [class*="text-slate-200"],
+html[data-theme="light"] .clientum-light-dashboard [class*="text-slate-300"] {
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard [class*="text-slate-400"],
+html[data-theme="light"] .clientum-light-dashboard [class*="text-slate-500"] {
+  color: #64748b !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-blue-"][class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-indigo-"][class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-violet-"][class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-purple-"][class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-emerald-"][class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-cyan-"][class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-rose-"][class*="text-white"],
+html[data-theme="light"] .clientum-light-dashboard [class*="bg-red-"][class*="text-white"] {
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .clientum-light-dashboard input,
+html[data-theme="light"] .clientum-light-dashboard select,
+html[data-theme="light"] .clientum-light-dashboard textarea {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .clientum-light-dashboard input::placeholder,
+html[data-theme="light"] .clientum-light-dashboard textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Executive dashboard custom surfaces */
+html[data-theme="light"] .clientum-light-dashboard .crm-dashboard__header h1,
+html[data-theme="light"] .clientum-light-dashboard .crm-stage__title,
+html[data-theme="light"] .clientum-light-dashboard .crm-deal-card h3,
+html[data-theme="light"] .clientum-light-dashboard .crm-panel__title,
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__identity strong {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-dashboard__header p,
+html[data-theme="light"] .clientum-light-dashboard .crm-stage__total,
+html[data-theme="light"] .clientum-light-dashboard .crm-panel__header p,
+html[data-theme="light"] .clientum-light-dashboard .crm-source-list em,
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__intro {
+  color: #64748b;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-select-button,
+html[data-theme="light"] .clientum-light-dashboard .crm-icon-button,
+html[data-theme="light"] .clientum-light-dashboard .crm-ai-toggle,
+html[data-theme="light"] .clientum-light-dashboard .crm-period {
+  background: #ffffff;
+  border-color: #dbe4ef;
+  color: #334155;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-select-button:hover,
+html[data-theme="light"] .clientum-light-dashboard .crm-icon-button:hover,
+html[data-theme="light"] .clientum-light-dashboard .crm-ai-toggle:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-dropdown,
+html[data-theme="light"] .clientum-light-dashboard .crm-board-shell,
+html[data-theme="light"] .clientum-light-dashboard .crm-stage,
+html[data-theme="light"] .clientum-light-dashboard .crm-deal-card,
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-card,
+html[data-theme="light"] .clientum-light-dashboard .crm-panel,
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant {
+  background: #ffffff;
+  border-color: #dbe4ef;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, .06);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-stage {
+  background: #f8fafc;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-deal-card {
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-card {
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-card--accent {
+  background: linear-gradient(145deg, #ecfeff, #ffffff);
+  border-color: #99f6e4;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__composer,
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__composer input,
+html[data-theme="light"] .clientum-light-dashboard .crm-message__bubble,
+html[data-theme="light"] .clientum-light-dashboard .crm-chat-day {
+  background: #f8fafc;
+  border-color: #dbe4ef;
+  color: #334155;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-message--user .crm-message__bubble {
+  background: linear-gradient(145deg, #2563eb, #1d4ed8);
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-send-button {
+  background: #2563eb !important;
+  color: #ffffff !important;
 }

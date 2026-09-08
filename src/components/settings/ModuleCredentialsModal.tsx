@@ -143,7 +143,7 @@ export const ModuleCredentialsModal: React.FC<ModuleCredentialsModalProps> = ({ 
           headers: await getClientumAuthJsonHeaders(currentUser),
           body: JSON.stringify({
             name: `${definition.label} · API`,
-            scopes: [`module:${moduleId}`, 'deals:read'],
+            scopes: [`module:${moduleId}`],
           }),
         });
         if (!response.ok) throw new Error('api key create failed');
@@ -193,6 +193,40 @@ export const ModuleCredentialsModal: React.FC<ModuleCredentialsModalProps> = ({ 
             <span>Estas credenciales pertenecen al workspace de <strong className="text-emerald-200">{currentUser.name}</strong>, se cifran en el backend y no se guardan en localStorage ni se muestran completas después de guardar.</span>
           </div>
 
+          {definition.platformConfigurations && definition.platformConfigurations.length > 0 && (
+            <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+              <div className="flex items-start gap-2">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-300" />
+                <div>
+                  <h3 className="text-xs font-semibold text-blue-100">Configuración administrada por ClientumCRM</h3>
+                  <p className="mt-1 text-[10px] leading-relaxed text-blue-100/65">
+                    Estas variables pertenecen a la plataforma o a una conexión administrada. No se editan desde el navegador ni se mezclan con las credenciales de tu workspace.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+                {definition.platformConfigurations.map((configuration) => (
+                  <div key={configuration.key} className="rounded-lg border border-blue-500/10 bg-[#0a1321]/70 px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold text-slate-200">{configuration.label}</span>
+                      <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
+                        configuration.kind === 'server-secret'
+                          ? 'bg-rose-500/10 text-rose-200'
+                          : configuration.kind === 'managed-connection'
+                            ? 'bg-purple-500/10 text-purple-200'
+                            : 'bg-cyan-500/10 text-cyan-200'
+                      }`}>
+                        {configuration.kind === 'server-secret' ? 'Backend' : configuration.kind === 'managed-connection' ? 'Conexión' : 'Público'}
+                      </span>
+                    </div>
+                    <code className="mt-1 block truncate text-[9px] text-blue-200/65">{configuration.key}</code>
+                    <p className="mt-1 text-[9px] leading-relaxed text-slate-500">{configuration.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {definition.fields.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[#304762] bg-[#0a1321] p-5 text-center">
               <ShieldCheck className="mx-auto h-7 w-7 text-cyan-300/70" />
@@ -215,14 +249,25 @@ export const ModuleCredentialsModal: React.FC<ModuleCredentialsModalProps> = ({ 
                       {credentialField.label}
                       {isConfigured(credentialField.id) && <span className="text-[9px] font-medium text-emerald-300">Configurada</span>}
                     </span>
-                    <input
-                      type="password"
-                      value={values[credentialField.id] || ''}
-                      onChange={(event) => setValues((previous) => ({ ...previous, [credentialField.id]: event.target.value }))}
-                      placeholder={isConfigured(credentialField.id) ? '•••••••••••• (guardada)' : credentialField.placeholder}
-                      autoComplete="new-password"
-                      className="w-full rounded-lg border border-[#29415c] bg-[#0a1321] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-600 focus:border-cyan-400/70 focus:ring-2 focus:ring-cyan-400/10"
-                    />
+                    {credentialField.inputType === 'select' ? (
+                      <select
+                        value={values[credentialField.id] || ''}
+                        onChange={(event) => setValues((previous) => ({ ...previous, [credentialField.id]: event.target.value }))}
+                        className="w-full rounded-lg border border-[#29415c] bg-[#0a1321] px-3 py-2 text-xs text-white outline-none focus:border-cyan-400/70 focus:ring-2 focus:ring-cyan-400/10"
+                      >
+                        <option value="">Seleccionar…</option>
+                        {credentialField.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type={credentialField.inputType === 'text' ? 'text' : 'password'}
+                        value={values[credentialField.id] || ''}
+                        onChange={(event) => setValues((previous) => ({ ...previous, [credentialField.id]: event.target.value }))}
+                        placeholder={isConfigured(credentialField.id) ? '•••••••••••• (guardada)' : credentialField.placeholder}
+                        autoComplete="new-password"
+                        className="w-full rounded-lg border border-[#29415c] bg-[#0a1321] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-600 focus:border-cyan-400/70 focus:ring-2 focus:ring-cyan-400/10"
+                      />
+                    )}
                     {credentialField.description && <span className="mt-1 block text-[10px] leading-relaxed text-slate-500">{credentialField.description}</span>}
                   </label>
                 ))}

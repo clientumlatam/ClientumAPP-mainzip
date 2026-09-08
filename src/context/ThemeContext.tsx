@@ -15,83 +15,40 @@ const THEME_STORAGE_KEY = 'clientum_theme';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode; defaultTheme?: ThemeMode }> = ({
   children,
-  defaultTheme = 'light',
+  defaultTheme: _defaultTheme = 'light',
 }) => {
-  const [theme, setThemeState] = useState<ThemeMode>(() => {
-    if (typeof window === 'undefined') return defaultTheme;
-    const stored = localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
-    if (stored === 'light' || stored === 'dark' || stored === 'system') {
-      return stored;
-    }
-    return defaultTheme;
-  });
+  const [theme, setThemeState] = useState<ThemeMode>('light');
+  const systemTheme: 'light' | 'dark' = 'light';
+  const resolvedTheme: 'light' | 'dark' = 'light';
 
-  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window === 'undefined') return 'light';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
-  // Listen to system color scheme changes
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleSystemChange = (e: MediaQueryListEvent) => {
-      setSystemTheme(e.matches ? 'dark' : 'light');
-    };
-
-    // Modern browsers
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleSystemChange);
-      return () => mediaQuery.removeEventListener('change', handleSystemChange);
-    } else if ((mediaQuery as any).addListener) {
-      // Legacy fallback
-      (mediaQuery as any).addListener(handleSystemChange);
-      return () => (mediaQuery as any).removeListener(handleSystemChange);
-    }
-  }, []);
-
-  const resolvedTheme: 'light' | 'dark' = useMemo(() => {
-    if (theme === 'system') {
-      return systemTheme;
-    }
-    return theme;
-  }, [theme, systemTheme]);
-
-  // Apply data-theme attribute and CSS classes to <html> root
+  // Clientum uses one consistent light workspace. Older persisted theme
+  // values are intentionally ignored so every dashboard route stays aligned.
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
     const root = document.documentElement;
-    root.setAttribute('data-theme', resolvedTheme);
-    root.setAttribute('data-mode', theme);
-    
-    // Update classList for Tailwind dark mode support
-    if (resolvedTheme === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    } else {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    }
-
-    // Update native browser color scheme for scrollbars & form controls
-    root.style.colorScheme = resolvedTheme;
-  }, [resolvedTheme, theme]);
-
-  const setTheme = (newTheme: ThemeMode) => {
-    setThemeState(newTheme);
+    root.setAttribute('data-theme', 'light');
+    root.setAttribute('data-mode', 'light');
+    root.classList.add('light');
+    root.classList.remove('dark');
+    root.style.colorScheme = 'light';
     try {
-      localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-    } catch (e) {
-      console.warn('Unable to persist theme to localStorage', e);
+      localStorage.setItem(THEME_STORAGE_KEY, 'light');
+    } catch {
+      // The visual theme remains usable when browser storage is unavailable.
+    }
+  }, []);
+
+  const setTheme = (_newTheme: ThemeMode) => {
+    setThemeState('light');
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, 'light');
+    } catch {
+      // Ignore storage restrictions; light mode is still enforced in memory.
     }
   };
 
-  const toggleTheme = () => {
-    const next: ThemeMode = resolvedTheme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-  };
+  const toggleTheme = () => setTheme('light');
 
   return (
     <ThemeContext.Provider

@@ -3,6 +3,15 @@ export interface ModuleCredentialField {
   label: string;
   placeholder: string;
   description?: string;
+  inputType?: 'secret' | 'text' | 'select';
+  options?: Array<{ value: string; label: string }>;
+}
+
+export interface PlatformConfiguration {
+  key: string;
+  label: string;
+  kind: 'server-secret' | 'public-config' | 'managed-connection';
+  description: string;
 }
 
 export interface ModuleCredentialDefinition {
@@ -12,6 +21,7 @@ export interface ModuleCredentialDefinition {
   description: string;
   fields: ModuleCredentialField[];
   note?: string;
+  platformConfigurations?: PlatformConfiguration[];
 }
 
 const field = (
@@ -20,6 +30,22 @@ const field = (
   placeholder: string,
   description?: string,
 ): ModuleCredentialField => ({ id, label, placeholder, description });
+
+const platform = (
+  key: string,
+  label: string,
+  kind: PlatformConfiguration['kind'],
+  description: string,
+): PlatformConfiguration => ({ key, label, kind, description });
+
+const platformGroup = (...configurations: PlatformConfiguration[]) => ({
+  platformConfigurations: configurations,
+});
+
+const AFIP_ENVIRONMENTS = [
+  { value: 'homologacion', label: 'Homologación' },
+  { value: 'produccion', label: 'Producción' },
+];
 
 const WHATSAPP = [
   field('WHATSAPP_ACCESS_TOKEN', 'WhatsApp Access Token', 'EAAB••••••••••••••••'),
@@ -71,6 +97,7 @@ export const MODULE_CREDENTIALS: ModuleCredentialDefinition[] = [
   { id: 'companies', label: 'Empresas', group: 'Gestión comercial', description: 'Cuentas corporativas del CRM.', fields: [], note: 'Este módulo no necesita credenciales externas.' },
   { id: 'people', label: 'Contactos', group: 'Gestión comercial', description: 'Directorio de contactos del CRM.', fields: [], note: 'Este módulo no necesita credenciales externas.' },
   { id: 'tasks', label: 'Tareas & Actividades', group: 'Gestión comercial', description: 'Actividades y recordatorios del CRM.', fields: [], note: 'Este módulo no necesita credenciales externas.' },
+  { id: 'calendar', label: 'Calendario', group: 'Gestión comercial', description: 'Agenda comercial y sincronización de reuniones.', fields: [], note: 'La sincronización se administra mediante una conexión OAuth dedicada.' },
   { id: 'analytics', label: 'Reportes & BI', group: 'Gestión comercial', description: 'Analítica local y reportes del espacio.', fields: [], note: 'Actualmente usa datos locales y no necesita credenciales externas.' },
   { id: 'whatsapp', label: 'WhatsApp CRM', group: 'Gestión comercial', description: 'WhatsApp Cloud API para conversaciones y envíos.', fields: WHATSAPP },
   {
@@ -83,9 +110,9 @@ export const MODULE_CREDENTIALS: ModuleCredentialDefinition[] = [
       field('AFIP_PRIVATE_KEY', 'Clave privada', '••••••••••••••••'),
       field('AFIP_PRIVATE_KEY_PASSWORD', 'Contraseña de clave privada', '••••••••••••••••'),
       field('AFIP_CUIT', 'CUIT emisor', '20-12345678-9'),
-      field('AFIP_ENVIRONMENT', 'Entorno', 'homologacion'),
+      { ...field('AFIP_ENVIRONMENT', 'Entorno', 'homologacion'), inputType: 'select', options: AFIP_ENVIRONMENTS },
     ],
-    note: 'La contraseña del certificado debe agregarse como secreto de servidor, no en el navegador.',
+    note: 'El certificado y la contraseña se envían únicamente al backend, se cifran por workspace y nunca se devuelven al navegador.',
   },
   {
     id: 'propuestas',
@@ -126,14 +153,117 @@ export const MODULE_CREDENTIALS: ModuleCredentialDefinition[] = [
   { id: 'csvStudio', label: 'CSV Import & Export', group: 'Operaciones & sistema', description: 'Importación y exportación de archivos.', fields: [], note: 'El procesamiento actual se realiza en el navegador.' },
   { id: 'domainManager', label: 'Gestor de Dominios', group: 'Operaciones & sistema', description: 'Cloudflare DNS y SSL por zona.', fields: [], note: 'Cloudflare API, Account ID y Zone ID pertenecen a la plataforma y se administran en Secrets.' },
   { id: 'settings', label: 'Configuración General', group: 'Operaciones & sistema', description: 'Ajustes del espacio, acceso y permisos.', fields: [], note: 'Las variables VITE_FIREBASE_* son configuración pública del entorno; no deben pedirse como secretos de usuario.' },
+  { id: 'messages', label: 'Mensajes', group: 'Comunicación & marketing', description: 'Centro unificado de conversaciones.', fields: [], note: 'El módulo actual utiliza datos locales y no requiere credenciales externas.' },
 ];
 
-export const getModuleCredentialDefinition = (moduleId: string): ModuleCredentialDefinition =>
-  MODULE_CREDENTIALS.find((module) => module.id === moduleId) || {
-    id: moduleId,
-    label: moduleId,
-    group: 'Módulo',
-    description: 'Configuración de credenciales del módulo.',
-    fields: [],
-    note: 'No hay credenciales adicionales definidas para este módulo.',
+const PLATFORM_CONFIGURATIONS: Record<string, PlatformConfiguration[]> = {
+  webmail: [
+    platform('SMTP_HOST', 'Servidor SMTP', 'server-secret', 'Remitente transaccional administrado por la plataforma.'),
+    platform('SMTP_PORT', 'Puerto SMTP', 'server-secret', 'Configuración de transporte del correo.'),
+    platform('SMTP_USER', 'Usuario SMTP', 'server-secret', 'Cuenta de envío del sistema.'),
+    platform('SMTP_PASSWORD', 'Contraseña SMTP', 'server-secret', 'Nunca se expone al navegador.'),
+    platform('CLOUDFLARE_ACCOUNT_ID', 'Cloudflare Account ID', 'public-config', 'Identificador de la cuenta del Worker/D1.'),
+    platform('CLOUDFLARE_D1_DATABASE_ID', 'Cloudflare D1 Database ID', 'public-config', 'Identificador de la base de correo.'),
+    platform('CLOUDFLARE_EMAIL_WORKER_URL', 'Email Worker URL', 'public-config', 'Endpoint interno para routing de correo.'),
+    platform('CLOUDFLARE_API_TOKEN', 'Cloudflare API Token', 'server-secret', 'Token restringido, solo backend.'),
+    platform('CLOUDFLARE_EMAIL_WORKER_SECRET', 'Email Worker Secret', 'server-secret', 'Firma compartida entre el backend y el Worker.'),
+    platform('WEBMAIL_ENCRYPTION_KEY', 'Webmail Encryption Key', 'server-secret', 'Cifrado server-side del contenido o credenciales.'),
+  ],
+  calendar: [
+    platform('GOOGLE_CLIENT_ID', 'Google OAuth Client ID', 'managed-connection', 'Se conecta mediante OAuth; no se guarda como credencial del módulo.'),
+    platform('GOOGLE_CLIENT_SECRET', 'Google OAuth Client Secret', 'managed-connection', 'Se mantiene en el backend o en una integración administrada.'),
+  ],
+  analytics: [
+    platform('GA_MEASUREMENT_ID', 'Google Analytics Measurement ID', 'public-config', 'Opcional y público; no es un secreto.'),
+    platform('POSTHOG_PUBLIC_KEY', 'PostHog Public Key', 'public-config', 'Opcional y restringido por dominio.'),
+    platform('POSTHOG_API_KEY', 'PostHog API Key', 'server-secret', 'Solo si los eventos se envían desde el backend.'),
+  ],
+  propuestas: [
+    platform('RESEND_API_KEY', 'Resend API Key', 'server-secret', 'Elegir Resend o SMTP; nunca ambos como proveedores activos.'),
+    platform('SENDGRID_API_KEY', 'SendGrid API Key', 'server-secret', 'Proveedor alternativo de email server-side.'),
+    platform('MAIL_FROM_ADDRESS', 'Mail From Address', 'public-config', 'Remitente validado de la plataforma.'),
+    platform('MAIL_FROM_NAME', 'Mail From Name', 'public-config', 'Nombre del remitente visible.'),
+    platform('SMTP_HOST', 'SMTP Host', 'server-secret', 'Alternativa SMTP administrada por la plataforma.'),
+    platform('SMTP_PORT', 'SMTP Port', 'server-secret', 'Puerto SMTP de la plataforma.'),
+    platform('SMTP_USER', 'SMTP User', 'server-secret', 'Usuario SMTP de la plataforma.'),
+    platform('SMTP_PASSWORD', 'SMTP Password', 'server-secret', 'Contraseña SMTP, solo backend.'),
+  ],
+  googleMaps: [
+    platform('VITE_GOOGLE_MAPS_API_KEY', 'Google Maps Browser API Key', 'public-config', 'Opcional para mapas del navegador; debe estar restringida por dominio y APIs.'),
+  ],
+  meddic: [
+    platform('GEMINI_API_KEY', 'Gemini API Key', 'server-secret', 'Capacidad de IA compartida por la plataforma.'),
+  ],
+  chatbot: [
+    platform('GEMINI_API_KEY', 'Gemini API Key', 'server-secret', 'Capacidad de IA compartida por la plataforma.'),
+  ],
+  campaigns: [
+    platform('GEMINI_API_KEY', 'Gemini API Key', 'server-secret', 'Contenido asistido por IA de la plataforma.'),
+    platform('RESEND_API_KEY', 'Resend API Key', 'server-secret', 'Proveedor de email administrado por la plataforma.'),
+    platform('SENDGRID_API_KEY', 'SendGrid API Key', 'server-secret', 'Proveedor alternativo de email administrado por la plataforma.'),
+    platform('EMAIL_WEBHOOK_SIGNING_SECRET', 'Email Delivery Signing Secret', 'server-secret', 'Firma de eventos de entrega.'),
+    platform('UNSUBSCRIBE_SIGNING_SECRET', 'Unsubscribe Signing Secret', 'server-secret', 'Firma de enlaces de baja.'),
+  ],
+  agenteOS: [
+    platform('GEMINI_API_KEY', 'Gemini API Key', 'server-secret', 'Clave compartida de IA, solo backend.'),
+  ],
+  aiAssistant: [
+    platform('GEMINI_API_KEY', 'Gemini API Key', 'server-secret', 'Clave compartida de IA, solo backend.'),
+  ],
+  gtmStrategy: [
+    platform('GEMINI_API_KEY', 'Gemini API Key', 'server-secret', 'Clave compartida de IA, solo backend.'),
+  ],
+  sdrOutreach: [
+    platform('GEMINI_API_KEY', 'Gemini API Key', 'server-secret', 'Clave compartida de IA, solo backend.'),
+    platform('RESEND_API_KEY', 'Resend API Key', 'server-secret', 'Proveedor de email de plataforma.'),
+    platform('SENDGRID_API_KEY', 'SendGrid API Key', 'server-secret', 'Proveedor alternativo de email.'),
+  ],
+  payments: [
+    platform('MERCADOPAGO_ENVIRONMENT', 'Mercado Pago Environment', 'public-config', 'Sandbox o producción, controlado por la plataforma.'),
+  ],
+  tiendaDigital: [
+    platform('MERCADOPAGO_ENVIRONMENT', 'Mercado Pago Environment', 'public-config', 'Sandbox o producción, controlado por la plataforma.'),
+  ],
+  workflows: [
+    platform('WORKFLOW_ENCRYPTION_KEY', 'Workflow Encryption Key', 'server-secret', 'Cifrado server-side de conexiones serializadas.'),
+    platform('N8N_API_KEY', 'n8n API Key', 'managed-connection', 'Se configura dentro de una conexión n8n dedicada.'),
+    platform('MAKE_WEBHOOK_SECRET', 'Make Webhook Secret', 'managed-connection', 'Se configura dentro de una conexión Make dedicada.'),
+    platform('ZAPIER_WEBHOOK_SECRET', 'Zapier Webhook Secret', 'managed-connection', 'Se configura dentro de una conexión Zapier dedicada.'),
+  ],
+  domainManager: [
+    platform('CLOUDFLARE_API_TOKEN', 'Cloudflare API Token', 'server-secret', 'Token limitado a la zona o cuenta necesaria.'),
+    platform('CLOUDFLARE_ACCOUNT_ID', 'Cloudflare Account ID', 'public-config', 'Identificador de la cuenta.'),
+    platform('CLOUDFLARE_ZONE_ID', 'Cloudflare Zone ID', 'public-config', 'Identificador de la zona DNS.'),
+    platform('CLOUDFLARE_ZONE_NAME', 'Cloudflare Zone Name', 'public-config', 'Nombre de la zona administrada.'),
+  ],
+  settings: [
+    platform('VITE_FIREBASE_API_KEY', 'Firebase API Key', 'public-config', 'Configuración pública restringida por dominio.'),
+    platform('VITE_FIREBASE_AUTH_DOMAIN', 'Firebase Auth Domain', 'public-config', 'Dominio público de autenticación.'),
+    platform('VITE_FIREBASE_PROJECT_ID', 'Firebase Project ID', 'public-config', 'Identificador público del proyecto.'),
+    platform('VITE_FIREBASE_STORAGE_BUCKET', 'Firebase Storage Bucket', 'public-config', 'Bucket público configurado para el proyecto.'),
+    platform('VITE_FIREBASE_MESSAGING_SENDER_ID', 'Firebase Messaging Sender ID', 'public-config', 'Identificador público de mensajería.'),
+    platform('VITE_FIREBASE_APP_ID', 'Firebase App ID', 'public-config', 'Identificador público de la aplicación.'),
+    platform('SESSION_SECRET', 'Session Secret', 'server-secret', 'Solo necesario si se agregan sesiones server-side.'),
+  ],
+};
+
+export const getModuleCredentialDefinition = (moduleId: string): ModuleCredentialDefinition => {
+  const definition = MODULE_CREDENTIALS.find((module) => module.id === moduleId);
+  if (!definition) {
+    return {
+      id: moduleId,
+      label: moduleId,
+      group: 'Módulo',
+      description: 'Configuración de credenciales del módulo.',
+      fields: [],
+      note: 'No hay credenciales adicionales definidas para este módulo.',
+    };
+  }
+  return {
+    ...definition,
+    platformConfigurations: PLATFORM_CONFIGURATIONS[moduleId] || definition.platformConfigurations || [],
   };
+};
+
+export const moduleNeedsUserCredentials = (moduleId: string): boolean =>
+  MODULE_CREDENTIALS.some((module) => module.id === moduleId && module.fields.length > 0);

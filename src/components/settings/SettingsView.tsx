@@ -15,7 +15,6 @@ import {
   Sliders,
   CheckCircle2,
   Sun,
-  Moon,
   Palette,
   Eye,
   Sparkles,
@@ -49,7 +48,6 @@ export const SettingsView: React.FC = () => {
     tasks,
     theme,
     setTheme,
-    toggleTheme,
     language,
     setLanguage,
     t,
@@ -132,36 +130,10 @@ export const SettingsView: React.FC = () => {
           </p>
         </div>
 
-        {/* Header Quick Theme Toggle */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-[#141822] border border-[#1e2330] p-1 rounded-lg">
-            <button
-              id="header-theme-toggle-dark"
-              onClick={() => setTheme('dark')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                theme === 'dark'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="Dark Mode"
-            >
-              <Moon className="w-3.5 h-3.5" />
-              <span>Dark</span>
-            </button>
-            <button
-              id="header-theme-toggle-light"
-              onClick={() => setTheme('light')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                theme === 'light'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="High-Contrast Light Mode"
-            >
-              <Sun className="w-3.5 h-3.5" />
-              <span>Light</span>
-            </button>
-          </div>
+        {/* Clientum has one consistent light workspace */}
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+          <Sun className="h-3.5 w-3.5 text-amber-500" />
+          <span>Clientum Clarity · Modo claro</span>
         </div>
       </div>
 
@@ -402,84 +374,10 @@ export const SettingsView: React.FC = () => {
                 </p>
               </div>
 
-              {/* Interactive toggle switch */}
-              <button
-                id="theme-switch-btn"
-                onClick={toggleTheme}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#181d29] hover:bg-[#202738] text-xs font-medium text-white border border-[#2b354a] transition-all cursor-pointer"
-              >
-                {theme === 'dark' ? (
-                  <>
-                    <Sun className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{t('switchTheme')} (Light)</span>
-                  </>
-                ) : (
-                  <>
-                    <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>{t('switchTheme')} (Dark)</span>
-                  </>
-                )}
-              </button>
             </div>
 
-            {/* Visual Theme Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              {/* Option 1: Default Dark (Clientum Obsidian) */}
-              <div
-                id="theme-card-dark"
-                onClick={() => setTheme('dark')}
-                className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  theme === 'dark'
-                    ? 'border-blue-500 bg-[#161a26] shadow-lg shadow-blue-500/10'
-                    : 'border-[#1e2330] bg-[#0e1118] hover:border-[#2a3348]'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-[#0a0c10] border border-[#1e2434] flex items-center justify-center text-blue-400">
-                      <Moon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-semibold text-white">Default Dark Mode</h4>
-                      <span className="text-[11px] text-slate-400 font-mono">Clientum Obsidian</span>
-                    </div>
-                  </div>
-
-                  {theme === 'dark' && (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
-                      <Check className="w-3 h-3" />
-                      Active
-                    </span>
-                  )}
-                </div>
-
-                {/* Mockup Preview - Dark */}
-                <div className="rounded-lg bg-[#0a0c10] p-3 border border-[#1e2434] space-y-2 mb-3">
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 pb-1 border-b border-[#181d28]">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-blue-500" />
-                      <span className="text-white font-medium">Acme Enterprise</span>
-                    </div>
-                    <span className="text-emerald-400 font-mono font-semibold">$120,000</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[9px]">
-                    <span className="px-1.5 py-0.5 rounded bg-[#181d29] text-blue-300 font-mono">
-                      Negotiation
-                    </span>
-                    <span className="text-slate-400">Close: Dec 15</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400" />
-                    Low-light & OLED optimized
-                  </span>
-                  <span className="font-mono text-[10px] text-slate-400">Dark #0A0C10</span>
-                </div>
-              </div>
-
-              {/* Option 2: High-Contrast Light (Clientum Clarity) */}
+            {/* Clientum Clarity is the only supported workspace appearance. */}
+            <div className="grid grid-cols-1 gap-4 mt-4 max-w-xl">
               <div
                 id="theme-card-light"
                 onClick={() => setTheme('light')}

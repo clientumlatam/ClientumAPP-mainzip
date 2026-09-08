@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Zap,
   Calendar,
   MessageSquare,
   Key,
@@ -9,23 +8,13 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
-  AlertCircle,
-  ExternalLink,
-  Copy,
-  Check,
   Send,
-  Radio,
-  Sliders,
-  Sparkles,
-  Shield,
-  Activity,
   X,
-  Code2,
   Clock,
   Mail,
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
-import { APIKey, WebhookConfig } from '../../types';
+import { WebhookConfig } from '../../types';
 import { CloudflareWebmailTab } from './CloudflareWebmailTab';
 import { UserApiKeysTab } from './UserApiKeysTab';
 
@@ -37,9 +26,6 @@ export const IntegrationsHubTab: React.FC = () => {
     slackIntegration,
     updateSlackIntegration,
     sendSlackTestMessage,
-    apiKeys,
-    createAPIKey,
-    revokeAPIKey,
     webhooks,
     addWebhook,
     deleteWebhook,
@@ -48,16 +34,9 @@ export const IntegrationsHubTab: React.FC = () => {
     showToast,
   } = useCRM();
 
-  const [activeSection, setActiveSection] = useState<'calendar' | 'slack' | 'emailRouting' | 'apikeys' | 'userApiKeys' | 'webhooks'>('emailRouting');
+  const [activeSection, setActiveSection] = useState<'calendar' | 'slack' | 'emailRouting' | 'userApiKeys' | 'webhooks'>('emailRouting');
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
   const [isSendingSlack, setIsSendingSlack] = useState(false);
-  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
-
-  // API Key creation modal
-  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
-  const [newKeyName, setNewKeyName] = useState('');
-  const [selectedScopes, setSelectedScopes] = useState<string[]>(['deals:read', 'deals:write', 'contacts:read']);
-  const [revealedPlatformToken, setRevealedPlatformToken] = useState<{ keyName: string; token: string } | null>(null);
 
   useEffect(() => {
     try {
@@ -92,28 +71,6 @@ export const IntegrationsHubTab: React.FC = () => {
     } finally {
       setIsSendingSlack(false);
     }
-  };
-
-  const handleCopyKey = (key: APIKey) => {
-    if (!key.token) {
-      showToast('Esta clave no tiene un token recuperable. Genera una nueva para obtenerlo una sola vez.', 'warning');
-      return;
-    }
-    navigator.clipboard.writeText(key.token);
-    setCopiedKeyId(key.id);
-    showToast(`Token ${key.keyPrefix}... copiado al portapapeles`, 'success');
-    setTimeout(() => setCopiedKeyId(null), 2000);
-  };
-
-  const handleCreateAPIKeySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newKeyName.trim()) return;
-    const createdKey = createAPIKey(newKeyName.trim(), selectedScopes, 'platform');
-    if (createdKey.token) {
-      setRevealedPlatformToken({ keyName: createdKey.name, token: createdKey.token });
-    }
-    setIsKeyModalOpen(false);
-    setNewKeyName('');
   };
 
   const handleCreateWebhookSubmit = (e: React.FormEvent) => {
@@ -172,18 +129,6 @@ export const IntegrationsHubTab: React.FC = () => {
           <MessageSquare className="w-3.5 h-3.5" />
           <span>Slack Notifications Bot</span>
           <span className="w-2 h-2 rounded-full bg-emerald-400" />
-        </button>
-
-        <button
-          onClick={() => setActiveSection('apikeys')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all shrink-0 ${
-            activeSection === 'apikeys'
-              ? 'bg-blue-600 text-white shadow-2xs font-semibold'
-              : 'bg-[#121620] text-slate-300 hover:text-white hover:bg-[#1a202c]'
-          }`}
-        >
-          <Key className="w-3.5 h-3.5" />
-          <span>API Keys REST (Plataforma) ({apiKeys.filter((k) => k.status === 'active' && (k.ownerUserId || 'platform') === 'platform').length})</span>
         </button>
 
         <button
@@ -449,105 +394,6 @@ export const IntegrationsHubTab: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION 3: REST API KEYS */}
-      {activeSection === 'apikeys' && (
-        <div id="section-api-keys" className="space-y-4">
-          {revealedPlatformToken && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-amber-200">Token de plataforma generado: {revealedPlatformToken.keyName}</p>
-                  <p className="mt-1 text-[11px] text-amber-100/70">Cópialo ahora. No se persiste en el navegador ni se vuelve a mostrar después de recargar.</p>
-                </div>
-                <div className="flex min-w-0 items-center gap-2">
-                  <code className="max-w-[420px] truncate rounded-lg border border-amber-500/30 bg-[#0e121a] px-3 py-2 text-[11px] text-amber-100">{revealedPlatformToken.token}</code>
-                  <button type="button" onClick={() => { navigator.clipboard.writeText(revealedPlatformToken.token); showToast('Token copiado al portapapeles', 'success'); }} className="rounded-lg border border-amber-500/30 px-2.5 py-2 text-[11px] font-semibold text-amber-200 hover:bg-amber-500/10">Copiar</button>
-                  <button type="button" onClick={() => setRevealedPlatformToken(null)} className="rounded-lg p-2 text-amber-200/70 hover:bg-amber-500/10" aria-label="Ocultar token">×</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-[#121620] border border-[#1e2434] rounded-xl p-5">
-            <div className="flex items-center justify-between pb-4 border-b border-[#1e2434]">
-              <div>
-                <h3 className="text-sm font-semibold text-white flex items-center gap-1.5">
-                  <Key className="w-4 h-4 text-purple-400" />
-                  Tokens de Acceso a la API REST de Clientum
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Genera claves de API con permisos restringidos para conectar tus sistemas externos, ERP o scripts automatizados.
-                </p>
-              </div>
-
-              <button
-                id="create-api-key-btn"
-                onClick={() => setIsKeyModalOpen(true)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 hover:bg-purple-500 text-white transition-colors shadow-2xs"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Generar API Key</span>
-              </button>
-            </div>
-
-            <div className="mt-4 divide-y divide-[#181f2f]">
-              {apiKeys.map((key) => (
-                <div key={key.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-white">{key.name}</span>
-                      <span className={`px-2 py-0.2 rounded text-[10px] font-medium ${
-                        key.status === 'active'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : 'bg-slate-700/50 text-slate-400 border border-slate-600/30'
-                      }`}>
-                        {key.status === 'active' ? 'Activa' : 'Revocada'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-1 font-mono text-[11px] text-slate-400">
-                      <span>{key.keyPrefix}••••••••••••••••</span>
-                       {key.status === 'active' && key.token && (
-                        <button
-                          onClick={() => handleCopyKey(key)}
-                          className="text-slate-400 hover:text-white p-0.5 rounded"
-                          title="Copiar Token"
-                        >
-                          {copiedKeyId === key.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                      {key.scopes.map((s) => (
-                        <span key={s} className="px-1.5 py-0.2 rounded bg-[#182030] text-blue-300 text-[10px] font-mono">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {key.status === 'active' && (
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`¿Estás seguro de revocar la clave "${key.name}"?`)) {
-                            revokeAPIKey(key.id);
-                          }
-                        }}
-                        className="px-2.5 py-1 rounded text-xs font-medium text-rose-400 hover:bg-rose-950/30 border border-rose-500/20 transition-colors"
-                      >
-                        Revocar Clave
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {activeSection === 'userApiKeys' && <UserApiKeysTab />}
 
       {/* SECTION 4: OUTBOUND WEBHOOKS */}
@@ -619,76 +465,6 @@ export const IntegrationsHubTab: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Create API Key */}
-      {isKeyModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#121620] border border-[#222a3d] rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e2434]">
-              <div className="flex items-center gap-2">
-                <Key className="w-4 h-4 text-purple-400" />
-                <h3 className="text-sm font-bold text-white">Generar Nueva Clave API REST</h3>
-              </div>
-              <button onClick={() => setIsKeyModalOpen(false)} className="text-slate-400 hover:text-white p-1">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateAPIKeySubmit} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">Nombre de la Aplicación / Servicio *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="ej. ERP SAP Connector, Script Zapier, Backup Bot"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  className="w-full bg-[#0e121a] border border-[#2b354c] rounded-md px-3 py-2 text-white placeholder-slate-500 focus:outline-hidden focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">Permisos & Scopes Asignados</label>
-                <div className="space-y-1.5 bg-[#0e121a] border border-[#2b354c] rounded-md p-3 max-h-40 overflow-y-auto">
-                  {['deals:read', 'deals:write', 'contacts:read', 'contacts:write', 'companies:read', 'webhooks:manage', 'audit:read'].map((scope) => (
-                    <label key={scope} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedScopes.includes(scope)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedScopes((prev) => [...prev, scope]);
-                          } else {
-                            setSelectedScopes((prev) => prev.filter((s) => s !== scope));
-                          }
-                        }}
-                        className="rounded bg-[#121620] border-[#2b354c] text-purple-600 focus:ring-0"
-                      />
-                      <span className="font-mono text-slate-300 text-[11px]">{scope}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1e2434]">
-                <button
-                  type="button"
-                  onClick={() => setIsKeyModalOpen(false)}
-                  className="px-3 py-1.5 rounded-md text-slate-300 hover:text-white"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-md bg-purple-600 hover:bg-purple-500 text-white font-medium"
-                >
-                  Generar Token
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

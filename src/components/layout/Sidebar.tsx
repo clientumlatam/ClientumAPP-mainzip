@@ -39,6 +39,7 @@ import { useCRM } from '../../context/CRMContext';
 import { ActiveTab } from '../../types';
 import { ClientumLogo } from '../common/ClientumLogo';
 import { ModuleCredentialsModal } from '../settings/ModuleCredentialsModal';
+import { moduleNeedsUserCredentials } from '../../data/moduleCredentials';
 
 type SidebarNavItem = {
   id: ActiveTab;
@@ -57,6 +58,7 @@ const SidebarNavRow: React.FC<{
 }> = ({ item, activeTab, onNavigate, onConfig }) => {
   const Icon = item.icon;
   const isActive = activeTab === item.id;
+  const canConfigureCredentials = item.configurable ?? moduleNeedsUserCredentials(item.id);
 
   return (
     <div className="flex w-full items-center gap-1">
@@ -79,7 +81,7 @@ const SidebarNavRow: React.FC<{
           </span>
         )}
       </button>
-      {item.configurable !== false && (
+      {canConfigureCredentials && (
         <button
           type="button"
           onClick={(event) => onConfig(event, item.id)}
@@ -150,7 +152,7 @@ export const Sidebar: React.FC = () => {
         { id: 'companies', label: 'Empresas', icon: Building2 },
         { id: 'people', label: 'Contactos', icon: Users2 },
         { id: 'tasks', label: 'Tareas & Actividades', icon: CheckSquare, badge: tasks.filter((task) => task.status !== 'Completed').length, badgeColor: 'bg-amber-100 text-amber-800' },
-        { id: 'calendar', label: 'Calendario', icon: Calendar, configurable: false },
+        { id: 'calendar', label: 'Calendario', icon: Calendar },
         { id: 'propuestas', label: 'Propuestas & Presupuestos', icon: FileCheck, badge: 'PDF', badgeColor: 'bg-emerald-100 text-emerald-800' },
         { id: 'googleMaps', label: 'Prospección Mapa B2B', icon: MapPin, badge: 'Maps', badgeColor: 'bg-blue-100 text-blue-800' },
         { id: 'meddic', label: 'Lead Scoring MEDDIC', icon: Target },
@@ -161,7 +163,7 @@ export const Sidebar: React.FC = () => {
       items: [
         { id: 'whatsapp', label: 'WhatsApp CRM', icon: MessageSquare, badge: 'LIVE', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' },
         { id: 'webmail', label: 'Webmail Cloudflare', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'GTM', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-semibold' },
-        { id: 'messages', label: 'Mensajes', icon: MessageSquare, badge: 12, badgeColor: 'bg-blue-100 text-blue-800' , configurable: false },
+        { id: 'messages', label: 'Mensajes', icon: MessageSquare, badge: 12, badgeColor: 'bg-blue-100 text-blue-800' },
         { id: 'chatbot', label: 'Chatbot WhatsApp 24/7', icon: Bot },
         { id: 'campaigns', label: 'Campañas Masivas', icon: Send },
       ],

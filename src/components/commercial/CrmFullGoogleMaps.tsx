@@ -20,6 +20,7 @@ import {
 import { useCRM } from '../../context/CRMContext';
 import { getClientumAuthJsonHeaders } from '../../lib/api';
 import { ModuleCredentialsModal } from '../settings/ModuleCredentialsModal';
+import { moduleNeedsUserCredentials } from '../../data/moduleCredentials';
 
 interface ScrapedLead {
   id: string;
@@ -255,14 +256,16 @@ export const CrmFullGoogleMaps: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setIsConfigOpen(true)}
-            className="px-3.5 py-2 rounded-lg bg-[#111a2a] hover:bg-[#182640] text-cyan-200 border border-cyan-400/25 font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Settings2 className="w-4 h-4" />
-            <span>Configurar API</span>
-          </button>
+          {moduleNeedsUserCredentials('googleMaps') && (
+            <button
+              type="button"
+              onClick={() => setIsConfigOpen(true)}
+              className="px-3.5 py-2 rounded-lg bg-[#111a2a] hover:bg-[#182640] text-cyan-200 border border-cyan-400/25 font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Settings2 className="w-4 h-4" />
+              <span>Configurar API</span>
+            </button>
+          )}
           <button
             onClick={handleImportAll}
             className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-emerald-600/20"

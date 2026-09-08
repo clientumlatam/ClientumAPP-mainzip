@@ -12,8 +12,6 @@ import {
   Download,
   RotateCcw,
   ArrowRight,
-  Sun,
-  Moon,
   Palette,
   Code2,
   ExternalLink,
@@ -37,9 +35,6 @@ export const CommandPalette: React.FC = () => {
     openAICopilot,
     exportOpportunitiesCSV,
     resetToDemoData,
-    theme,
-    setTheme,
-    toggleTheme,
     openComposeEmailModal,
   } = useCRM();
 
@@ -134,15 +129,6 @@ export const CommandPalette: React.FC = () => {
       icon: Download,
       badge: 'Export',
       onSelect: () => exportOpportunitiesCSV(),
-    },
-    {
-      id: 'act-toggle-theme',
-      category: 'Actions',
-      title: theme === 'dark' ? 'Switch to High-Contrast Light Theme' : 'Switch to Default Dark Theme',
-      subtitle: 'Toggle workspace contrast and brightness',
-      icon: theme === 'dark' ? Sun : Moon,
-      badge: 'Theme',
-      onSelect: () => toggleTheme(),
     },
     {
       id: 'act-theme-settings',

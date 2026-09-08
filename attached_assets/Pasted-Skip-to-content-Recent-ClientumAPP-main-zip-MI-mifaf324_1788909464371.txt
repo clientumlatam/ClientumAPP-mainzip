@@ -1,10 +1,184 @@
-Inventario de secretos y configuraciones por módulo
+Skip to content
+
+    Recent
+    ClientumAPP-main.zip
+
+MI
+mifaf32430
+mifaf32430
+
+Commands
+assets
+attached_assets
+34
+dist
+docs
+1
+secrets-architecture.md
+secrets-audit.md
+M
+migrations
+001_tenant_credentials.sql
+public
+screenshots
+scripts
+2
+src
+3
+components
+2
+context
+data
+1
+clientumCatalog.ts
+clientumLeads.ts
+erpInitialData.ts
+initialData.ts
+moduleCredentials.ts
+M
+rbacInitialData.ts
+webmailInitialData.ts
+i18n
+lib
+services
+App.tsx
+firebase.ts
+index.css
+main.tsx
+types.ts
+features.md
+firebase-applet-config.json
+firestore.rules
+index.html
+metadata.json
+NAVIGATION.md
+replit.md
+SECRETS.md
+server.ts
+M
+tsconfig.json
+vite.config.ts
+zipFile.zip
+Packager files
+bun.lock
+package-lock.json
+package.json
+M
+Attached Image
+Attached Image
+
+Add authenticated user login
+Free
+17 minutes ago
+Inspecting implementation details
+Inspecting implementation details
+
+Voy a revisar la estructura actual y el flujo de autenticación existente para agregar el login sin romper la navegación ni la configuración actual. Luego lo integraré, verificaré el flujo completo y ajustaré la vista al estilo de la app.
+5 actions
+
+Veo que el proyecto ya tiene Firebase y funciones de autenticación preparadas; ahora voy a conectar ese backend al estado de la aplicación y revisar si falta la pantalla de acceso o la protección de rutas.
+Show less
+Opened App.tsx
+Opened firebase.ts
+Opened main.tsx
+Opened index.css
+Searched src, server.ts for "onAuthStateChanged|signInWith|authState|currentUser|AuthResult|/api/auth|authorization|Bearer|logout|Cerrar sesión"
+Read lines 240–430 of server.ts
+Opened CRMContext.tsx
+Opened CRMContext.tsx
+Opened AuthScreen.tsx
+Opened AuthModal.tsx
+Opened ProtectedRoute.tsx
+Opened PublicSite.tsx
+Opened SocialAuthButtons.tsx
+Opened navigation.ts
+
+El código actual muestra un problema importante: existe el formulario, pero enterApp() puede marcar la sesión como autenticada sin credenciales y el contexto no sincroniza el estado con Firebase. Voy a corregir eso para que el acceso privado requiera una sesión real de Firebase (manteniendo únicamente el demo local en desarrollo), y haré que el usuario autenticado se refleje en el perfil y en las llamadas al servidor.
+17 actions
+
+Voy a hacer el cambio en tres capas: Firebase será la fuente de verdad de la sesión, el CRM dejará de abrir el dashboard sin autenticación, y la navegación mostrará el modal de acceso cuando corresponda. También evitaré que las credenciales inválidas se conviertan accidentalmente en una sesión demo cuando Firebase sí está configurado.
+4 actions
+
+La protección y la sincronización ya están implementadas. Ahora voy a ejecutar el chequeo de TypeScript y revisar el arranque del workflow para detectar errores de integración o estados de sesión inconsistentes.
+4 actions
+
+El chequeo de TypeScript y el build de producción pasan correctamente. Haré una verificación visual final del portal y del acceso al CRM, además de revisar que la sesión demo no se habilite en producción por accidente.
+10 actions
+
+La vista protegida se comporta bien: visitar /app sin sesión vuelve al portal público, y el workflow no muestra errores nuevos. Voy a ejecutar el smoke test de navegación existente para confirmar también el acceso demo local, logout y protección de rutas de extremo a extremo.
+2 actions
+
+El smoke test encontró un desajuste esperado por el cambio: antes el botón entraba directamente al demo; ahora abre el login, que es lo correcto para una sesión autenticada. Antes de actualizar el smoke test, voy a confirmar por navegador que el modal aparece y que el botón de demo solo funciona en desarrollo.
+Show less
+Ran an inline script with node
+Evaluating Firebase registration
+Evaluating Firebase registration
+Edited navigation-smoke.mjs
+Running scripts for checks
+Running scripts for checks
+Ran the smoke:navigation script
+Updating authentication flow
+Updating authentication flow
+
+El smoke test reveló un segundo detalle real: el login sí autentica al usuario, pero no cambiaba la URL al workspace privado. Voy a corregir ese salto en login/registro (incluido SSO) y volver a ejecutar el flujo completo.
+12 actions
+
+El flujo principal ya pasa. El último fallo es solo del smoke test al volver desde el portal: como la sesión sigue activa, el botón cambia de “Ingresar al CRM” a “Ir al Dashboard”. Ajusto esa expectativa y ejecuto la verificación final.
+9 actions
+
+El flujo completo ya pasa: rutas privadas redirigen sin sesión, el login abre el modal, la demo local entra al CRM, el logout revoca el acceso y el modo app no puede reabrirse sin sesión. Haré el último build y revisaré los logs antes de entregarlo.
+8 actions
+
+Implementé el login autenticado para ClientumCRM.
+
+Cambios principales:
+
+    Firebase ahora es la fuente de verdad de la sesión mediante onAuthStateChanged.
+    Las rutas privadas (/app, /dashboard, /crm, /erp) quedan protegidas.
+    El botón “Ingresar al CRM” abre el modal de login en lugar de entrar directamente.
+    Login, registro y SSO redirigen correctamente al workspace privado.
+    Logout cierra también la sesión de Firebase.
+    Las credenciales inválidas de Firebase ya no se convierten en una sesión demo.
+    El acceso demo queda limitado al entorno de desarrollo.
+    El smoke test fue actualizado para validar el nuevo flujo autenticado.
+
+Verificaciones completadas:
+
+    npm run lint
+    npm run build
+    npm run smoke:navigation
+    Preview visual sin errores nuevos de navegador ni workflow.
+
+El proyecto queda listo para publicar.
+Worked for 5 minutes
+Publish
+Domain
+Available
+.replit.app
+Who can access your app
+PublicAnyone on the internet with the URL
+Checkpoint made 11 minutes ago
+Pasted-Inventario-de-secretos-y-configuraciones-por-m-dulo-Doc_1788908856497.txt
+Attached Image
+Attached Image
+Free
+8 minutes ago
+
+Recibí el inventario de secretos y las referencias visuales del módulo de prospección. No veo una instrucción nueva explícita sobre qué cambiar con estos archivos; voy a confirmar el objetivo antes de modificar el proyecto.
+5 actions
+
+El documento confirma que el siguiente trabajo posible está alrededor de Prospección Maps B2B, sus credenciales y la separación entre configuración pública y secretos backend. Las capturas muestran el módulo y su modal de configuración, pero no indican qué comportamiento quieres que implemente.
+ObjetivoCompletar el modal de credenciales y guardado seguro por usuario
+Additional commentspara todos kis modulos  Inventario de secretos y configuraciones por módulo
 
     Documento de referencia para configurar ClientumCRM de forma segura.
 
     Importante: este archivo contiene nombres de variables y ejemplos de formato, nunca valores reales. Los secretos deben guardarse en Replit Secrets o en una integración OAuth/API administrada; no deben escribirse en el código, en localStorage, en commits ni en este documento.
 
 Estado actual del proyecto
+
+    Auditoría actualizada el 2026-09-08: los nombres de las variables disponibles fueron contrastados con el código. Por seguridad, nunca se inspeccionan ni se imprimen valores de Secrets desde esta documentación. Consulta docs/secrets-audit.md para la matriz completa de variables usadas, credenciales por usuario y trabajo pendiente.
+
 Regla de separación
 
     Secretos de la plataforma: viven en Replit Secrets o en variables de entorno del backend. Son compartidos por la aplicación completa y nunca se cargan en el tab de API Keys de un usuario.
@@ -12,10 +186,10 @@ Regla de separación
     Token de API: el valor completo se muestra una sola vez al generarlo. La interfaz no lo persiste en localStorage; en producción debe guardarse únicamente su hash en el backend.
 
 Variable	Estado	Uso actual
-GEMINI_API_KEY	No configurada	Es la única clave que el backend consume actualmente. Habilita Copilot, CMO, GTM, Ad Copy, prospección y agentes IA.
-SESSION_SECRET	Disponible	Está registrada en Replit Secrets, pero el servidor actual no usa sesiones Express. Reservarla para una futura sesión server-side.
-VITE_FIREBASE_*	No configuradas como Secrets	Son configuración cliente de Firebase. El código actual tiene valores de fallback; para producción deben definirse como variables VITE_ y quitar los fallbacks hardcodeados.
-DATABASE_URL	Administrada por Replit	No debe solicitarse ni configurarse manualmente. La aplicación actual no consume PostgreSQL directamente.
+GEMINI_API_KEY	Registrada; validar valor	El backend la consume en /api/ai/*. Los placeholders se consideran no configurados y activan solo el resultado demo/fallback.
+SESSION_SECRET	Registrada; reservada	El servidor no usa sesiones Express. Solo participa como último fallback técnico del cifrado interno si no existe WORKFLOW_ENCRYPTION_KEY ni API_KEY_PEPPER.
+VITE_FIREBASE_*	Registradas como configuración pública	Se inyectan en el bundle cliente. Firebase no se inicializa con valores vacíos y los fallbacks de autenticación están limitados a desarrollo.
+DATABASE_URL / PG*	Administradas por Replit	El servidor usa PostgreSQL para credenciales por usuario y API Keys internas. No deben solicitarse ni configurarse manualmente.
 Reglas de seguridad
 
     Nunca pegues una API key, token, contraseña, certificado o clave privada en el chat o en un archivo .md.
@@ -295,3 +469,126 @@ Alternativas
     Vonage: VONAGE_API_KEY, VONAGE_API_SECRET, VONAGE_BRAND_NAME, VONAGE_SIGNATURE_SECRET.
 
 No solicitar ni guardar las variables de las tres opciones a la vez. La conexión debe gestionarse mediante una integración o Secrets y el envío real debe vivir en backend.
+Worked for 18 seconds
+Checkpoint made 8 minutes ago
+Inspecting code modules
+Inspecting code modules
+
+Voy a ampliar la configuración de credenciales para cubrir todos los módulos del inventario, manteniendo la separación entre secretos de plataforma y credenciales por usuario. Primero revisaré el modal actual, el catálogo de módulos y los endpoints de persistencia; después completaré la UI y verificaré que ningún secreto termine en localStorage o en el bundle del navegador.
+25 actions
+
+Encontré dos huecos importantes: el catálogo no cubría explícitamente Calendario/Mensajes y el guardado parcial podía sobrescribir campos ya configurados. Voy a corregir ambos, además de mostrar en el modal qué variables son de plataforma y cuáles sí pertenecen al workspace, sin revelar valores ni permitir editar secretos globales desde el navegador.
+Show less
+Troubleshooting patching issues
+Troubleshooting patching issues
+Edited moduleCredentials.ts
+Opened moduleCredentials.ts
+Patching data
+Patching data
+Troubleshooting a patch failure
+Troubleshooting a patch failure
+Edited moduleCredentials.ts
+Edited moduleCredentials.ts
+Edited moduleCredentials.ts
+Edited moduleCredentials.ts
+Edited ModuleCredentialsModal.tsx
+Edited server.ts
+Fixing sidebar configuration
+Fixing sidebar configuration
+Edited Sidebar.tsx
+Inspecting modules and tests
+Inspecting modules and tests
+
+La base ya está actualizada: el modal ahora diferencia credenciales del workspace frente a configuración de plataforma, acepta selección de entorno AFIP, y el backend conserva campos previamente guardados cuando se actualiza solo uno. Ahora voy a compilar y corregir cualquier incompatibilidad antes de completar la cobertura de pruebas.
+Show less
+Checked code style
+Planning smoke tests
+Planning smoke tests
+Opened navigation-smoke.mjs
+Opened secrets-audit.md
+Edited secrets-audit.md
+Figuring out resume and issues
+Figuring out resume and issues
+Checked code style and 1 other action
+Viewed code changes and 1 other action
+Refreshed logs
+Verifying app visuals
+Verifying app visuals
+
+La compilación está limpia y el workflow sigue activo sin errores de navegador. Haré ahora la prueba de navegación completa y una comprobación visual del modal ampliado para confirmar que la cobertura de módulos no rompió el flujo existente.
+2 actions
+
+El flujo existente sigue pasando. Para validar específicamente la ampliación solicitada, agregaré al smoke test una comprobación breve de módulos sin credenciales propias (Calendario/Mensajes) y de un módulo mixto (Maps: configuración de plataforma + credencial del workspace).
+5 actions
+
+La prueba ampliada también pasó: Calendario y Mensajes muestran su configuración administrada, y Maps separa correctamente la credencial del workspace de la configuración pública de plataforma. Queda una mejora de seguridad independiente que conviene dejar propuesta: probar aislamiento entre workspaces y preservación de credenciales parciales directamente contra el backend.
+Propuesta de prueba creada
+
+El trabajo principal está terminado y la prueba adicional quedó propuesta como seguimiento. Haré una última validación de tipos, formato del diff y búsqueda de persistencia insegura antes de entregarlo.
+3 actions
+
+Listo. Completé el sistema de credenciales para todos los módulos del inventario.
+Cambios realizados
+
+    El mismo modal seguro está disponible desde la barra superior y el menú lateral para todos los módulos, incluidos:
+        Calendario
+        Mensajes
+        IA
+        WhatsApp
+        AFIP
+        Mercado Pago
+        Maps B2B
+        Campañas
+        Workflows
+        Cloudflare
+        Configuración general
+    Se agregaron campos específicos para las credenciales pertenecientes al workspace.
+    AFIP ahora permite seleccionar entre Homologación y Producción.
+    El modal diferencia claramente:
+        Credenciales del workspace.
+        Configuración pública.
+        Secretos administrados por backend.
+        Conexiones OAuth o administradas.
+    Las credenciales de plataforma no se pueden editar desde el navegador.
+    Las actualizaciones parciales ya no eliminan otros campos previamente guardados.
+    Las API Keys generadas quedan limitadas al scope del módulo correspondiente.
+    Los secretos nunca se guardan en localStorage, no se devuelven completos al cliente y permanecen cifrados en backend/PostgreSQL.
+    Se actualizaron la auditoría de secretos y el smoke test.
+
+Verificación
+
+    npm run lint — correcto.
+    npm run build — correcto.
+    npm run smoke:navigation — correcto.
+    Validación visual del portal — correcta.
+    Smoke test ampliado para Calendario, Mensajes y Maps — correcto.
+    git diff --check — correcto.
+    No se encontraron persistencias inseguras de API keys, tokens o secretos en localStorage.
+
+Las integraciones reales de AFIP, Mercado Pago, WhatsApp y otros proveedores todavía requieren sus endpoints backend específicos; esta entrega deja lista y segura la configuración de sus credenciales.
+Worked for 4 minutes
+
+Confirmar que las credenciales de cada workspace permanecen aisladas Qué y por qué
+
+El modal y el backend ya guardan credenciales cifradas por workspace y fusionan actualizaciones parciales. Falta una prueba automatizada que demuestre que un usuario no puede leer o modificar las credenciales de otro workspace y que actualizar un solo campo no elimina los restantes. Hecho cuando
+Un usuario autenticado solo puede leer y eliminar las credenciales de su workspace.
+Una actualización parcial conserva los campos cifrados que no se enviaron nuevamente.
+Un intento de usar un módulo o campo no permitido devuelve un error sin persistir datos.
+
+Archivos relevantes
+server.ts
+migrations/001_tenant_credentials.sql
+src/components/settings/ModuleCredentialsModal.tsx
+scripts/navigation-smoke.mjs
+Free
+2 minutes ago
+Evaluating testing framework
+Evaluating testing framework
+
+Voy a convertir esta tarea en una prueba end-to-end contra los endpoints reales de credenciales. Usará dos usuarios de prueba efímeros, verificará lectura, aislamiento, actualización parcial y validaciones, y limpiará las credenciales al finalizar para no dejar secretos ni datos de prueba persistidos.
+3 actions
+
+La prueba ya está creada, pero ajusto un detalle para que demuestre realmente la actualización parcial: usaré un módulo con dos credenciales permitidas (Mercado Pago), en lugar de Maps que solo tiene un campo editable.
+Worked for 35 seconds
+
+You've reached your daily free quota limit. It will reset at 12:00 AM UTC.
