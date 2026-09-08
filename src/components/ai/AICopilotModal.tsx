@@ -14,6 +14,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
+import { getClientumAuthJsonHeaders } from '../../lib/api';
 
 interface Message {
   id: string;
@@ -154,7 +155,7 @@ export const AICopilotModal: React.FC = () => {
 
   const quickPrompts = getQuickPrompts();
 
-  const handleSendPrompt = (promptText: string) => {
+  const handleSendPrompt = async (promptText: string) => {
     if (!promptText.trim() || loading) return;
 
     const userMsg: Message = {
@@ -171,7 +172,7 @@ export const AICopilotModal: React.FC = () => {
 
     fetch('/api/ai/copilot', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+       headers: await getClientumAuthJsonHeaders(),
       body: JSON.stringify({
         messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
         context: aiCopilotContext,

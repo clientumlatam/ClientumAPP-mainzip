@@ -35,10 +35,63 @@ import {
   Globe,
   Mail,
   ScanSearch,
+  KeyRound,
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
 import { ActiveTab } from '../../types';
 import { ClientumLogo } from '../common/ClientumLogo';
+import { ModuleCredentialsModal } from '../settings/ModuleCredentialsModal';
+
+type SidebarNavItem = {
+  id: ActiveTab;
+  label: string;
+  icon: React.ElementType;
+  badge?: string | number;
+  badgeColor?: string;
+};
+
+const SidebarNavRow: React.FC<{
+  item: SidebarNavItem;
+  activeTab: ActiveTab;
+  onNavigate: (tab: ActiveTab) => void;
+  onConfig: (event: React.MouseEvent, moduleId: ActiveTab) => void;
+}> = ({ item, activeTab, onNavigate, onConfig }) => {
+  const Icon = item.icon;
+  const isActive = activeTab === item.id;
+
+  return (
+    <div className="flex w-full items-center gap-1">
+      <button
+        id={`nav-item-${item.id}`}
+        onClick={() => onNavigate(item.id)}
+        className={`min-w-0 flex-1 flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer group ${
+          isActive
+            ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-950/50 border border-blue-500'
+            : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
+        }`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
+          <span className="truncate">{item.label}</span>
+        </div>
+        {item.badge !== undefined && (
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isActive ? 'bg-blue-700 text-white border border-blue-400/30' : (item.badgeColor || 'bg-slate-800 text-slate-300 border border-slate-700')}`}>
+            {item.badge}
+          </span>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={(event) => onConfig(event, item.id)}
+        className="shrink-0 rounded-md p-1.5 text-slate-500 opacity-0 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 focus:opacity-100 group-hover:opacity-100"
+        title={`Configurar credenciales de ${item.label}`}
+        aria-label={`Configurar credenciales de ${item.label}`}
+      >
+        <KeyRound className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+};
 
 export const Sidebar: React.FC = () => {
   const {
@@ -62,12 +115,18 @@ export const Sidebar: React.FC = () => {
   } = useCRM();
 
   const [isMoreModulesOpen, setIsMoreModulesOpen] = useState(false);
+  const [configModuleId, setConfigModuleId] = useState<ActiveTab | null>(null);
 
   const unreadWebmailCount = webmailEmails ? webmailEmails.filter((e) => e.folder === 'inbox' && !e.isRead).length : 0;
 
   const handleNavClick = (tab: ActiveTab) => {
     setActiveTab(tab);
     setIsMobileSidebarOpen(false);
+  };
+
+  const handleModuleConfig = (event: React.MouseEvent, moduleId: ActiveTab) => {
+    event.stopPropagation();
+    setConfigModuleId(moduleId);
   };
 
   // Primary CRM navigation
@@ -213,32 +272,9 @@ export const Sidebar: React.FC = () => {
               Gestión Comercial
             </div>
             <nav className="space-y-0.5">
-              {primaryNav.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={`${item.id}-${item.label}`}
-                    id={`nav-item-${item.id}-${item.label}`}
-                    onClick={() => handleNavClick(item.id)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer group ${
-                      isActive
-                        ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-950/50 border border-blue-500'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                      <span className="truncate">{item.label}</span>
-                    </div>
-                    {item.badge !== undefined && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isActive ? 'bg-blue-700 text-white border border-blue-400/30' : (item.badgeColor || 'bg-slate-800 text-slate-300 border border-slate-700')}`}>
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {primaryNav.map((item) => (
+                <SidebarNavRow key={`${item.id}-${item.label}`} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
+              ))}
             </nav>
           </div>
 
@@ -267,32 +303,9 @@ export const Sidebar: React.FC = () => {
                     Ventas & Cierre
                   </div>
                   <nav className="space-y-0.5">
-                    {salesNav.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = activeTab === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          id={`nav-item-${item.id}`}
-                          onClick={() => handleNavClick(item.id)}
-                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer group ${
-                            isActive
-                              ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-950/50 border border-blue-500'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                            <span className="truncate">{item.label}</span>
-                          </div>
-                          {item.badge !== undefined && (
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isActive ? 'bg-blue-700 text-white border border-blue-400/30' : (item.badgeColor || 'bg-slate-800 text-slate-300 border border-slate-700')}`}>
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+                    {salesNav.map((item) => (
+                      <SidebarNavRow key={item.id} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
+                    ))}
                   </nav>
                 </div>
 
@@ -302,32 +315,9 @@ export const Sidebar: React.FC = () => {
                     Inteligencia Artificial
                   </div>
                   <nav className="space-y-0.5">
-                    {aiNav.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = activeTab === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          id={`nav-item-${item.id}`}
-                          onClick={() => handleNavClick(item.id)}
-                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer group ${
-                            isActive
-                              ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-950/50 border border-blue-500'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                            <span className="truncate">{item.label}</span>
-                          </div>
-                          {item.badge !== undefined && (
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isActive ? 'bg-blue-700 text-white border border-blue-400/30' : (item.badgeColor || 'bg-slate-800 text-slate-300 border border-slate-700')}`}>
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+                    {aiNav.map((item) => (
+                      <SidebarNavRow key={item.id} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
+                    ))}
                   </nav>
                 </div>
 
@@ -337,32 +327,9 @@ export const Sidebar: React.FC = () => {
                     Operaciones & Sistema
                   </div>
                   <nav className="space-y-0.5">
-                    {operationsNav.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = activeTab === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          id={`nav-item-${item.id}`}
-                          onClick={() => handleNavClick(item.id)}
-                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer group ${
-                            isActive
-                              ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-950/50 border border-blue-500'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                            <span className="truncate">{item.label}</span>
-                          </div>
-                          {item.badge !== undefined && (
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isActive ? 'bg-blue-700 text-white border border-blue-400/30' : (item.badgeColor || 'bg-slate-800 text-slate-300 border border-slate-700')}`}>
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+                    {operationsNav.map((item) => (
+                      <SidebarNavRow key={item.id} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
+                    ))}
                   </nav>
                 </div>
               </div>
@@ -468,6 +435,7 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
       </aside>
+      <ModuleCredentialsModal moduleId={configModuleId} onClose={() => setConfigModuleId(null)} />
     </>
   );
 };

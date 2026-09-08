@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Database,
   Layers,
@@ -57,6 +57,16 @@ export const SettingsView: React.FC = () => {
   } = useCRM();
 
   const [activeSubTab, setActiveSubTab] = useState<'roles' | 'audit' | 'integrations' | 'appearance' | 'schema' | 'members' | 'ecosystem' | 'data'>('roles');
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('clientum_settings_section') === 'userApiKeys') {
+        setActiveSubTab('integrations');
+      }
+    } catch {
+      // The settings page remains usable when browser storage is disabled.
+    }
+  }, []);
 
   // Custom fields state
   const [customFields, setCustomFields] = useState<CustomField[]>([

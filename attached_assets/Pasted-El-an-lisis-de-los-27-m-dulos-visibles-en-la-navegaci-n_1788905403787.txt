@@ -1,0 +1,120 @@
+El análisis de los 27 módulos visibles en la navegación de **Clientum CRM** (*imagen_2.png*) muestra su nivel de dependencia técnica y requerimientos de credenciales a partir de la documentación de secretos de la plataforma (*SECRETS(7).md*):
+
+---
+
+### **1. Gestión Comercial**
+
+* **Resumen Ejecutivo:** Se ejecuta íntegramente de forma local en la versión actual sin requerir secretos externos. En caso de integrar analítica en el futuro, requerirá `GA_MEASUREMENT_ID` o `POSTHOG_PUBLIC_KEY` para métricas del cliente.
+
+
+* **Centro de Funciones:** Actúa como orquestador de herramientas. Reutiliza credenciales según la función invocada: `GEMINI_API_KEY` para inteligencia artificial, claves de Mercado Pago para procesar cobros y variables del proveedor SMS que se decida implementar (como Twilio con `TWILIO_ACCOUNT_SID` y `TWILIO_AUTH_TOKEN`).
+
+
+* **Pipeline Negocios / Empresas / Contactos / Tareas & Actividades:** Gestionan su estado en la memoria del cliente o en almacenamiento local sin credenciales adicionales. En un despliegue persistente server-side utilizarían la base PostgreSQL integrada (`DATABASE_URL`, administrada por Replit) y opcionalmente `DB_ENCRYPTION_KEY` para el cifrado de datos sensibles.
+
+
+* **Reportes & BI:** Renderiza tableros mediante Recharts usando únicamente datos del CRM local sin requerir variables adicionales.
+
+
+* **Webmail Cloudflare (D1):** Actualmente funciona con datos de prueba. Su conexión en producción requiere tokens de API de servidor como `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_EMAIL_WORKER_SECRET` y la clave de cifrado `WEBMAIL_ENCRYPTION_KEY`.
+
+
+* **WhatsApp CRM:** Funciona como interfaz de demostración. Requiere integración backend directa con la API Cloud de Meta mediante `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_PHONE_NUMBER_ID` y `WHATSAPP_WEBHOOK_VERIFY_TOKEN`.
+
+
+* **Facturación AFIP (CAE):** Diseñado para la emisión de comprobantes fiscales. En entorno de producción demanda configuraciones sensibles y certificados digitales cifrados: `AFIP_CUIT`, `AFIP_ENVIRONMENT` (homologación/producción), `AFIP_CERTIFICATE_P12_BASE64`, `AFIP_PRIVATE_KEY` y `AFIP_PRIVATE_KEY_PASSWORD`.
+
+
+
+---
+
+### **2. Ventas & Cierre**
+
+* **Propuestas & Presupuestos:** Opera localmente para la generación de documentos. Al activar el envío directo vía correo requiere servicios transaccionales con `RESEND_API_KEY` o `SENDGRID_API_KEY` (o en su defecto credenciales SMTP).
+
+
+* **Prospección Maps B2B:** Cuenta con un modo de demostración. Para geocodificación y búsqueda real en Google Places requiere `VITE_GOOGLE_MAPS_API_KEY` (pública restringida a dominio) en el frontend y opcionalmente `GOOGLE_MAPS_SERVER_API_KEY` en el servidor.
+
+
+* **Lead Scoring MEDDIC:** Procesa las evaluaciones de manera local sin secretos adicionales. Si se opta por automatizar el scoring mediante análisis generativo, reutiliza `GEMINI_API_KEY`.
+
+
+* **Chatbot WhatsApp 24/7:** Opera de forma combinada consumiendo la infraestructura de mensajes de Meta (`WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, etc.) junto con `GEMINI_API_KEY` para la generación autónoma de respuestas.
+
+
+* **Campañas Masivas:** Módulo de distribución multicanal. Utiliza las credenciales configuradas de Meta para WhatsApp y proveedores de correo (`RESEND_API_KEY` / `SENDGRID_API_KEY`), sumando claves de firma de desuscripción (`UNSUBSCRIBE_SIGNING_SECRET`).
+
+
+
+---
+
+### **3. Inteligencia Artificial**
+
+* **Agent OS (14 Agentes v3) / Asistente Gemini 3.5 / Estrategias GTM / Agentes SDR Outreach:**
+Todos los módulos agrupados bajo esta categoría dependen de manera centralizada de una única credencial de servidor: `GEMINI_API_KEY`. Estas llamadas se procesan desde el backend en `server.ts` a través de los endpoints `/api/ai/*`. El módulo de SDR Outreach añade adicionalmente las credenciales del canal de salida configurado (WhatsApp o correo).
+
+
+
+---
+
+### **4. Operaciones & Sistema**
+
+* **Cobros Mercado Pago:** Genera enlaces simulados en la UI. Su funcionamiento con transacciones reales requiere tokens de API backend: `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `MERCADOPAGO_ENVIRONMENT` y la clave pública restringida para el checkout `VITE_MERCADOPAGO_PUBLIC_KEY`.
+
+
+* **Tienda Digital WhatsApp:** Integra los módulos de WhatsApp y Cobros de Mercado Pago. En caso de sincronizar inventario con plataformas externas como Shopify, requeriría `SHOPIFY_STOREFRONT_ACCESS_TOKEN` o `SHOPIFY_ADMIN_ACCESS_TOKEN`.
+
+
+* **Campus Academia LMS:** No demanda secretos en su versión actual.
+
+
+* **Workflows & Flujos:** Diseñador de automatizaciones que en su estado base trabaja localmente. Para la ejecución de llamadas salientes requiere `WORKFLOW_ENCRYPTION_KEY` y secretos específicos de plataformas de integración (como `N8N_API_KEY`, `MAKE_WEBHOOK_SECRET` o `ZAPIER_WEBHOOK_SECRET`).
+
+
+* **Custom Objects Studio / CSV Import & Export:** Herramientas de gestión e importación de estructuras que se procesan localmente en el navegador sin requerir API keys de terceros.
+
+
+* **Gestor de Dominios:** Para la administración automática de registros DNS y certificados SSL, requiere acceso a Cloudflare mediante `CLOUDFLARE_API_TOKEN` (con alcance limitado a zona), `CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_ZONE_ID`.
+
+
+* **Configuración General:** Contiene los parámetros del SDK cliente de Firebase (`VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, etc.), la variable de sesiones del servidor `SESSION_SECRET` y las claves OAuth/API Hub como `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
+
+
+
+---
+
+### **Resumen de arquitectura y seguridad**
+
+| Módulo | Tipo de ejecución actual | Clave principal para producción |
+| --- | --- | --- |
+| Resumen Ejecutivo / Empresas / Contactos / Tareas | Local / Client-side
+
+ | Ninguna (opcional `DATABASE_URL`)
+
+ |
+| Webmail Cloudflare | Demostración
+
+ | `CLOUDFLARE_API_TOKEN` / D1
+
+ |
+| WhatsApp CRM & Chatbot | Demostración / Vista
+
+ | `WHATSAPP_ACCESS_TOKEN` + Meta Cloud API
+
+ |
+| Facturación AFIP | Simulación
+
+ | `AFIP_CERTIFICATE_P12_BASE64` + CUIT
+
+ |
+| Módulos de IA (Agent OS, Gemini, GTM, SDR) | Backend `/api/ai/*`<br> | `GEMINI_API_KEY` (Replit Secrets)
+
+ |
+| Cobros Mercado Pago | Links simulados
+
+ | `MERCADOPAGO_ACCESS_TOKEN`<br> |
+| Gestor de Dominios | Local
+
+ | `CLOUDFLARE_API_TOKEN` (Zone level)
+
+ |

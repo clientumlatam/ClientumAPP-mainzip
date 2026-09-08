@@ -27,6 +27,7 @@ import {
 import { useCRM } from '../../context/CRMContext';
 import { STAGES } from '../../data/initialData';
 import { Activity, Opportunity, Person, Company, Task, StageId } from '../../types';
+import { getClientumAuthJsonHeaders } from '../../lib/api';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const RecordDrawer: React.FC = () => {
@@ -169,7 +170,7 @@ export const RecordDrawer: React.FC = () => {
             const base64data = (reader.result as string).split(',')[1];
             const response = await fetch('/api/ai/transcribe', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+               headers: await getClientumAuthJsonHeaders(),
               body: JSON.stringify({ audioBase64: base64data, mimeType: 'audio/webm' })
             });
             const data = await response.json();

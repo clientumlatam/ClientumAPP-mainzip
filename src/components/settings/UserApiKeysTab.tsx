@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Check,
   Copy,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
 import { APIKey } from '../../types';
+import { getClientumAuthHeaders, getClientumAuthJsonHeaders } from '../../lib/api';
 
 type ModuleGroup = {
   label: string;
@@ -69,16 +70,46 @@ export const UserApiKeysTab: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState(currentUser.id);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [keyName, setKeyName] = useState('');
-  const [selectedModules, setSelectedModules] = useState<string[]>(['propuestas', 'googleMaps']);
+  const [selectedModules, setSelectedModules] = useState<string[]>(() => {
+    try {
+      const requestedModule = sessionStorage.getItem('clientum_api_key_module');
+      return requestedModule ? [requestedModule] : ['propuestas', 'googleMaps'];
+    } catch {
+      return ['propuestas', 'googleMaps'];
+    }
+  });
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
   const [revealedToken, setRevealedToken] = useState<{ keyName: string; token: string } | null>(null);
+  const [secureKeys, setSecureKeys] = useState<APIKey[]>([]);
   const canManageUserKeys = hasPermission('integrations', 'manage');
   const visibleUsers = canManageUserKeys ? users : [currentUser];
 
   const selectedUser = visibleUsers.find((user) => user.id === selectedUserId) || currentUser;
+  useEffect(() => {
+    let isMounted = true;
+    void (async () => {
+      try {
+        const response = await fetch('/api/user-api-keys', {
+          headers: await getClientumAuthHeaders(currentUser),
+        });
+        if (!response.ok) throw new Error('secure API key read failed');
+        const payload = await response.json() as { keys?: APIKey[] };
+        if (isMounted) setSecureKeys(payload.keys || []);
+      } catch {
+        if (isMounted) showToast('No se pudieron cargar las API Keys REST seguras', 'warning');
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser, showToast]);
+
+  const getKeysForUser = (userId: string) => userId === currentUser.id
+    ? secureKeys
+    : apiKeys.filter((key) => keyOwnerId(key, currentUser.id) === userId);
   const userKeys = useMemo(
-    () => apiKeys.filter((key) => keyOwnerId(key, currentUser.id) === selectedUser.id),
-    [apiKeys, currentUser.id, selectedUser.id],
+    () => getKeysForUser(selectedUser.id),
+    [apiKeys, currentUser.id, secureKeys, selectedUser.id],
   );
   const activeKeyCount = userKeys.filter((key) => key.status === 'active').length;
 
@@ -90,22 +121,54 @@ export const UserApiKeysTab: React.FC = () => {
     );
   };
 
-  const handleCreate = (event: React.FormEvent) => {
+  const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!keyName.trim() || selectedModules.length === 0) {
       showToast('Define un nombre y al menos un módulo para la API Key', 'warning');
       return;
     }
 
-    const createdKey = createAPIKey(
-      keyName.trim(),
-      selectedModules.map((moduleId) => `module:${moduleId}`),
-      canManageUserKeys ? selectedUser.id : currentUser.id,
-    );
-    if (createdKey.token) setRevealedToken({ keyName: createdKey.name, token: createdKey.token });
+    const scopes = selectedModules.map((moduleId) => `module:${moduleId}`);
+    if (selectedUser.id === currentUser.id) {
+      try {
+        const response = await fetch('/api/user-api-keys', {
+          method: 'POST',
+          headers: await getClientumAuthJsonHeaders(currentUser),
+          body: JSON.stringify({ name: keyName.trim(), scopes }),
+        });
+        if (!response.ok) throw new Error('secure API key create failed');
+        const payload = await response.json() as { key: APIKey; token: string };
+        setSecureKeys((previous) => [payload.key, ...previous]);
+        setRevealedToken({ keyName: payload.key.name, token: payload.token });
+      } catch {
+        showToast('No se pudo generar la API Key REST segura', 'error');
+        return;
+      }
+    } else {
+      const createdKey = createAPIKey(keyName.trim(), scopes, selectedUser.id);
+      if (createdKey.token) setRevealedToken({ keyName: createdKey.name, token: createdKey.token });
+    }
     setKeyName('');
     setSelectedModules(['propuestas', 'googleMaps']);
     setIsCreateOpen(false);
+  };
+
+  const handleRevoke = async (key: APIKey) => {
+    if (key.ownerUserId === currentUser.id) {
+      try {
+        const response = await fetch(`/api/user-api-keys/${encodeURIComponent(key.id)}`, {
+          method: 'DELETE',
+          headers: await getClientumAuthHeaders(currentUser),
+        });
+        if (!response.ok) throw new Error('secure API key revoke failed');
+        setSecureKeys((previous) => previous.map((item) => item.id === key.id ? { ...item, status: 'revoked' } : item));
+        showToast(`API Key "${key.name}" revocada`, 'warning');
+      } catch {
+        showToast('No se pudo revocar la API Key REST segura', 'error');
+      }
+      return;
+    }
+    revokeAPIKey(key.id);
   };
 
   const handleCopy = async (key: APIKey) => {
@@ -153,7 +216,7 @@ export const UserApiKeysTab: React.FC = () => {
 
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
            {visibleUsers.map((user) => {
-            const count = apiKeys.filter((key) => keyOwnerId(key, currentUser.id) === user.id && key.status === 'active').length;
+             const count = getKeysForUser(user.id).filter((key) => key.status === 'active').length;
             return (
               <button
                 type="button"
@@ -268,7 +331,7 @@ export const UserApiKeysTab: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        if (window.confirm(`¿Revocar la clave "${key.name}"?`)) revokeAPIKey(key.id);
+                         if (window.confirm(`¿Revocar la clave "${key.name}"?`)) void handleRevoke(key);
                       }}
                       className="flex shrink-0 items-center gap-1.5 self-start rounded border border-rose-500/20 px-2.5 py-1 text-xs font-medium text-rose-400 transition-colors hover:bg-rose-950/30 sm:self-center"
                     >

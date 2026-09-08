@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getClientumAuthJsonHeaders } from '../../lib/api';
 import {
   LayoutGrid,
   Map,
@@ -178,11 +179,11 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
   // --- ACTIONS ---
   
   // 2. Maps Prospecting Run
-  const runMapsProspecting = () => {
+  const runMapsProspecting = async () => {
     setMapsLoading(true);
     fetch('/api/ai/prospect', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+       headers: await getClientumAuthJsonHeaders(),
       body: JSON.stringify({ city: mapsCity, niche: mapsNiche })
     })
       .then(res => {
@@ -349,11 +350,11 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
   };
 
   // 9. Asistente IA Gemini 2.5
-  const runGeminiAsistente = () => {
+  const runGeminiAsistente = async () => {
     setGeminiLoading(true);
     fetch('/api/ai/cmo', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+       headers: await getClientumAuthJsonHeaders(),
       body: JSON.stringify({ query: geminiQuery })
     })
       .then(res => {
@@ -374,11 +375,11 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
   };
 
   // 10. GTM Strategy Generator
-  const runGTMGenerator = () => {
+  const runGTMGenerator = async () => {
     setGtmLoading(true);
     fetch('/api/ai/gtm', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+       headers: await getClientumAuthJsonHeaders(),
       body: JSON.stringify({ product: gtmProduct, audience: gtmAudience })
     })
       .then(res => {
@@ -399,11 +400,11 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
   };
 
   // 11. AI Ad Copy Studio
-  const runAdStudio = () => {
+  const runAdStudio = async () => {
     setAdLoading(true);
     fetch('/api/ai/adcopy', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+       headers: await getClientumAuthJsonHeaders(),
       body: JSON.stringify({ product: adProduct, platform: adPlatform })
     })
       .then(res => {

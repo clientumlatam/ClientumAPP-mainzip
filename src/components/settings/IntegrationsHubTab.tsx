@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Zap,
   Calendar,
@@ -58,6 +58,17 @@ export const IntegrationsHubTab: React.FC = () => {
   const [newKeyName, setNewKeyName] = useState('');
   const [selectedScopes, setSelectedScopes] = useState<string[]>(['deals:read', 'deals:write', 'contacts:read']);
   const [revealedPlatformToken, setRevealedPlatformToken] = useState<{ keyName: string; token: string } | null>(null);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('clientum_settings_section') === 'userApiKeys') {
+        setActiveSection('userApiKeys');
+        sessionStorage.removeItem('clientum_settings_section');
+      }
+    } catch {
+      // Keep the default section when browser storage is disabled.
+    }
+  }, []);
 
   // Webhook creation modal
   const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);

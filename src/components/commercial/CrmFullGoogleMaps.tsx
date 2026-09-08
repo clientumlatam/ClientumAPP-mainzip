@@ -17,6 +17,7 @@ import {
   Check
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
+import { getClientumAuthJsonHeaders } from '../../lib/api';
 
 interface ScrapedLead {
   id: string;
@@ -120,7 +121,7 @@ export const CrmFullGoogleMaps: React.FC = () => {
     try {
       const res = await fetch('/api/ai/prospect', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+         headers: await getClientumAuthJsonHeaders(),
         body: JSON.stringify({ niche: keyword, city })
       });
 

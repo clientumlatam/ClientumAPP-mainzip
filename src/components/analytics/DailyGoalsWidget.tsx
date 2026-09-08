@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import confetti from 'canvas-confetti';
+import { getClientumAuthJsonHeaders } from '../../lib/api';
 
 interface DailyGoalsWidgetProps {
   opportunities: any[];
@@ -201,7 +202,7 @@ export const DailyGoalsWidget: React.FC<DailyGoalsWidgetProps> = ({ opportunitie
     try {
       const res = await fetch('/api/ai/smart-goals', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+         headers: await getClientumAuthJsonHeaders(),
         body: JSON.stringify({ historyData, currentGoals: dailyGoals })
       });
       const data = await res.json();

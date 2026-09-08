@@ -5,7 +5,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import dotenv from "dotenv";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 dotenv.config();
 
@@ -18,6 +19,318 @@ app.use(express.json({
     (request as express.Request & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
   },
 }));
+
+type UserCredentialRecord = {
+  updatedAt: string;
+  values: Record<string, string>;
+};
+
+type UserCredentialVault = Record<string, Record<string, UserCredentialRecord>>;
+type ServerApiKeyRecord = {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  scopes: string[];
+  createdAt: string;
+  status: "active" | "revoked";
+  tokenHash: string;
+};
+type ServerApiKeyVault = Record<string, ServerApiKeyRecord[]>;
+
+const userCredentialStorePath = process.env.USER_CREDENTIAL_STORE_PATH ||
+  path.join(process.cwd(), ".data", "user-credentials.enc.json");
+const userApiKeyStorePath = process.env.USER_API_KEY_STORE_PATH ||
+  path.join(process.cwd(), ".data", "user-api-keys.enc.json");
+
+function getCredentialEncryptionKey(): Buffer {
+  const configuredKey = process.env.WORKFLOW_ENCRYPTION_KEY ||
+    process.env.API_KEY_PEPPER ||
+    process.env.SESSION_SECRET;
+  if (!configuredKey || isPlaceholderValue(configuredKey)) {
+    throw new Error("A server encryption secret is required to manage user credentials.");
+  }
+  return createHash("sha256").update(configuredKey).digest();
+}
+
+function loadUserCredentialVault(): UserCredentialVault {
+  if (!existsSync(userCredentialStorePath)) return {};
+
+  const encrypted = JSON.parse(readFileSync(userCredentialStorePath, "utf8")) as {
+    iv: string;
+    authTag: string;
+    data: string;
+  };
+  const decipher = createDecipheriv(
+    "aes-256-gcm",
+    getCredentialEncryptionKey(),
+    Buffer.from(encrypted.iv, "base64"),
+  );
+  decipher.setAuthTag(Buffer.from(encrypted.authTag, "base64"));
+  const plaintext = Buffer.concat([
+    decipher.update(Buffer.from(encrypted.data, "base64")),
+    decipher.final(),
+  ]).toString("utf8");
+  return JSON.parse(plaintext) as UserCredentialVault;
+}
+
+function saveUserCredentialVault(vault: UserCredentialVault): void {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", getCredentialEncryptionKey(), iv);
+  const encrypted = Buffer.concat([
+    cipher.update(JSON.stringify(vault), "utf8"),
+    cipher.final(),
+  ]);
+  mkdirSync(path.dirname(userCredentialStorePath), { recursive: true });
+  writeFileSync(userCredentialStorePath, JSON.stringify({
+    iv: iv.toString("base64"),
+    authTag: cipher.getAuthTag().toString("base64"),
+    data: encrypted.toString("base64"),
+  }), { mode: 0o600 });
+}
+
+function loadServerApiKeyVault(): ServerApiKeyVault {
+  if (!existsSync(userApiKeyStorePath)) return {};
+  const encrypted = JSON.parse(readFileSync(userApiKeyStorePath, "utf8")) as {
+    iv: string;
+    authTag: string;
+    data: string;
+  };
+  const decipher = createDecipheriv(
+    "aes-256-gcm",
+    getCredentialEncryptionKey(),
+    Buffer.from(encrypted.iv, "base64"),
+  );
+  decipher.setAuthTag(Buffer.from(encrypted.authTag, "base64"));
+  return JSON.parse(Buffer.concat([
+    decipher.update(Buffer.from(encrypted.data, "base64")),
+    decipher.final(),
+  ]).toString("utf8")) as ServerApiKeyVault;
+}
+
+function saveServerApiKeyVault(vault: ServerApiKeyVault): void {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", getCredentialEncryptionKey(), iv);
+  const encrypted = Buffer.concat([
+    cipher.update(JSON.stringify(vault), "utf8"),
+    cipher.final(),
+  ]);
+  mkdirSync(path.dirname(userApiKeyStorePath), { recursive: true });
+  writeFileSync(userApiKeyStorePath, JSON.stringify({
+    iv: iv.toString("base64"),
+    authTag: cipher.getAuthTag().toString("base64"),
+    data: encrypted.toString("base64"),
+  }), { mode: 0o600 });
+}
+
+function hashServerApiKey(token: string): string {
+  return createHmac("sha256", getCredentialEncryptionKey()).update(token).digest("hex");
+}
+
+async function getRequestUserId(req: express.Request): Promise<string | null> {
+  const authorization = String(req.header("authorization") || "");
+  const bearerToken = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
+  const firebaseApiKey = process.env.VITE_FIREBASE_API_KEY?.trim();
+
+  if (bearerToken && firebaseApiKey) {
+    try {
+      const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(firebaseApiKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: bearerToken }),
+      });
+      if (response.ok) {
+        const payload = await response.json() as { users?: Array<{ localId?: string }> };
+        const verifiedUserId = payload.users?.[0]?.localId;
+        if (verifiedUserId && /^[a-zA-Z0-9:_-]{1,120}$/.test(verifiedUserId)) return verifiedUserId;
+      }
+    } catch (error: any) {
+      console.warn("Firebase ID token validation failed:", error?.message || error);
+    }
+  }
+
+  // The app has a deliberate local/demo auth fallback. It is never accepted
+  // in production, where Firebase verification above is mandatory.
+  if (process.env.NODE_ENV !== "production") {
+    const userId = String(req.header("x-clientum-user-id") || "").trim();
+    return /^[a-zA-Z0-9:_-]{1,120}$/.test(userId) ? userId : null;
+  }
+  return null;
+}
+
+function getUserCredentialValues(userId: string, moduleId: string): Record<string, string> {
+  const vault = loadUserCredentialVault();
+  return vault[userId]?.[moduleId]?.values || {};
+}
+
+function getUserGeminiKey(userId: string | null, moduleId = "aiAssistant"): string | undefined {
+  if (userId) {
+    const moduleValues = getUserCredentialValues(userId, moduleId);
+    if (moduleValues.GEMINI_API_KEY) return moduleValues.GEMINI_API_KEY;
+    const sharedValues = getUserCredentialValues(userId, "aiAssistant");
+    if (sharedValues.GEMINI_API_KEY) return sharedValues.GEMINI_API_KEY;
+  }
+  return process.env.GEMINI_API_KEY || undefined;
+}
+
+app.get("/api/user-credentials", async (req, res) => {
+  const userId = await getRequestUserId(req);
+  const moduleId = String(req.query.moduleId || "").trim();
+  if (!userId || !moduleId) {
+    res.status(400).json({ error: "A valid user and module are required." });
+    return;
+  }
+
+  try {
+    const values = getUserCredentialValues(userId, moduleId);
+    res.json({
+      userId,
+      moduleId,
+      fields: Object.keys(values).map((fieldId) => ({
+        fieldId,
+        configured: true,
+        masked: "••••••••••••",
+      })),
+    });
+  } catch (error: any) {
+    console.error("User credential read error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo leer la configuración segura." });
+  }
+});
+
+app.put("/api/user-credentials", async (req, res) => {
+  const userId = await getRequestUserId(req);
+  const { moduleId, values } = req.body || {};
+  if (!userId || typeof moduleId !== "string" || !/^[a-zA-Z0-9_-]{1,80}$/.test(moduleId)) {
+    res.status(400).json({ error: "A valid user and module are required." });
+    return;
+  }
+  if (!values || typeof values !== "object" || Array.isArray(values)) {
+    res.status(400).json({ error: "Credential values must be an object." });
+    return;
+  }
+
+  try {
+    const vault = loadUserCredentialVault();
+    const nextValues = Object.fromEntries(
+      Object.entries(values as Record<string, unknown>)
+        .filter(([, value]) => typeof value === "string" && value.trim().length > 0)
+        .map(([fieldId, value]) => [fieldId.slice(0, 120), String(value).trim().slice(0, 10000)]),
+    );
+    vault[userId] = vault[userId] || {};
+    vault[userId][moduleId] = { updatedAt: new Date().toISOString(), values: nextValues };
+    saveUserCredentialVault(vault);
+    res.json({
+      success: true,
+      moduleId,
+      fields: Object.keys(nextValues).map((fieldId) => ({ fieldId, configured: true, masked: "••••••••••••" })),
+    });
+  } catch (error: any) {
+    console.error("User credential write error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo guardar la configuración segura." });
+  }
+});
+
+app.delete("/api/user-credentials", async (req, res) => {
+  const userId = await getRequestUserId(req);
+  const moduleId = String(req.query.moduleId || "").trim();
+  if (!userId || !moduleId) {
+    res.status(400).json({ error: "A valid user and module are required." });
+    return;
+  }
+
+  try {
+    const vault = loadUserCredentialVault();
+    if (vault[userId]) {
+      delete vault[userId][moduleId];
+      if (Object.keys(vault[userId]).length === 0) delete vault[userId];
+      saveUserCredentialVault(vault);
+    }
+    res.json({ success: true, moduleId });
+  } catch (error: any) {
+    console.error("User credential delete error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo eliminar la configuración segura." });
+  }
+});
+
+app.get("/api/user-api-keys", async (req, res) => {
+  const userId = await getRequestUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: "A verified user session is required." });
+    return;
+  }
+  try {
+    const keys = loadServerApiKeyVault()[userId] || [];
+    res.json({
+      keys: keys.map(({ tokenHash: _tokenHash, ...metadata }) => ({
+        ...metadata,
+        ownerUserId: userId,
+      })),
+    });
+  } catch (error: any) {
+    console.error("Server API key read error:", error?.message || error);
+    res.status(500).json({ error: "No se pudieron leer las API Keys seguras." });
+  }
+});
+
+app.post("/api/user-api-keys", async (req, res) => {
+  const userId = await getRequestUserId(req);
+  const name = typeof req.body?.name === "string" ? req.body.name.trim().slice(0, 120) : "";
+  const scopes = Array.isArray(req.body?.scopes)
+    ? req.body.scopes.filter((scope: unknown): scope is string => typeof scope === "string" && /^[a-zA-Z0-9:_-]{1,100}$/.test(scope)).slice(0, 40)
+    : [];
+  if (!userId) {
+    res.status(401).json({ error: "A verified user session is required." });
+    return;
+  }
+  if (!name || scopes.length === 0) {
+    res.status(400).json({ error: "A name and at least one scope are required." });
+    return;
+  }
+
+  try {
+    const token = `clm_live_${randomBytes(24).toString("hex")}`;
+    const record: ServerApiKeyRecord = {
+      id: `key_${randomBytes(12).toString("hex")}`,
+      name,
+      keyPrefix: token.slice(0, 13),
+      scopes,
+      createdAt: new Date().toISOString(),
+      status: "active",
+      tokenHash: hashServerApiKey(token),
+    };
+    const vault = loadServerApiKeyVault();
+    vault[userId] = [record, ...(vault[userId] || [])];
+    saveServerApiKeyVault(vault);
+    const { tokenHash: _tokenHash, ...metadata } = record;
+    res.status(201).json({ key: { ...metadata, ownerUserId: userId }, token });
+  } catch (error: any) {
+    console.error("Server API key write error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo generar la API Key segura." });
+  }
+});
+
+app.delete("/api/user-api-keys/:keyId", async (req, res) => {
+  const userId = await getRequestUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: "A verified user session is required." });
+    return;
+  }
+  try {
+    const vault = loadServerApiKeyVault();
+    const keys = vault[userId] || [];
+    const target = keys.find((key) => key.id === req.params.keyId);
+    if (!target) {
+      res.status(404).json({ error: "API Key not found." });
+      return;
+    }
+    target.status = "revoked";
+    saveServerApiKeyVault(vault);
+    res.json({ success: true, keyId: target.id });
+  } catch (error: any) {
+    console.error("Server API key revoke error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo revocar la API Key segura." });
+  }
+});
 
 type EmailAddressInput = string | string[] | undefined;
 
@@ -202,15 +515,19 @@ app.post("/api/email/send", async (req, res) => {
   }
 });
 
-// Lazy-initialization of Gemini client for security and robustness
-let aiClient: GoogleGenAI | null = null;
-function getGeminiClient(): GoogleGenAI {
-  if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is required in secrets");
-    }
-    aiClient = new GoogleGenAI({
+// Lazy-initialization of Gemini clients. A user-supplied key stays server-side
+// and gets its own client cache entry, separate from the platform key.
+const aiClients = new Map<string, GoogleGenAI>();
+function getGeminiClient(apiKey = process.env.GEMINI_API_KEY): GoogleGenAI {
+  if (!apiKey) {
+    throw new Error("A Gemini API key is required");
+  }
+  const cacheKey = createHash("sha256").update(apiKey).digest("hex");
+  const cachedClient = aiClients.get(cacheKey);
+  if (cachedClient) return cachedClient;
+
+  {
+    const client = new GoogleGenAI({
       apiKey,
       httpOptions: {
         headers: {
@@ -218,13 +535,14 @@ function getGeminiClient(): GoogleGenAI {
         }
       }
     });
+    aiClients.set(cacheKey, client);
+    return client;
   }
-  return aiClient;
 }
 
 // Helper to check if API key is present
-function isApiKeyPresent(): boolean {
-  return !!process.env.GEMINI_API_KEY;
+function isApiKeyPresent(apiKey = process.env.GEMINI_API_KEY): boolean {
+  return Boolean(apiKey);
 }
 
 // Helper function to call Gemini with retries and model fallbacks
@@ -232,10 +550,11 @@ async function callGeminiWithRetry(
   params: {
     contents: any;
     config?: any;
+    apiKey?: string;
   },
   modelsToTry: string[] = ["gemini-3.7-flash", "gemini-flash-latest"]
 ): Promise<any> {
-  const client = getGeminiClient();
+  const client = getGeminiClient(params.apiKey);
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -293,9 +612,11 @@ app.post("/api/ai/copilot", async (req, res) => {
       parts: [{ text: m.content }]
     }));
 
-    if (isApiKeyPresent()) {
+    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
+          apiKey: requestGeminiKey,
           contents: formattedContents,
           config: {
             systemInstruction,
@@ -355,9 +676,11 @@ app.post("/api/ai/cmo", async (req, res) => {
       return;
     }
 
-    if (isApiKeyPresent()) {
+    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
+          apiKey: requestGeminiKey,
           contents: `Provide a high-quality strategic marketing and retention strategy for: "${query}"`,
           config: {
             systemInstruction: "You are a professional Chief Marketing Officer (CMO). Provide actionable positioning, email marketing sequences, and content ideas. Use clear markdown headers.",
@@ -390,9 +713,11 @@ app.post("/api/ai/gtm", async (req, res) => {
       return;
     }
 
-    if (isApiKeyPresent()) {
+    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
+          apiKey: requestGeminiKey,
           contents: `Generate a detailed Go-To-Market (GTM) strategy for the product "${product}" targeting "${audience}".`,
           config: {
             systemInstruction: "You are a premium SaaS Go-To-Market strategist. Outline the key target segments, suggested channels, a unique value proposition, and specific pricing suggestions. Use elegant markdown.",
@@ -425,9 +750,11 @@ app.post("/api/ai/adcopy", async (req, res) => {
       return;
     }
 
-    if (isApiKeyPresent()) {
+    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
+          apiKey: requestGeminiKey,
           contents: `Write 3 high-converting ad copy variations for "${product}" on "${platform}".`,
           config: {
             systemInstruction: "You are a senior conversion copywriter. Write three distinct ad copy variations with hooks, core body benefits, and strong Calls to Action (CTA). Return them formatted as an elegant JSON list of strings.",
@@ -473,9 +800,11 @@ app.post("/api/ai/prospect", async (req, res) => {
       return;
     }
 
-    if (isApiKeyPresent()) {
+    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req), "googleMaps");
+    if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
+          apiKey: requestGeminiKey,
           contents: `Find 3 plausible and detailed lead businesses of type "${niche}" in or around the area "${city}".`,
           config: {
             systemInstruction: "You are a professional sales prospecting database engine. Generate realistic lead details including company name, phone, structured local address, realistic sales status ('Alta Intención' or 'Excelente Prospecto' or 'Calificación Media'), and realistic ratings.",
@@ -543,9 +872,11 @@ app.post("/api/ai/smart-goals", async (req, res) => {
   try {
     const { historyData, currentGoals } = req.body;
 
-    if (isApiKeyPresent()) {
+    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
+          apiKey: requestGeminiKey,
           contents: `Analyze this historical CRM daily sales performance data: ${JSON.stringify(historyData || [])}. Current targets: ${JSON.stringify(currentGoals || {})}. Recommend realistic, optimized daily targets for revenue closed, outreach calls, and meetings booked, along with brief strategic reasoning.`,
           config: {
             systemInstruction: "You are a professional sales operations AI advisor. Analyze performance metrics and return a JSON object with revenueTarget (number), outreachTarget (number), meetingsTarget (number), and reasoning (string).",
@@ -594,9 +925,11 @@ app.post("/api/expense/categorize", async (req, res) => {
       return;
     }
 
-    if (isApiKeyPresent()) {
+    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req), "erp");
+    if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
+          apiKey: requestGeminiKey,
           contents: `Classify this business expense into one category. Description: "${description}". Vendor: "${vendor || 'N/A'}". Choose strictly one of: 'Software', 'Marketing', 'Travel', 'Salaries', 'Office', 'Utilities', 'Other'.`,
           config: {
             systemInstruction: "You are an AI financial auditor for enterprise ERP expenses. Automatically categorize the user expense description into one of these exact allowed categories: Software, Marketing, Travel, Salaries, Office, Utilities, Other.",
@@ -670,10 +1003,12 @@ app.post("/api/ai/transcribe", async (req, res) => {
       return;
     }
 
-    if (isApiKeyPresent()) {
+    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry(
           {
+            apiKey: requestGeminiKey,
             contents: [
               {
                 parts: [

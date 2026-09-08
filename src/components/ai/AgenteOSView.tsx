@@ -26,6 +26,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
+import { getClientumAuthJsonHeaders } from '../../lib/api';
 
 export interface SpecializedAgent {
   id: string;
@@ -283,7 +284,7 @@ export const AgenteOSView: React.FC = () => {
     try {
       const res = await fetch('/api/ai/copilot', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+         headers: await getClientumAuthJsonHeaders(),
         body: JSON.stringify({
           prompt: `${selectedAgent.systemPrompt}\n\nInstrucción de tarea: ${taskText}`,
           context: `Agente: ${selectedAgent.name}, Rol: ${selectedAgent.role}, Departamento: ${selectedAgent.department}`
