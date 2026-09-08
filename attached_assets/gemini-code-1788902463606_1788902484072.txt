@@ -1,0 +1,79 @@
+# ============================================================
+# CLIENTUMCRM - PLANTILLA FINAL 100% CLOUD GRATIS ($0/MES)
+# ============================================================
+
+# ------------------------------------------------------------
+# 1. CORE SERVER CONFIGURATION (Backend - Render / Koyeb)
+# ------------------------------------------------------------
+NODE_ENV=production
+APP_URL=https://tu-backend.onrender.com
+SESSION_SECRET=genera_un_hash_aleatorio_32_caracteres_aqui
+
+# ------------------------------------------------------------
+# 2. MOTOR DE IA (Google AI Studio - Free Tier 15 RPM / 1M TPM)
+# ------------------------------------------------------------
+# Obtenida sin tarjeta de crédito desde: https://aistudio.google.com/
+GEMINI_API_KEY=tu_clave_api_de_google_ai_studio
+
+# ------------------------------------------------------------
+# 3. BASE DE DATOS Y AUTENTICACIÓN (Supabase Free Tier)
+# ------------------------------------------------------------
+# Base de datos PostgreSQL (500 MB gratis): Dashboard -> Project Settings -> Database
+DATABASE_URL=postgresql://postgres.xxxx:tu_password@aws-0-sa-east-1.pooler.supabase.com:6543/postgres
+
+# Configuración Pública Firebase / Supabase Client (Vite Frontend)
+VITE_FIREBASE_API_KEY=tu_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=tu-proyecto.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=tu-proyecto
+VITE_FIREBASE_STORAGE_BUCKET=tu-proyecto.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=1234567890
+VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456
+
+# ------------------------------------------------------------
+# 4. ALMACENAMIENTO DE ARCHIVOS (Cloudflare R2 - 10 GB Gratis)
+# ------------------------------------------------------------
+CLOUDFLARE_ACCOUNT_ID=tu_account_id_cloudflare
+R2_ACCESS_KEY_ID=tu_r2_access_key
+R2_SECRET_ACCESS_KEY=tu_r2_secret_key
+R2_BUCKET_NAME=clientum-crm-storage
+
+# ------------------------------------------------------------
+# 5. EMAILING Y CAMPAÑAS (Brevo SMTP - 300 Envíos/día Gratis)
+# ------------------------------------------------------------
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_USER=tu_email_registrado_en_brevo@dominio.com
+SMTP_PASSWORD=tu_clave_smtp_de_brevo
+MAIL_FROM_ADDRESS=tu_email_registrado_en_brevo@dominio.com
+MAIL_FROM_NAME="ClientumCRM"
+
+# ------------------------------------------------------------
+# 6. WHATSAPP CRM (Meta Cloud API - 1.000 Conversaciones/mes Gratis)
+# ------------------------------------------------------------
+WHATSAPP_ACCESS_TOKEN=tu_access_token_de_meta
+WHATSAPP_PHONE_NUMBER_ID=tu_phone_number_id
+WHATSAPP_BUSINESS_ACCOUNT_ID=tu_business_account_id
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=un_token_inventado_para_verificar_webhook
+
+# ------------------------------------------------------------
+# 7. FACTURACIÓN AFIP (Web Services Oficiales - Sin Intermediarios)
+# ------------------------------------------------------------
+AFIP_CUIT=20123456789
+AFIP_ENVIRONMENT=homologacion
+AFIP_CERTIFICATE_P12_BASE64=cert_en_base64_obtenido_en_afip
+AFIP_PRIVATE_KEY=clave_privada_pem_de_afip
+
+# ------------------------------------------------------------
+# 8. PASARELA DE COBROS (Mercado Pago API Directa - $0 Mantenimiento)
+# ------------------------------------------------------------
+MERCADOPAGO_ACCESS_TOKEN=TEST-1234567890123456-xxxxxx-xxxxxx
+MERCADOPAGO_WEBHOOK_SECRET=secreto_para_validar_notificaciones
+VITE_MERCADOPAGO_PUBLIC_KEY=TEST-1234567890-public-key
+MERCADOPAGO_ENVIRONMENT=sandbox
+
+# ------------------------------------------------------------
+# 9. PROTECCIÓN Y SEGURIDAD INTERNA (Plataforma Backend)
+# ------------------------------------------------------------
+WORKFLOW_ENCRYPTION_KEY=clave_32_caracteres_para_cifrar_workflows
+WEBHOOK_SIGNING_SECRET=clave_para_firmar_webhooks_propios
+API_KEY_PEPPER=clave_pepper_para_hashear_api_keys_de_usuarios
