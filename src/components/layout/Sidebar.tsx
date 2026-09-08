@@ -14,8 +14,6 @@ import {
   Plus,
   Compass,
   ChevronDown,
-  ChevronRight,
-  Layers,
   Database,
   MessageSquare,
   Receipt,
@@ -48,6 +46,7 @@ type SidebarNavItem = {
   icon: React.ElementType;
   badge?: string | number;
   badgeColor?: string;
+  configurable?: boolean;
 };
 
 const SidebarNavRow: React.FC<{
@@ -80,15 +79,17 @@ const SidebarNavRow: React.FC<{
           </span>
         )}
       </button>
-      <button
-        type="button"
-        onClick={(event) => onConfig(event, item.id)}
-        className="shrink-0 rounded-md p-1.5 text-slate-500 opacity-0 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 focus:opacity-100 group-hover:opacity-100"
-        title={`Configurar credenciales de ${item.label}`}
-        aria-label={`Configurar credenciales de ${item.label}`}
-      >
-        <KeyRound className="h-3.5 w-3.5" />
-      </button>
+      {item.configurable !== false && (
+        <button
+          type="button"
+          onClick={(event) => onConfig(event, item.id)}
+          className="shrink-0 rounded-md p-1.5 text-slate-500 opacity-0 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 focus:opacity-100 group-hover:opacity-100"
+          title={`Configurar credenciales de ${item.label}`}
+          aria-label={`Configurar credenciales de ${item.label}`}
+        >
+          <KeyRound className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
   );
 };
@@ -114,7 +115,6 @@ export const Sidebar: React.FC = () => {
     openComposeEmailModal,
   } = useCRM();
 
-  const [isMoreModulesOpen, setIsMoreModulesOpen] = useState(false);
   const [configModuleId, setConfigModuleId] = useState<ActiveTab | null>(null);
 
   const unreadWebmailCount = webmailEmails ? webmailEmails.filter((e) => e.folder === 'inbox' && !e.isRead).length : 0;
@@ -129,44 +129,71 @@ export const Sidebar: React.FC = () => {
     setConfigModuleId(moduleId);
   };
 
-  // Primary CRM navigation
-  const primaryNav: Array<{ id: ActiveTab; label: string; icon: React.ElementType; badge?: string | number; badgeColor?: string }> = [
-    { id: 'dashboard', label: 'Resumen Ejecutivo', icon: Home },
-    { id: 'featureHub', label: 'Centro de funciones', icon: ScanSearch, badge: '6', badgeColor: 'bg-violet-100 text-violet-800 font-semibold' },
-    { id: 'opportunities', label: 'Pipeline Negocios', icon: Briefcase, badge: 'Kanban', badgeColor: 'bg-blue-100 text-blue-800' },
-    { id: 'webmail', label: 'Webmail SMTP + Routing', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'SMTP', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-semibold' },
-    { id: 'companies', label: 'Empresas', icon: Building2 },
-    { id: 'people', label: 'Contactos', icon: Users2 },
-    { id: 'tasks', label: 'Tareas & Actividades', icon: CheckSquare, badge: 7, badgeColor: 'bg-amber-100 text-amber-800' },
-    { id: 'analytics', label: 'Reportes & BI', icon: BarChart3 },
-    { id: 'whatsapp', label: 'WhatsApp CRM', icon: MessageSquare, badge: 'Live', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' },
-    { id: 'erp', label: 'Facturación AFIP (CAE)', icon: Receipt, badge: 'RG 4291', badgeColor: 'bg-blue-100 text-blue-800 font-bold' },
-  ];
+  type SidebarSection = {
+    label: string;
+    items: SidebarNavItem[];
+  };
 
-  const salesNav: Array<{ id: ActiveTab; label: string; icon: React.ElementType; badge?: string | number; badgeColor?: string }> = [
-    { id: 'propuestas', label: 'Propuestas & Presupuestos', icon: FileCheck, badge: 'PDF', badgeColor: 'bg-emerald-100 text-emerald-800' },
-    { id: 'googleMaps', label: 'Prospección Maps B2B', icon: MapPin, badge: 'Maps', badgeColor: 'bg-blue-100 text-blue-800' },
-    { id: 'meddic', label: 'Lead Scoring MEDDIC', icon: Target },
-    { id: 'chatbot', label: 'Chatbot WhatsApp 24/7', icon: Bot },
-    { id: 'campaigns', label: 'Campañas Masivas', icon: Send },
-  ];
-
-  const aiNav: Array<{ id: ActiveTab; label: string; icon: React.ElementType; badge?: string | number; badgeColor?: string }> = [
-    { id: 'agenteOS', label: 'Agent OS (14 Agentes)', icon: Cpu, badge: 'v3', badgeColor: 'bg-blue-100 text-blue-800 font-bold' },
-    { id: 'aiAssistant', label: 'Asistente Gemini 3.6', icon: Sparkles },
-    { id: 'gtmStrategy', label: 'Estrategias GTM', icon: Compass },
-    { id: 'sdrOutreach', label: 'Agente SDR Outreach', icon: Bot },
-  ];
-
-  const operationsNav: Array<{ id: ActiveTab; label: string; icon: React.ElementType; badge?: string | number; badgeColor?: string }> = [
-    { id: 'payments', label: 'Cobros MercadoPago', icon: CreditCard },
-    { id: 'tiendaDigital', label: 'Tienda Digital WhatsApp', icon: Store, badge: 'Catálogo', badgeColor: 'bg-emerald-100 text-emerald-800' },
-    { id: 'campusLMS', label: 'Campus Academia LMS', icon: GraduationCap, badge: 'Cursos', badgeColor: 'bg-purple-100 text-purple-800' },
-    { id: 'workflows', label: 'Workflows & Flujos', icon: Workflow },
-    { id: 'customObjects', label: 'Custom Objects Studio', icon: Database },
-    { id: 'csvStudio', label: 'CSV Import & Export', icon: FileSpreadsheet },
-    { id: 'domainManager', label: 'Gestor de Dominios', icon: Globe },
-    { id: 'settings', label: 'Configuración General', icon: Settings },
+  const navigationSections: SidebarSection[] = [
+    {
+      label: 'Panel de control & análisis',
+      items: [
+        { id: 'dashboard', label: 'Resumen Ejecutivo', icon: Home },
+        { id: 'featureHub', label: 'Centro de Funciones', icon: ScanSearch, badge: 'Activo', badgeColor: 'bg-violet-100 text-violet-800 font-semibold' },
+        { id: 'analytics', label: 'Reportes & BI', icon: BarChart3 },
+      ],
+    },
+    {
+      label: 'CRM & gestión de ventas',
+      items: [
+        { id: 'opportunities', label: 'Negocios', icon: Briefcase, badge: 'Kanban', badgeColor: 'bg-blue-100 text-blue-800' },
+        { id: 'companies', label: 'Empresas', icon: Building2 },
+        { id: 'people', label: 'Contactos', icon: Users2 },
+        { id: 'tasks', label: 'Tareas & Actividades', icon: CheckSquare, badge: tasks.filter((task) => task.status !== 'Completed').length, badgeColor: 'bg-amber-100 text-amber-800' },
+        { id: 'calendar', label: 'Calendario', icon: Calendar, configurable: false },
+        { id: 'propuestas', label: 'Propuestas & Presupuestos', icon: FileCheck, badge: 'PDF', badgeColor: 'bg-emerald-100 text-emerald-800' },
+        { id: 'googleMaps', label: 'Prospección Mapa B2B', icon: MapPin, badge: 'Maps', badgeColor: 'bg-blue-100 text-blue-800' },
+        { id: 'meddic', label: 'Lead Scoring MEDDIC', icon: Target },
+      ],
+    },
+    {
+      label: 'Comunicación & marketing',
+      items: [
+        { id: 'whatsapp', label: 'WhatsApp CRM', icon: MessageSquare, badge: 'LIVE', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' },
+        { id: 'webmail', label: 'Webmail Cloudflare', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'GTM', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-semibold' },
+        { id: 'messages', label: 'Mensajes', icon: MessageSquare, badge: 12, badgeColor: 'bg-blue-100 text-blue-800' , configurable: false },
+        { id: 'chatbot', label: 'Chatbot WhatsApp 24/7', icon: Bot },
+        { id: 'campaigns', label: 'Campañas Masivas', icon: Send },
+      ],
+    },
+    {
+      label: 'Ecosistema IA & automatización',
+      items: [
+        { id: 'aiAssistant', label: 'Asistente Gemini 1.5', icon: Sparkles },
+        { id: 'agenteOS', label: 'Agent OS (14 Agentes)', icon: Cpu, badge: 'v2', badgeColor: 'bg-blue-100 text-blue-800 font-bold' },
+        { id: 'sdrOutreach', label: 'Agente SDR Outreach', icon: Bot },
+        { id: 'gtmStrategy', label: 'Estrategias GTM', icon: Compass },
+        { id: 'workflows', label: 'Automatizaciones', icon: Workflow },
+      ],
+    },
+    {
+      label: 'Operaciones, pagos & e-commerce',
+      items: [
+        { id: 'erp', label: 'Facturación AFIP (CAE)', icon: Receipt, badge: 'WS AFIP', badgeColor: 'bg-blue-100 text-blue-800 font-bold' },
+        { id: 'payments', label: 'Cobros MercadoPago', icon: CreditCard },
+        { id: 'tiendaDigital', label: 'Tienda Digital WhatsApp', icon: Store, badge: 'Catálogo', badgeColor: 'bg-emerald-100 text-emerald-800' },
+        { id: 'campusLMS', label: 'Campus Academia LMS', icon: GraduationCap, badge: 'LMS UI', badgeColor: 'bg-purple-100 text-purple-800' },
+      ],
+    },
+    {
+      label: 'Sistema, datos & configuración',
+      items: [
+        { id: 'customObjects', label: 'Custom Objects Studio', icon: Database },
+        { id: 'csvStudio', label: 'CSV Import & Export', icon: FileSpreadsheet },
+        { id: 'domainManager', label: 'Gestor de Dominios', icon: Globe },
+        { id: 'settings', label: 'Configuración General', icon: Settings },
+      ],
+    },
   ];
 
   return (
@@ -266,75 +293,18 @@ export const Sidebar: React.FC = () => {
         {/* Navigation list */}
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 custom-scrollbar bg-[var(--sidebar-bg)]">
           
-          {/* Primary Dashboard Navigation */}
-          <div>
-            <div className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Gestión Comercial
-            </div>
-            <nav className="space-y-0.5">
-              {primaryNav.map((item) => (
-                <SidebarNavRow key={`${item.id}-${item.label}`} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
-              ))}
-            </nav>
-          </div>
-
-          {/* Collapsible Enterprise Modules */}
-          <div className="pt-2 border-t border-[var(--sidebar-border)]">
-            <button
-              onClick={() => setIsMoreModulesOpen((prev) => !prev)}
-              className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 rounded-lg transition-colors cursor-pointer"
-            >
-              <span className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-blue-400" />
-                <span>Módulos Avanzados (16+)</span>
-              </span>
-              <ChevronRight
-                className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
-                  isMoreModulesOpen ? 'rotate-90' : ''
-                }`}
-              />
-            </button>
-
-            {isMoreModulesOpen && (
-              <div className="mt-2 space-y-4 pl-1">
-                {/* Ventas Especializadas */}
-                <div>
-                  <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Ventas & Cierre
-                  </div>
-                  <nav className="space-y-0.5">
-                    {salesNav.map((item) => (
-                      <SidebarNavRow key={item.id} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
-                    ))}
-                  </nav>
-                </div>
-
-                {/* Inteligencia Artificial */}
-                <div>
-                  <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Inteligencia Artificial
-                  </div>
-                  <nav className="space-y-0.5">
-                    {aiNav.map((item) => (
-                      <SidebarNavRow key={item.id} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
-                    ))}
-                  </nav>
-                </div>
-
-                {/* Operaciones & Sistema */}
-                <div>
-                  <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Operaciones & Sistema
-                  </div>
-                  <nav className="space-y-0.5">
-                    {operationsNav.map((item) => (
-                      <SidebarNavRow key={item.id} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
-                    ))}
-                  </nav>
-                </div>
+          {navigationSections.map((section) => (
+            <div key={section.label} className="border-t border-[var(--sidebar-border)] pt-3 first:border-t-0 first:pt-0">
+              <div className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {section.label}
               </div>
-            )}
-          </div>
+              <nav className="space-y-0.5">
+                {section.items.map((item) => (
+                  <SidebarNavRow key={item.id} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
+                ))}
+              </nav>
+            </div>
+          ))}
 
           {/* AI Sales Copilot Action Card */}
           <div className="px-1">

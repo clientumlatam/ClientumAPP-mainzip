@@ -8,6 +8,7 @@ import { ExecutiveDashboardView } from '../dashboard/ExecutiveDashboardView';
 import { CompaniesView } from '../companies/CompaniesView';
 import { PeopleView } from '../people/PeopleView';
 import { TasksView } from '../tasks/TasksView';
+import { CalendarView } from '../calendar/CalendarView';
 import { AnalyticsView } from '../analytics/AnalyticsView';
 import { SettingsView } from '../settings/SettingsView';
 import { PowerSuiteView } from '../power/PowerSuiteView';
@@ -44,6 +45,7 @@ import { AICopilotModal } from '../ai/AICopilotModal';
 import { AuthModal } from '../auth/AuthModal';
 import { UserProfileModal } from '../auth/UserProfileModal';
 import { WebmailInboxView } from '../webmail/WebmailInboxView';
+import { MessagesView } from '../messages/MessagesView';
 import { ComposeEmailModal } from '../webmail/ComposeEmailModal';
 import { FeatureHubView } from '../features/FeatureHubView';
 import { ToastContainer } from '../common/ToastContainer';
@@ -74,9 +76,11 @@ const MainContent: React.FC = () => {
         {activeTab === 'companies' && <CompaniesView />}
         {activeTab === 'people' && <PeopleView />}
         {activeTab === 'tasks' && <TasksView />}
+        {activeTab === 'calendar' && <CalendarView />}
         {activeTab === 'analytics' && <AnalyticsView />}
         {activeTab === 'powerSuite' && <PowerSuiteView />}
         {activeTab === 'whatsapp' && <WhatsAppView />}
+        {activeTab === 'messages' && <MessagesView />}
         {activeTab === 'erp' && <ErpView />}
         {activeTab === 'restaurant' && <RestaurantView />}
         {activeTab === 'ecommerce' && <EcommerceView />}

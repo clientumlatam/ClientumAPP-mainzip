@@ -59,10 +59,14 @@ export const Navbar: React.FC = () => {
         return { name: t('people') || 'Contactos', count: people.length, desc: t('allPeople') || 'Directorio de personas' };
       case 'tasks':
         return { name: t('tasks') || 'Tareas', count: tasks.length, desc: t('allTasks') || 'Actividades comerciales' };
+      case 'calendar':
+        return { name: 'Calendario', count: tasks.filter((task) => task.status !== 'Completed').length, desc: 'Agenda comercial y próximos seguimientos' };
       case 'analytics':
         return { name: t('analytics') || 'Analíticas & BI', count: undefined, desc: 'Rendimiento y conversión' };
       case 'whatsapp':
         return { name: 'WhatsApp Omnicanal', count: 12, desc: 'Bandeja centralizada y chats en tiempo real' };
+      case 'messages':
+        return { name: 'Mensajes', count: 12, desc: 'Centro unificado de conversaciones' };
       case 'erp':
         return { name: 'ERP & Facturación AFIP', count: undefined, desc: 'Comprobantes fiscales A, B y C con CAE automático' };
       case 'settings':
