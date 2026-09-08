@@ -55,16 +55,11 @@ const MODULE_GROUPS: ModuleGroup[] = [
 
 const ALL_MODULE_IDS = MODULE_GROUPS.flatMap((group) => group.items.map((item) => item.id));
 
-const keyOwnerId = (key: APIKey, fallbackUserId: string) => key.ownerUserId || fallbackUserId;
-
 export const UserApiKeysTab: React.FC = () => {
   const {
     users,
     currentUser,
     hasPermission,
-    apiKeys,
-    createAPIKey,
-    revokeAPIKey,
     showToast,
   } = useCRM();
   const [selectedUserId, setSelectedUserId] = useState(currentUser.id);
@@ -80,21 +75,24 @@ export const UserApiKeysTab: React.FC = () => {
   });
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
   const [revealedToken, setRevealedToken] = useState<{ keyName: string; token: string } | null>(null);
-  const [secureKeys, setSecureKeys] = useState<APIKey[]>([]);
+  const [secureKeysByUser, setSecureKeysByUser] = useState<Record<string, APIKey[]>>({});
   const canManageUserKeys = hasPermission('integrations', 'manage');
   const visibleUsers = canManageUserKeys ? users : [currentUser];
 
   const selectedUser = visibleUsers.find((user) => user.id === selectedUserId) || currentUser;
   useEffect(() => {
+    const ownerUserId = selectedUser.id;
     let isMounted = true;
     void (async () => {
       try {
-        const response = await fetch('/api/user-api-keys', {
+        const response = await fetch(`/api/user-api-keys?ownerUserId=${encodeURIComponent(ownerUserId)}`, {
           headers: await getClientumAuthHeaders(currentUser),
         });
         if (!response.ok) throw new Error('secure API key read failed');
         const payload = await response.json() as { keys?: APIKey[] };
-        if (isMounted) setSecureKeys(payload.keys || []);
+        if (isMounted) {
+          setSecureKeysByUser((previous) => ({ ...previous, [ownerUserId]: payload.keys || [] }));
+        }
       } catch {
         if (isMounted) showToast('No se pudieron cargar las API Keys REST seguras', 'warning');
       }
@@ -102,14 +100,11 @@ export const UserApiKeysTab: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [currentUser, showToast]);
+  }, [currentUser, selectedUser.id, showToast]);
 
-  const getKeysForUser = (userId: string) => userId === currentUser.id
-    ? secureKeys
-    : apiKeys.filter((key) => keyOwnerId(key, currentUser.id) === userId);
   const userKeys = useMemo(
-    () => getKeysForUser(selectedUser.id),
-    [apiKeys, currentUser.id, secureKeys, selectedUser.id],
+    () => secureKeysByUser[selectedUser.id] || [],
+    [secureKeysByUser, selectedUser.id],
   );
   const activeKeyCount = userKeys.filter((key) => key.status === 'active').length;
 
@@ -129,24 +124,26 @@ export const UserApiKeysTab: React.FC = () => {
     }
 
     const scopes = selectedModules.map((moduleId) => `module:${moduleId}`);
-    if (selectedUser.id === currentUser.id) {
-      try {
-        const response = await fetch('/api/user-api-keys', {
-          method: 'POST',
-          headers: await getClientumAuthJsonHeaders(currentUser),
-          body: JSON.stringify({ name: keyName.trim(), scopes }),
-        });
-        if (!response.ok) throw new Error('secure API key create failed');
-        const payload = await response.json() as { key: APIKey; token: string };
-        setSecureKeys((previous) => [payload.key, ...previous]);
-        setRevealedToken({ keyName: payload.key.name, token: payload.token });
-      } catch {
-        showToast('No se pudo generar la API Key REST segura', 'error');
-        return;
-      }
-    } else {
-      const createdKey = createAPIKey(keyName.trim(), scopes, selectedUser.id);
-      if (createdKey.token) setRevealedToken({ keyName: createdKey.name, token: createdKey.token });
+    try {
+      const response = await fetch('/api/user-api-keys', {
+        method: 'POST',
+        headers: await getClientumAuthJsonHeaders(currentUser),
+        body: JSON.stringify({
+          name: keyName.trim(),
+          scopes,
+          ownerUserId: selectedUser.id,
+        }),
+      });
+      if (!response.ok) throw new Error('secure API key create failed');
+      const payload = await response.json() as { key: APIKey; token: string };
+      setSecureKeysByUser((previous) => ({
+        ...previous,
+        [selectedUser.id]: [payload.key, ...(previous[selectedUser.id] || [])],
+      }));
+      setRevealedToken({ keyName: payload.key.name, token: payload.token });
+    } catch {
+      showToast('No se pudo generar la API Key REST segura', 'error');
+      return;
     }
     setKeyName('');
     setSelectedModules(['propuestas', 'googleMaps']);
@@ -154,21 +151,22 @@ export const UserApiKeysTab: React.FC = () => {
   };
 
   const handleRevoke = async (key: APIKey) => {
-    if (key.ownerUserId === currentUser.id) {
-      try {
-        const response = await fetch(`/api/user-api-keys/${encodeURIComponent(key.id)}`, {
-          method: 'DELETE',
-          headers: await getClientumAuthHeaders(currentUser),
-        });
-        if (!response.ok) throw new Error('secure API key revoke failed');
-        setSecureKeys((previous) => previous.map((item) => item.id === key.id ? { ...item, status: 'revoked' } : item));
-        showToast(`API Key "${key.name}" revocada`, 'warning');
-      } catch {
-        showToast('No se pudo revocar la API Key REST segura', 'error');
-      }
-      return;
+    try {
+      const response = await fetch(`/api/user-api-keys/${encodeURIComponent(key.id)}`, {
+        method: 'DELETE',
+        headers: await getClientumAuthHeaders(currentUser),
+      });
+      if (!response.ok) throw new Error('secure API key revoke failed');
+      setSecureKeysByUser((previous) => ({
+        ...previous,
+        [selectedUser.id]: (previous[selectedUser.id] || []).map((item) =>
+          item.id === key.id ? { ...item, status: 'revoked' } : item,
+        ),
+      }));
+      showToast(`API Key "${key.name}" revocada`, 'warning');
+    } catch {
+      showToast('No se pudo revocar la API Key REST segura', 'error');
     }
-    revokeAPIKey(key.id);
   };
 
   const handleCopy = async (key: APIKey) => {
@@ -216,7 +214,7 @@ export const UserApiKeysTab: React.FC = () => {
 
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
            {visibleUsers.map((user) => {
-             const count = getKeysForUser(user.id).filter((key) => key.status === 'active').length;
+              const count = (secureKeysByUser[user.id] || []).filter((key) => key.status === 'active').length;
             return (
               <button
                 type="button"

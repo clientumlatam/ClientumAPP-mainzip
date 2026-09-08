@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
+import { Pool } from "pg";
 import dotenv from "dotenv";
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -37,10 +38,21 @@ type ServerApiKeyRecord = {
 };
 type ServerApiKeyVault = Record<string, ServerApiKeyRecord[]>;
 
+const databaseUrl = process.env.DATABASE_URL?.trim();
+const hasPostgresEnvironment = Boolean(
+  process.env.PGHOST && process.env.PGUSER && process.env.PGDATABASE,
+);
+const credentialDatabase = databaseUrl
+  ? new Pool({ connectionString: databaseUrl, max: 5 })
+  : hasPostgresEnvironment
+    ? new Pool({ max: 5 })
+    : null;
 const userCredentialStorePath = process.env.USER_CREDENTIAL_STORE_PATH ||
   path.join(process.cwd(), ".data", "user-credentials.enc.json");
 const userApiKeyStorePath = process.env.USER_API_KEY_STORE_PATH ||
   path.join(process.cwd(), ".data", "user-api-keys.enc.json");
+
+console.log(`Credential persistence: ${credentialDatabase ? "PostgreSQL" : "development file fallback"}`);
 
 function getCredentialEncryptionKey(): Buffer {
   const configuredKey = process.env.WORKFLOW_ENCRYPTION_KEY ||
@@ -52,49 +64,27 @@ function getCredentialEncryptionKey(): Buffer {
   return createHash("sha256").update(configuredKey).digest();
 }
 
-function loadUserCredentialVault(): UserCredentialVault {
-  if (!existsSync(userCredentialStorePath)) return {};
+type EncryptedPayload = {
+  iv: string;
+  authTag: string;
+  data: string;
+};
 
-  const encrypted = JSON.parse(readFileSync(userCredentialStorePath, "utf8")) as {
-    iv: string;
-    authTag: string;
-    data: string;
-  };
-  const decipher = createDecipheriv(
-    "aes-256-gcm",
-    getCredentialEncryptionKey(),
-    Buffer.from(encrypted.iv, "base64"),
-  );
-  decipher.setAuthTag(Buffer.from(encrypted.authTag, "base64"));
-  const plaintext = Buffer.concat([
-    decipher.update(Buffer.from(encrypted.data, "base64")),
-    decipher.final(),
-  ]).toString("utf8");
-  return JSON.parse(plaintext) as UserCredentialVault;
-}
-
-function saveUserCredentialVault(vault: UserCredentialVault): void {
+function encryptJson(value: unknown): EncryptedPayload {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", getCredentialEncryptionKey(), iv);
   const encrypted = Buffer.concat([
-    cipher.update(JSON.stringify(vault), "utf8"),
+    cipher.update(JSON.stringify(value), "utf8"),
     cipher.final(),
   ]);
-  mkdirSync(path.dirname(userCredentialStorePath), { recursive: true });
-  writeFileSync(userCredentialStorePath, JSON.stringify({
+  return {
     iv: iv.toString("base64"),
     authTag: cipher.getAuthTag().toString("base64"),
     data: encrypted.toString("base64"),
-  }), { mode: 0o600 });
+  };
 }
 
-function loadServerApiKeyVault(): ServerApiKeyVault {
-  if (!existsSync(userApiKeyStorePath)) return {};
-  const encrypted = JSON.parse(readFileSync(userApiKeyStorePath, "utf8")) as {
-    iv: string;
-    authTag: string;
-    data: string;
-  };
+function decryptJson<T>(encrypted: EncryptedPayload): T {
   const decipher = createDecipheriv(
     "aes-256-gcm",
     getCredentialEncryptionKey(),
@@ -104,22 +94,32 @@ function loadServerApiKeyVault(): ServerApiKeyVault {
   return JSON.parse(Buffer.concat([
     decipher.update(Buffer.from(encrypted.data, "base64")),
     decipher.final(),
-  ]).toString("utf8")) as ServerApiKeyVault;
+  ]).toString("utf8")) as T;
+}
+
+function loadUserCredentialVault(): UserCredentialVault {
+  if (!existsSync(userCredentialStorePath)) return {};
+
+  return decryptJson<UserCredentialVault>(
+    JSON.parse(readFileSync(userCredentialStorePath, "utf8")) as EncryptedPayload,
+  );
+}
+
+function saveUserCredentialVault(vault: UserCredentialVault): void {
+  mkdirSync(path.dirname(userCredentialStorePath), { recursive: true });
+  writeFileSync(userCredentialStorePath, JSON.stringify(encryptJson(vault)), { mode: 0o600 });
+}
+
+function loadServerApiKeyVault(): ServerApiKeyVault {
+  if (!existsSync(userApiKeyStorePath)) return {};
+  return decryptJson<ServerApiKeyVault>(
+    JSON.parse(readFileSync(userApiKeyStorePath, "utf8")) as EncryptedPayload,
+  );
 }
 
 function saveServerApiKeyVault(vault: ServerApiKeyVault): void {
-  const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", getCredentialEncryptionKey(), iv);
-  const encrypted = Buffer.concat([
-    cipher.update(JSON.stringify(vault), "utf8"),
-    cipher.final(),
-  ]);
   mkdirSync(path.dirname(userApiKeyStorePath), { recursive: true });
-  writeFileSync(userApiKeyStorePath, JSON.stringify({
-    iv: iv.toString("base64"),
-    authTag: cipher.getAuthTag().toString("base64"),
-    data: encrypted.toString("base64"),
-  }), { mode: 0o600 });
+  writeFileSync(userApiKeyStorePath, JSON.stringify(encryptJson(vault)), { mode: 0o600 });
 }
 
 function hashServerApiKey(token: string): string {
@@ -157,16 +157,68 @@ async function getRequestUserId(req: express.Request): Promise<string | null> {
   return null;
 }
 
-function getUserCredentialValues(userId: string, moduleId: string): Record<string, string> {
+const ADMIN_ROLE_NAMES = new Set([
+  "admin",
+  "administrator",
+  "administrador",
+  "super admin",
+  "super administrador",
+  "super_admin",
+  "super-administrador",
+]);
+
+function isValidUserId(value: unknown): value is string {
+  return typeof value === "string" && /^[a-zA-Z0-9:_-]{1,120}$/.test(value.trim());
+}
+
+function isApiKeyAdministrator(req: express.Request, userId: string): boolean {
+  const configuredAdminIds = String(process.env.CLIENTUM_API_KEY_ADMIN_IDS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (configuredAdminIds.includes(userId)) return true;
+  if (process.env.NODE_ENV === "production") return false;
+
+  const demoRole = String(req.header("x-clientum-user-role") || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  return ADMIN_ROLE_NAMES.has(demoRole);
+}
+
+function getRequestedOwnerUserId(value: unknown, fallbackUserId: string): string | null {
+  if (value === undefined || value === null || value === "") return fallbackUserId;
+  if (!isValidUserId(value)) return null;
+  return value.trim();
+}
+
+async function getUserCredentialValues(userId: string, moduleId: string): Promise<Record<string, string>> {
+  if (credentialDatabase) {
+    const result = await credentialDatabase.query<{
+      iv: string;
+      auth_tag: string;
+      encrypted_data: string;
+    }>(
+      "SELECT iv, auth_tag, encrypted_data FROM clientum_user_credentials WHERE user_id = $1 AND module_id = $2",
+      [userId, moduleId],
+    );
+    if (!result.rows[0]) return {};
+    return decryptJson<Record<string, string>>({
+      iv: result.rows[0].iv,
+      authTag: result.rows[0].auth_tag,
+      data: result.rows[0].encrypted_data,
+    });
+  }
+
   const vault = loadUserCredentialVault();
   return vault[userId]?.[moduleId]?.values || {};
 }
 
-function getUserGeminiKey(userId: string | null, moduleId = "aiAssistant"): string | undefined {
+async function getUserGeminiKey(userId: string | null, moduleId = "aiAssistant"): Promise<string | undefined> {
   if (userId) {
-    const moduleValues = getUserCredentialValues(userId, moduleId);
+    const moduleValues = await getUserCredentialValues(userId, moduleId);
     if (moduleValues.GEMINI_API_KEY) return moduleValues.GEMINI_API_KEY;
-    const sharedValues = getUserCredentialValues(userId, "aiAssistant");
+    const sharedValues = await getUserCredentialValues(userId, "aiAssistant");
     if (sharedValues.GEMINI_API_KEY) return sharedValues.GEMINI_API_KEY;
   }
   return process.env.GEMINI_API_KEY || undefined;
@@ -181,7 +233,7 @@ app.get("/api/user-credentials", async (req, res) => {
   }
 
   try {
-    const values = getUserCredentialValues(userId, moduleId);
+    const values = await getUserCredentialValues(userId, moduleId);
     res.json({
       userId,
       moduleId,
@@ -210,15 +262,28 @@ app.put("/api/user-credentials", async (req, res) => {
   }
 
   try {
-    const vault = loadUserCredentialVault();
     const nextValues = Object.fromEntries(
       Object.entries(values as Record<string, unknown>)
         .filter(([, value]) => typeof value === "string" && value.trim().length > 0)
         .map(([fieldId, value]) => [fieldId.slice(0, 120), String(value).trim().slice(0, 10000)]),
     );
-    vault[userId] = vault[userId] || {};
-    vault[userId][moduleId] = { updatedAt: new Date().toISOString(), values: nextValues };
-    saveUserCredentialVault(vault);
+    if (credentialDatabase) {
+      const encrypted = encryptJson(nextValues);
+      await credentialDatabase.query(
+        `INSERT INTO clientum_user_credentials
+          (user_id, module_id, updated_at, iv, auth_tag, encrypted_data)
+         VALUES ($1, $2, NOW(), $3, $4, $5)
+         ON CONFLICT (user_id, module_id)
+         DO UPDATE SET updated_at = NOW(), iv = EXCLUDED.iv, auth_tag = EXCLUDED.auth_tag,
+                       encrypted_data = EXCLUDED.encrypted_data`,
+        [userId, moduleId, encrypted.iv, encrypted.authTag, encrypted.data],
+      );
+    } else {
+      const vault = loadUserCredentialVault();
+      vault[userId] = vault[userId] || {};
+      vault[userId][moduleId] = { updatedAt: new Date().toISOString(), values: nextValues };
+      saveUserCredentialVault(vault);
+    }
     res.json({
       success: true,
       moduleId,
@@ -239,11 +304,18 @@ app.delete("/api/user-credentials", async (req, res) => {
   }
 
   try {
-    const vault = loadUserCredentialVault();
-    if (vault[userId]) {
-      delete vault[userId][moduleId];
-      if (Object.keys(vault[userId]).length === 0) delete vault[userId];
-      saveUserCredentialVault(vault);
+    if (credentialDatabase) {
+      await credentialDatabase.query(
+        "DELETE FROM clientum_user_credentials WHERE user_id = $1 AND module_id = $2",
+        [userId, moduleId],
+      );
+    } else {
+      const vault = loadUserCredentialVault();
+      if (vault[userId]) {
+        delete vault[userId][moduleId];
+        if (Object.keys(vault[userId]).length === 0) delete vault[userId];
+        saveUserCredentialVault(vault);
+      }
     }
     res.json({ success: true, moduleId });
   } catch (error: any) {
@@ -253,17 +325,43 @@ app.delete("/api/user-credentials", async (req, res) => {
 });
 
 app.get("/api/user-api-keys", async (req, res) => {
-  const userId = await getRequestUserId(req);
-  if (!userId) {
+  const actorUserId = await getRequestUserId(req);
+  const ownerUserId = getRequestedOwnerUserId(req.query.ownerUserId, actorUserId || "");
+  if (!actorUserId || !ownerUserId) {
     res.status(401).json({ error: "A verified user session is required." });
     return;
   }
+  if (ownerUserId !== actorUserId && !isApiKeyAdministrator(req, actorUserId)) {
+    res.status(403).json({ error: "You are not allowed to manage another user's API Keys." });
+    return;
+  }
   try {
-    const keys = loadServerApiKeyVault()[userId] || [];
+    const keys = credentialDatabase
+      ? (await credentialDatabase.query<{
+        id: string;
+        name: string;
+        key_prefix: string;
+        scopes: string[] | string;
+        created_at: Date | string;
+        status: "active" | "revoked";
+        token_hash: string;
+      }>(
+        "SELECT id, name, key_prefix, scopes, created_at, status, token_hash FROM clientum_user_api_keys WHERE user_id = $1 ORDER BY created_at DESC",
+        [ownerUserId],
+      )).rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        keyPrefix: row.key_prefix,
+        scopes: Array.isArray(row.scopes) ? row.scopes : JSON.parse(row.scopes),
+        createdAt: new Date(row.created_at).toISOString(),
+        status: row.status,
+        tokenHash: row.token_hash,
+      }))
+      : (loadServerApiKeyVault()[ownerUserId] || []);
     res.json({
       keys: keys.map(({ tokenHash: _tokenHash, ...metadata }) => ({
         ...metadata,
-        ownerUserId: userId,
+        ownerUserId,
       })),
     });
   } catch (error: any) {
@@ -273,13 +371,18 @@ app.get("/api/user-api-keys", async (req, res) => {
 });
 
 app.post("/api/user-api-keys", async (req, res) => {
-  const userId = await getRequestUserId(req);
+  const actorUserId = await getRequestUserId(req);
+  const ownerUserId = getRequestedOwnerUserId(req.body?.ownerUserId, actorUserId || "");
   const name = typeof req.body?.name === "string" ? req.body.name.trim().slice(0, 120) : "";
   const scopes = Array.isArray(req.body?.scopes)
     ? req.body.scopes.filter((scope: unknown): scope is string => typeof scope === "string" && /^[a-zA-Z0-9:_-]{1,100}$/.test(scope)).slice(0, 40)
     : [];
-  if (!userId) {
+  if (!actorUserId || !ownerUserId) {
     res.status(401).json({ error: "A verified user session is required." });
+    return;
+  }
+  if (ownerUserId !== actorUserId && !isApiKeyAdministrator(req, actorUserId)) {
+    res.status(403).json({ error: "You are not allowed to create an API Key for another user." });
     return;
   }
   if (!name || scopes.length === 0) {
@@ -298,11 +401,29 @@ app.post("/api/user-api-keys", async (req, res) => {
       status: "active",
       tokenHash: hashServerApiKey(token),
     };
-    const vault = loadServerApiKeyVault();
-    vault[userId] = [record, ...(vault[userId] || [])];
-    saveServerApiKeyVault(vault);
+    if (credentialDatabase) {
+      await credentialDatabase.query(
+        `INSERT INTO clientum_user_api_keys
+          (id, user_id, name, key_prefix, scopes, created_at, status, token_hash)
+         VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8)`,
+        [
+          record.id,
+          ownerUserId,
+          record.name,
+          record.keyPrefix,
+          JSON.stringify(record.scopes),
+          record.createdAt,
+          record.status,
+          record.tokenHash,
+        ],
+      );
+    } else {
+      const vault = loadServerApiKeyVault();
+      vault[ownerUserId] = [record, ...(vault[ownerUserId] || [])];
+      saveServerApiKeyVault(vault);
+    }
     const { tokenHash: _tokenHash, ...metadata } = record;
-    res.status(201).json({ key: { ...metadata, ownerUserId: userId }, token });
+    res.status(201).json({ key: { ...metadata, ownerUserId }, token });
   } catch (error: any) {
     console.error("Server API key write error:", error?.message || error);
     res.status(500).json({ error: "No se pudo generar la API Key segura." });
@@ -310,17 +431,47 @@ app.post("/api/user-api-keys", async (req, res) => {
 });
 
 app.delete("/api/user-api-keys/:keyId", async (req, res) => {
-  const userId = await getRequestUserId(req);
-  if (!userId) {
+  const actorUserId = await getRequestUserId(req);
+  if (!actorUserId) {
     res.status(401).json({ error: "A verified user session is required." });
     return;
   }
   try {
+    if (credentialDatabase) {
+      const ownerResult = await credentialDatabase.query<{ user_id: string; status: "active" | "revoked" }>(
+        "SELECT user_id, status FROM clientum_user_api_keys WHERE id = $1",
+        [req.params.keyId],
+      );
+      const owner = ownerResult.rows[0];
+      if (!owner) {
+        res.status(404).json({ error: "API Key not found." });
+        return;
+      }
+      if (owner.user_id !== actorUserId && !isApiKeyAdministrator(req, actorUserId)) {
+        res.status(403).json({ error: "You are not allowed to revoke another user's API Key." });
+        return;
+      }
+      if (owner.status === "revoked") {
+        res.json({ success: true, keyId: req.params.keyId });
+        return;
+      }
+      const result = await credentialDatabase.query<{ id: string }>(
+        "UPDATE clientum_user_api_keys SET status = 'revoked' WHERE id = $1 RETURNING id",
+        [req.params.keyId],
+      );
+      res.json({ success: true, keyId: result.rows[0].id });
+      return;
+    }
     const vault = loadServerApiKeyVault();
-    const keys = vault[userId] || [];
-    const target = keys.find((key) => key.id === req.params.keyId);
-    if (!target) {
+    const ownerEntry = Object.entries(vault).find(([, keys]) => keys.some((key) => key.id === req.params.keyId));
+    const ownerUserId = ownerEntry?.[0];
+    const target = ownerEntry?.[1].find((key) => key.id === req.params.keyId);
+    if (!ownerUserId || !target) {
       res.status(404).json({ error: "API Key not found." });
+      return;
+    }
+    if (ownerUserId !== actorUserId && !isApiKeyAdministrator(req, actorUserId)) {
+      res.status(403).json({ error: "You are not allowed to revoke another user's API Key." });
       return;
     }
     target.status = "revoked";
@@ -612,7 +763,7 @@ app.post("/api/ai/copilot", async (req, res) => {
       parts: [{ text: m.content }]
     }));
 
-    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req));
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
@@ -676,7 +827,7 @@ app.post("/api/ai/cmo", async (req, res) => {
       return;
     }
 
-    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req));
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
@@ -713,7 +864,7 @@ app.post("/api/ai/gtm", async (req, res) => {
       return;
     }
 
-    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req));
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
@@ -750,7 +901,7 @@ app.post("/api/ai/adcopy", async (req, res) => {
       return;
     }
 
-    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req));
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
@@ -800,7 +951,7 @@ app.post("/api/ai/prospect", async (req, res) => {
       return;
     }
 
-    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req), "googleMaps");
+    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req), "googleMaps");
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
@@ -872,7 +1023,7 @@ app.post("/api/ai/smart-goals", async (req, res) => {
   try {
     const { historyData, currentGoals } = req.body;
 
-    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req));
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
@@ -925,7 +1076,7 @@ app.post("/api/expense/categorize", async (req, res) => {
       return;
     }
 
-    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req), "erp");
+    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req), "erp");
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
@@ -1003,7 +1154,7 @@ app.post("/api/ai/transcribe", async (req, res) => {
       return;
     }
 
-    const requestGeminiKey = getUserGeminiKey(await getRequestUserId(req));
+    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req));
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry(

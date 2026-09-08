@@ -1,4 +1,5 @@
 - [Firebase environment propagation](firebase-env.md) — inject only public Firebase config into Vite and guard Auth/Analytics when it is unavailable.
 - [Provider configuration validation](provider-config-validation.md) — secret existence does not prove a usable value; reject documentation placeholders before enabling delivery.
+- [PostgreSQL workflow environment](postgres-runtime-config.md) — workflows may expose PG* variables without DATABASE_URL; prefer the managed PostgreSQL connection over file fallback.
 - [Workspace typecheck setup](workspace-typecheck.md) — build can work while lint is blocked by missing declared dev dependencies; restore packages before diagnosing code errors.
 - [User credential boundaries](user-credential-boundaries.md) — keep provider credentials and internal REST tokens user-scoped and separate from workspace-managed secrets.

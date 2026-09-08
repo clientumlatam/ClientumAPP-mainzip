@@ -1,7 +1,7 @@
 import { User } from '../types';
 import { auth, isLiveFirebaseConfigured } from '../firebase';
 
-export const getClientumUserHeaders = (user?: Pick<User, 'id'>): Record<string, string> => {
+export const getClientumUserHeaders = (user?: Pick<User, 'id' | 'role'>): Record<string, string> => {
   let userId = user?.id;
   if (!userId && typeof window !== 'undefined') {
     try {
@@ -12,15 +12,19 @@ export const getClientumUserHeaders = (user?: Pick<User, 'id'>): Record<string, 
     }
   }
 
-  return userId ? { 'x-clientum-user-id': userId } : {};
+  const headers: Record<string, string> = userId ? { 'x-clientum-user-id': userId } : {};
+  if ((import.meta as any)?.env?.DEV && user?.role) {
+    headers['x-clientum-user-role'] = user.role;
+  }
+  return headers;
 };
 
-export const getClientumJsonHeaders = (user?: Pick<User, 'id'>): Record<string, string> => ({
+export const getClientumJsonHeaders = (user?: Pick<User, 'id' | 'role'>): Record<string, string> => ({
   'Content-Type': 'application/json',
   ...getClientumUserHeaders(user),
 });
 
-export const getClientumAuthHeaders = async (user?: Pick<User, 'id'>): Promise<Record<string, string>> => {
+export const getClientumAuthHeaders = async (user?: Pick<User, 'id' | 'role'>): Promise<Record<string, string>> => {
   const headers = getClientumUserHeaders(user);
   if (isLiveFirebaseConfigured && auth.currentUser) {
     try {
@@ -32,7 +36,7 @@ export const getClientumAuthHeaders = async (user?: Pick<User, 'id'>): Promise<R
   return headers;
 };
 
-export const getClientumAuthJsonHeaders = async (user?: Pick<User, 'id'>): Promise<Record<string, string>> => ({
+export const getClientumAuthJsonHeaders = async (user?: Pick<User, 'id' | 'role'>): Promise<Record<string, string>> => ({
   'Content-Type': 'application/json',
   ...(await getClientumAuthHeaders(user)),
 });
