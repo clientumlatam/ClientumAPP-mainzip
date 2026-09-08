@@ -4,13 +4,19 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({
+  limit: "10mb",
+  verify: (request, _response, buffer) => {
+    (request as express.Request & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
+  },
+}));
 
 type EmailAddressInput = string | string[] | undefined;
 
@@ -696,36 +702,76 @@ app.post("/api/ai/transcribe", async (req, res) => {
   }
 });
 
+function getWhatsAppWebhookConfig() {
+  return {
+    appSecret: process.env.WHATSAPP_APP_SECRET?.trim() || "",
+    verifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim() || "",
+  };
+}
+
+function hasValidWhatsAppSignature(request: express.Request): boolean {
+  const { appSecret } = getWhatsAppWebhookConfig();
+  const signature = request.header("x-hub-signature-256") || "";
+  const rawBody = (request as express.Request & { rawBody?: Buffer }).rawBody;
+  if (!appSecret || !rawBody || !signature.startsWith("sha256=")) return false;
+
+  const received = Buffer.from(signature.slice("sha256=".length), "hex");
+  const expected = createHmac("sha256", appSecret).update(rawBody).digest();
+  return received.length === expected.length && timingSafeEqual(received, expected);
+}
+
 // 6. Real WhatsApp Baileys / Meta Cloud API Webhook Listener
-// This endpoint receives incoming webhook events from Baileys or Meta Cloud API
+// Meta signatures are mandatory; no demo payloads or fallback messages are accepted.
 app.post("/api/whatsapp/webhook", (req, res) => {
   try {
-    const payload = req.body;
-    console.log("Incoming WhatsApp Webhook Event:", JSON.stringify(payload, null, 2));
+    const { appSecret } = getWhatsAppWebhookConfig();
+    if (!appSecret) {
+      res.status(503).json({ error: "WhatsApp webhook is not configured on the server." });
+      return;
+    }
+    if (!hasValidWhatsAppSignature(req)) {
+      res.status(401).json({ error: "Invalid WhatsApp webhook signature." });
+      return;
+    }
 
-    // Support Meta Cloud API verification / message format or Baileys event format
+    const payload = req.body;
+
+    if (!payload || typeof payload !== "object" || payload.object !== "whatsapp_business_account") {
+      res.status(400).json({ error: "Unsupported WhatsApp webhook payload." });
+      return;
+    }
+
     const entry = payload.entry?.[0];
     const changes = entry?.changes?.[0];
     const value = changes?.value;
     const message = value?.messages?.[0];
 
-    let incomingPhone = message?.from || payload.phone || payload.sender || "+5491100000000";
-    let messageBody = message?.text?.body || payload.message || payload.text || "Hola, me interesa agendar una demo.";
-    let senderName = value?.contacts?.[0]?.profile?.name || payload.name || "Cliente Webhook";
+    // Delivery/status events are valid but do not create an inbox message.
+    if (!message?.from) {
+      res.json({ success: true, ignored: true, reason: "No inbound message in event." });
+      return;
+    }
 
-    // Broadcast event / response for real-time frontend integration if needed
+    const incomingPhone = message.from;
+    const messageBody = message.text?.body || message.button?.text || message.interactive?.button_reply?.title;
+    const senderName = value?.contacts?.[0]?.profile?.name || "WhatsApp contact";
+    if (!messageBody) {
+      res.json({ success: true, ignored: true, reason: "Inbound message type is not supported yet." });
+      return;
+    }
+
     res.json({
       success: true,
       received: {
         phone: incomingPhone,
         name: senderName,
         message: messageBody,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      status: "Message ingested and synced with CRM Inbox"
+      status: "Message signature verified.",
     });
   } catch (error: any) {
-    console.error("Webhook Error:", error);
+    console.error("WhatsApp webhook error:", error?.message || error);
     res.status(500).json({ error: error.message || "Invalid webhook payload" });
   }
 });
@@ -735,8 +781,14 @@ app.get("/api/whatsapp/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
+  const { verifyToken } = getWhatsAppWebhookConfig();
 
-  if (mode === "subscribe" && token === "clientum_verify_token_2026") {
+  if (!verifyToken) {
+    res.status(503).json({ error: "WhatsApp webhook verification is not configured on the server." });
+    return;
+  }
+
+  if (mode === "subscribe" && typeof token === "string" && token === verifyToken) {
     res.status(200).send(challenge);
   } else {
     res.status(403).json({ error: "Verification token mismatch or invalid mode" });

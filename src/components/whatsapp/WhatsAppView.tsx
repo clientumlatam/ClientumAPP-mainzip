@@ -21,7 +21,7 @@ export const WhatsAppView: React.FC = () => {
             <h2 className="font-bold text-white text-sm flex items-center gap-2">
               WhatsApp CRM de ClientumCRM
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-mono font-normal">
-                Conectado (API Oficial / Baileys)
+                Pendiente de conexión segura
               </span>
             </h2>
             <p className="text-[11px] text-slate-400">Bandeja multi-agente, modo dual bot/humano, plantillas y campañas masivas</p>

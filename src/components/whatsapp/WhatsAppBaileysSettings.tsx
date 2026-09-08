@@ -5,7 +5,7 @@ import { useCRM } from '../../context/CRMContext';
 export const WhatsAppBaileysSettings: React.FC = () => {
   const { showToast } = useCRM();
   const [connectionType, setConnectionType] = useState<'official' | 'baileys'>('official');
-  const [isConnected, setIsConnected] = useState(true);
+  const isConnected = false;
   const [testPayload, setTestPayload] = useState('{"phone": "+5491112345678", "message": "Hola, quiero información sobre los planes corporativos."}');
   const [testResult, setTestResult] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
@@ -24,7 +24,10 @@ export const WhatsAppBaileysSettings: React.FC = () => {
       });
       const data = await res.json();
       setTestResult(JSON.stringify(data, null, 2));
-      showToast('Webhook probado y sincronizado correctamente con el CRM', 'success');
+      if (!res.ok) {
+        throw new Error(data.error || 'El servidor rechazó el webhook');
+      }
+      showToast('Webhook firmado aceptado por el servidor', 'success');
     } catch (err: any) {
       setTestResult(`Error: JSON inválido o fallo en servidor (${err.message})`);
       showToast('Error al probar webhook', 'error');
@@ -60,7 +63,7 @@ export const WhatsAppBaileysSettings: React.FC = () => {
           {webhookUrl}
         </div>
         <p className="text-[11px] text-slate-400">
-          Token de verificación (Meta Cloud API): <code className="text-white bg-[#1c2333] px-1.5 py-0.5 rounded">clientum_verify_token_2026</code>
+          Token de verificación: se lee exclusivamente desde Replit Secrets como <code className="text-white bg-[#1c2333] px-1.5 py-0.5 rounded">WHATSAPP_WEBHOOK_VERIFY_TOKEN</code>
         </p>
       </div>
 
@@ -96,24 +99,23 @@ export const WhatsAppBaileysSettings: React.FC = () => {
         <div className="space-y-4 flex-1">
           <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
             <ShieldCheck className="w-5 h-5" />
-            <span>Estado: {isConnected ? '🟢 Conectado y Sincronizado' : '🔴 Desconectado'}</span>
+            <span>Estado: {isConnected ? '🟢 Conectado y Sincronizado' : '🟡 Pendiente de configuración'}</span>
           </div>
           <p className="text-slate-400 leading-relaxed text-xs">
-            Número vinculado: <strong className="text-white">+54 9 11 5000-2026</strong> ({connectionType === 'official' ? 'Webhook activo v18.0' : 'Sesión Baileys activa'}). Las peticiones POST a <code className="text-emerald-400">/api/whatsapp/webhook</code> alimentan el Inbox en vivo.
+            El canal real requiere credenciales de Meta y firma válida. Las peticiones POST a <code className="text-emerald-400">/api/whatsapp/webhook</code> se aceptan solo cuando <code className="text-emerald-400">WHATSAPP_APP_SECRET</code> está configurado.
           </p>
           <div className="flex flex-wrap gap-2 pt-2">
             <button
               onClick={() => {
-                setIsConnected(!isConnected);
-                showToast(isConnected ? 'Sesión desconectada' : 'Sesión reconectada con éxito', 'info');
+                showToast('La conexión debe configurarse desde Meta y Replit Secrets antes de habilitar el canal.', 'info');
               }}
               className="px-4 py-2 bg-[#1c2333] hover:bg-[#252f44] text-white rounded-lg font-semibold transition-colors cursor-pointer flex items-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>{isConnected ? 'Desconectar Sesión' : 'Reconectar Dispositivo'}</span>
+              <span>Configurar conexión</span>
             </button>
             <button
-              onClick={() => showToast('Webhook verificado OK con Meta API', 'success')}
+              onClick={() => showToast('La verificación real se realiza con el challenge de Meta y los secretos del servidor', 'info')}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition-colors cursor-pointer flex items-center gap-2"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
