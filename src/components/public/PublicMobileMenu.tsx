@@ -32,9 +32,9 @@ interface PublicMobileMenuProps {
 type MobileSection = 'product' | 'industries' | 'resources';
 
 const industryIcon = (path: string) => {
-  if (path.includes('agro')) return <span className="text-emerald-600">🌾</span>;
-  if (path.includes('salud')) return <span className="text-rose-600">✚</span>;
-  if (path.includes('gastronomia')) return <span className="text-orange-600">🍽</span>;
+  if (path.includes('agro')) return <Briefcase className="h-4 w-4 text-emerald-600" aria-hidden="true" />;
+  if (path.includes('salud')) return <Briefcase className="h-4 w-4 text-rose-600" aria-hidden="true" />;
+  if (path.includes('gastronomia')) return <Briefcase className="h-4 w-4 text-orange-600" aria-hidden="true" />;
   if (path.includes('ecommerce')) return <Store className="h-4 w-4 text-cyan-600" aria-hidden="true" />;
   return <Briefcase className="h-4 w-4 text-blue-600" aria-hidden="true" />;
 };
@@ -76,7 +76,7 @@ export const PublicMobileMenu: React.FC<PublicMobileMenuProps> = ({
       <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
         {([
           ['product', 'Producto'],
-          ['industries', 'Industrias (10)'],
+          ['industries', 'Industrias'],
           ['resources', 'Recursos'],
         ] as const).map(([section, label]) => (
           <button
@@ -144,9 +144,9 @@ export const PublicMobileMenu: React.FC<PublicMobileMenuProps> = ({
       {mobileSection === 'resources' && (
         <div className="space-y-1.5">
           {[
-            ['/precios', '🏷️ Planes & Precios'],
+            ['/precios', 'Planes & Precios'],
             ['/casos', 'Casos de Éxito & Clientes'],
-            ['/academia', '🎓 Academia LMS Clientum'],
+            ['/academia', 'Academia LMS Clientum'],
             ['/servicios', 'Servicios de Implementación'],
             ['/tienda/central', 'Tienda Digital Oficial'],
             ['/dominios', 'Gestor de Dominios & Cloudflare'],
@@ -171,7 +171,7 @@ export const PublicMobileMenu: React.FC<PublicMobileMenuProps> = ({
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-slate-600">Moneda de visualización:</span>
           <button type="button" onClick={onToggleCurrency} className="rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1 font-bold text-slate-800">
-            {currency === 'ARS' ? '🇦🇷 Pesos (ARS)' : '🇺🇸 Dólares (USD)'}
+            {currency === 'ARS' ? 'Pesos (ARS)' : 'Dólares (USD)'}
           </button>
         </div>
 

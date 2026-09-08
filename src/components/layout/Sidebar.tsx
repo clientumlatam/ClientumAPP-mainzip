@@ -118,6 +118,9 @@ export const Sidebar: React.FC = () => {
   } = useCRM();
 
   const [configModuleId, setConfigModuleId] = useState<ActiveTab | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    'Operaciones, pagos & e-commerce': true,
+  });
 
   const unreadWebmailCount = webmailEmails ? webmailEmails.filter((e) => e.folder === 'inbox' && !e.isRead).length : 0;
 
@@ -295,18 +298,27 @@ export const Sidebar: React.FC = () => {
         {/* Navigation list */}
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 custom-scrollbar bg-[var(--sidebar-bg)]">
           
-          {navigationSections.map((section) => (
+          {navigationSections.map((section) => {
+            const isCollapsed = collapsedSections[section.label] ?? false;
+            return (
             <div key={section.label} className="border-t border-[var(--sidebar-border)] pt-3 first:border-t-0 first:pt-0">
-              <div className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {section.label}
-              </div>
-              <nav className="space-y-0.5">
+              <button
+                type="button"
+                className="w-full flex items-center justify-between px-2 pb-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-primary)] cursor-pointer"
+                onClick={() => setCollapsedSections((previous) => ({ ...previous, [section.label]: !isCollapsed }))}
+                aria-expanded={!isCollapsed}
+              >
+                <span>{section.label}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+              </button>
+              {!isCollapsed && <nav className="space-y-0.5">
                 {section.items.map((item) => (
                   <SidebarNavRow key={item.id} item={item} activeTab={activeTab} onNavigate={handleNavClick} onConfig={handleModuleConfig} />
                 ))}
-              </nav>
+              </nav>}
             </div>
-          ))}
+            );
+          })}
 
           {/* AI Sales Copilot Action Card */}
           <div className="px-1">

@@ -12,6 +12,7 @@ import {
   Menu,
   ExternalLink,
   Settings2,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
 import { STAGES } from '../../data/initialData';
@@ -44,6 +45,7 @@ export const Navbar: React.FC = () => {
   } = useCRM();
 
   const [isConfigOpen, setIsConfigOpen] = React.useState(false);
+  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
   const configModuleId = activeTab === 'mapsProspecting' ? 'googleMaps' : activeTab;
   const hasModuleCredentials = moduleNeedsUserCredentials(configModuleId);
 
@@ -208,33 +210,6 @@ export const Navbar: React.FC = () => {
           </button>
         )}
 
-        {/* Switch to Public Site button */}
-        <button
-          onClick={exitToPublicSite}
-          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
-          title="Ver Sitio Web Público"
-        >
-          <Globe className="w-3.5 h-3.5 text-blue-600" />
-          <span>Sitio Público</span>
-          <ExternalLink className="w-3 h-3 text-slate-400" />
-        </button>
-
-        {/* Language Selector Dropdown */}
-        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5 shadow-xs">
-          <Globe className="w-3.5 h-3.5 text-slate-500 mr-1 shrink-0" />
-          <select
-            id="navbar-language-select"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as Language)}
-            className="bg-transparent text-xs text-slate-800 focus:outline-none cursor-pointer py-1 pr-1 font-semibold"
-            title="Seleccionar Idioma"
-          >
-            <option value="es">🇪🇸 ES</option>
-            <option value="en">🇺🇸 EN</option>
-            <option value="pt">🇧🇷 PT</option>
-          </select>
-        </div>
-
         {/* View Mode Switcher (Kanban vs Table) */}
         {activeTab === 'opportunities' && (
           <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
@@ -289,15 +264,57 @@ export const Navbar: React.FC = () => {
           </button>
         )}
 
-        {/* Reset Demo Data Button */}
-        <button
-          id="navbar-reset-demo-btn"
-          onClick={resetToDemoData}
-          className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200 text-xs transition-all cursor-pointer shadow-xs"
-          title="Restablecer Datos de Demostración"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-        </button>
+        {/* Low-frequency actions stay together instead of competing with the primary action. */}
+        <div className="relative">
+          <button
+            id="navbar-more-btn"
+            onClick={() => setIsMoreOpen((open) => !open)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+            title="Más acciones"
+            aria-expanded={isMoreOpen}
+            aria-haspopup="menu"
+          >
+            <MoreHorizontal className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">Más</span>
+          </button>
+          {isMoreOpen && (
+            <div className="absolute right-0 top-full mt-2 z-30 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu">
+              <button
+                onClick={() => { exitToPublicSite(); setIsMoreOpen(false); }}
+                className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                role="menuitem"
+              >
+                <Globe className="w-3.5 h-3.5 text-blue-600" />
+                <span>Sitio Público</span>
+                <ExternalLink className="w-3 h-3 ml-auto text-slate-400" />
+              </button>
+              <label className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700">
+                <Globe className="w-3.5 h-3.5 text-slate-500" />
+                <span className="flex-1">Idioma</span>
+                <select
+                  id="navbar-language-select"
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as Language)}
+                  className="bg-transparent text-xs text-slate-800 focus:outline-none cursor-pointer font-semibold"
+                  title="Seleccionar idioma"
+                >
+                  <option value="es">ES</option>
+                  <option value="en">EN</option>
+                  <option value="pt">PT</option>
+                </select>
+              </label>
+              <button
+                id="navbar-reset-demo-btn"
+                onClick={() => { resetToDemoData(); setIsMoreOpen(false); }}
+                className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                role="menuitem"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                Restablecer demo
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Primary "+ Add" Button */}
         <button

@@ -122,79 +122,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
 
   return (
     <>
-      {/* 1. TOP ANNOUNCEMENT & UTILITY BAR */}
-      <div className="bg-slate-50 border-b border-slate-200 text-xs py-1.5 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 text-slate-600 text-[11px]">
-          
-          {/* Left Highlights */}
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
-              <Sparkles className="w-3 h-3 text-blue-600" />
-              Novedades 2026
-            </span>
-            <span className="truncate hidden md:inline">
-              🇦🇷 Facturación AFIP CAE homologada en tiempo real • 🤖 IA Gemini 3.7 integrada
-            </span>
-          </div>
-
-          {/* Right Utilities & Quick Modals */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            {/* Interactive Tool Badges */}
-            <div className="hidden lg:flex items-center gap-1.5 border-r border-slate-200 pr-2.5">
-              <button
-                onClick={onOpenWizard}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-blue-50 text-slate-700 hover:text-blue-700 transition-colors cursor-pointer font-medium"
-              >
-                <Calculator className="w-3 h-3 text-blue-600" />
-                <span>Cotizador ROI</span>
-              </button>
-              <button
-                onClick={onOpenSimulator}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 transition-colors cursor-pointer font-medium"
-              >
-                <Bot className="w-3 h-3 text-emerald-600" />
-                <span>Simulador Bot</span>
-              </button>
-              <button
-                onClick={onOpenAudit}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-amber-50 text-slate-700 hover:text-amber-700 transition-colors cursor-pointer font-medium"
-              >
-                <Sparkles className="w-3 h-3 text-amber-600" />
-                <span>Auditoría 60s</span>
-              </button>
-            </div>
-
-            {/* Currency Selector Pill */}
-            <button
-              onClick={onToggleCurrency}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 hover:border-blue-400 text-slate-800 font-bold shadow-2xs transition-all cursor-pointer text-[10px]"
-              title="Cambiar moneda de planes y cotizaciones"
-            >
-              <span className="text-[11px]">{currency === 'ARS' ? '🇦🇷' : '🇺🇸'}</span>
-              <span>{currency}</span>
-            </button>
-
-            {/* Session action */}
-            {isAuthenticated ? (
-              <button
-                onClick={enterApp}
-                className="font-semibold text-blue-700 hover:text-blue-800 transition-colors cursor-pointer hidden sm:inline"
-              >
-                Ir al Dashboard
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="font-medium text-slate-600 hover:text-blue-600 transition-colors cursor-pointer hidden sm:inline"
-              >
-                Iniciar Sesión
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 2. MAIN STICKY NAVIGATION HEADER */}
+      {/* Main sticky navigation header */}
       <header
         ref={navRef}
         className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]"
@@ -453,7 +381,6 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                 }`}
               >
                 <span>Industrias</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-bold">10</span>
                 <ChevronDown
                   className={`w-3.5 h-3.5 transition-transform duration-200 ${
                     activeMenu === 'industries' ? 'rotate-180 text-blue-600' : 'text-slate-400'
@@ -515,7 +442,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               )}
             </div>
 
-            {/* Precios (Direct Link with Badge) */}
+            {/* Precios (direct link) */}
             <button
               onClick={() => handleNavClick('/precios')}
               className={`px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -524,10 +451,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                   : 'hover:text-blue-600 hover:bg-slate-100'
               }`}
             >
-              <span>Precios</span>
-              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 font-bold">
-                {currency}
-              </span>
+                <span>Precios</span>
             </button>
 
             {/* 3. RECURSOS & EMPRESA DROPDOWN */}

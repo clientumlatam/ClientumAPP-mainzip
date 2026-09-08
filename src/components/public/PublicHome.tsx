@@ -75,7 +75,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         ...prev,
         {
           sender: 'bot',
-          text: `Entendido: "${userText}". Nuestro Agente Comercial con Gemini 3.6 Flash califica este requerimiento y asigna un ejecutivo con SLA < 4 horas.`,
+          text: `Entendido: "${userText}". Nuestro Agente Comercial califica este requerimiento y asigna un ejecutivo con SLA < 4 horas.`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -89,7 +89,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
     },
     {
       q: '¿Cómo funciona la integración de WhatsApp con Inteligencia Artificial?',
-      a: 'Soportamos tanto conexión por código QR (mediante gateway Baileys para usar tu número actual en minutos) como la API oficial de Meta Cloud API para números corporativos. Nuestro bot impulsado por Gemini 3.6 Flash se entrena con tu catálogo de productos y preguntas frecuentes, respondiendo en segundos y transfiriendo leads calificados a tus vendedores.'
+      a: 'Soportamos tanto conexión por código QR (mediante gateway Baileys para usar tu número actual en minutos) como la API oficial de Meta Cloud API para números corporativos. Nuestro bot impulsado por un asistente IA se entrena con tu catálogo de productos y preguntas frecuentes, respondiendo en segundos y transfiriendo leads calificados a tus vendedores.'
     },
     {
       q: '¿Cuánto tiempo toma la implementación y migración de datos?',
@@ -121,7 +121,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
-              El CRM Inteligente y Omnicanal que Transforma tus{' '}
+              El CRM comercial que convierte tus{' '}
               <span className="text-blue-600">
                 Conversaciones en Ventas
               </span>
@@ -129,8 +129,8 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
-              Unifica WhatsApp, pipeline visual Kanban, facturación AFIP con CAE y 14 agentes de IA
-              en una sola plataforma con servidores soberanos, soporte humano en menos de 4 horas y precios en moneda local.
+              Unifica WhatsApp, pipeline visual Kanban y facturación AFIP en una sola plataforma.
+              Operá con soporte humano, moneda local y herramientas pensadas para PyMEs latinoamericanas.
             </p>
 
             {/* Primary Action Buttons */}
@@ -195,7 +195,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
             Experimenta el Poder de Clientum sin Registrarte
           </h2>
           <p className="text-sm sm:text-base text-slate-600">
-            Alterna entre los 3 pilares clave para ver cómo automatizarás tu embudo comercial.
+            Elegí una capacidad para ver cómo Clientum ordena una tarea comercial concreta.
           </p>
         </div>
 
@@ -358,7 +358,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
                       IA
                     </div>
                     <div>
-                      <div className="text-xs font-bold">Clientum Bot • Gemini 3.6</div>
+                      <div className="text-xs font-bold">Clientum Bot • Asistente IA</div>
                       <div className="text-[10px] text-emerald-200">En línea • Responde en 2 segundos</div>
                     </div>
                   </div>

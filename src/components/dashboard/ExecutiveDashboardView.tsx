@@ -125,14 +125,11 @@ export const ExecutiveDashboardView: React.FC = () => {
   const [pipelineFilter, setPipelineFilter] = useState('Todos los pipelines');
   const [isPipelineDropdownOpen, setIsPipelineDropdownOpen] = useState(false);
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { id: 'm-1', sender: 'user', text: '¿Cuál es el resumen de mis negocios esta semana?', time: '10:30' },
-    { id: 'm-2', sender: 'assistant', text: 'Estos son los highlights de tus negocios esta semana:\n\n• Negocios creados                 18\n• En negociación                     7\n• Monto en negociación       $ 38.000\n• Ganados                              4\n• Ingresos ganados                $ 57.200', time: '10:30' },
-    { id: 'm-3', sender: 'user', text: '¿Qué actividades tengo pendientes para hoy?', time: '10:31' },
-    { id: 'm-4', sender: 'assistant', text: 'Tienes 5 actividades pendientes para hoy:\n\n10:00  Llamada con TechGlobal\n11:30  Reunión con SoftBuild\n14:00  Enviar propuesta a MoviLab\n15:30  Seguimiento con NetSolutions\n17:00  Demo con EduSmart', time: '10:31' },
+    { id: 'm-1', sender: 'assistant', text: 'Hola. Puedo resumir tus negocios, revisar pendientes o ayudarte a preparar el próximo paso.', time: 'Ahora' },
   ]);
 
   const handleDragStart = (event: React.DragEvent, id: string) => {
@@ -189,8 +186,8 @@ export const ExecutiveDashboardView: React.FC = () => {
         <div className="crm-dashboard__header">
           <div>
             <div className="crm-eyebrow"><span className="crm-status-dot" /> VISTA EJECUTIVA · ACTUALIZADO AHORA</div>
-            <h1>Pipeline de ventas</h1>
-            <p>Monitorea el rendimiento de tu equipo y las oportunidades en tiempo real.</p>
+            <h1>Resumen ejecutivo</h1>
+            <p>Entendé cómo está el negocio y dónde conviene intervenir hoy.</p>
           </div>
           <div className="crm-dashboard__actions">
             <div className="crm-select-wrap">
@@ -207,10 +204,23 @@ export const ExecutiveDashboardView: React.FC = () => {
             </div>
             <button className="crm-icon-button" onClick={() => showToast('Filtro de oportunidades aplicado', 'info')} title="Filtrar"><Filter size={15} /></button>
             <button className="crm-icon-button" onClick={() => showToast('Opciones del pipeline', 'info')} title="Más opciones"><MoreHorizontal size={16} /></button>
-            <button className={`crm-ai-toggle ${isChatOpen ? 'is-active' : ''}`} onClick={() => setIsChatOpen((open) => !open)}>
-              <Sparkles size={15} /> Asistente IA <span className="crm-online-pip" />
+            <button
+              className={`crm-ai-toggle ${isChatOpen ? 'is-active' : ''}`}
+              onClick={() => setIsChatOpen((open) => !open)}
+              aria-pressed={isChatOpen}
+              aria-label={isChatOpen ? 'Ocultar asistente IA' : 'Abrir asistente IA'}
+            >
+              <Sparkles size={15} /> {isChatOpen ? 'Ocultar asistente' : 'Abrir asistente'} <span className="crm-online-pip" />
             </button>
           </div>
+        </div>
+
+        <div className="crm-pipeline-heading">
+          <div>
+            <span className="crm-section-kicker">Dónde intervenir</span>
+            <h2>Pipeline comercial</h2>
+          </div>
+          <span>Arrastrá un negocio para actualizar su etapa</span>
         </div>
 
         <div className="crm-board-shell">
@@ -314,31 +324,38 @@ export const ExecutiveDashboardView: React.FC = () => {
       </section>
 
       {isChatOpen && (
-        <aside className="crm-assistant">
-          <div className="crm-assistant__header">
-            <div className="crm-assistant__identity"><div className="crm-assistant__avatar"><Sparkles size={17} /><span /></div><div><strong>Asistente IA</strong><small>En línea</small></div></div>
-            <div className="crm-assistant__tools"><button onClick={() => showToast('Iniciando llamada de voz...', 'info')}><Phone size={14} /></button><button onClick={() => showToast('Videollamada en preparación...', 'info')}><Video size={14} /></button><button onClick={() => setIsChatOpen(false)}><X size={15} /></button></div>
-          </div>
-          <div className="crm-assistant__intro"><Sparkles size={13} /> Insights automáticos de tu pipeline</div>
-          <div className="crm-assistant__messages custom-scrollbar">
-            <div className="crm-chat-day">Hoy</div>
-            {chatMessages.map((message) => (
-              <div key={message.id} className={`crm-message ${message.sender === 'user' ? 'crm-message--user' : ''}`}>
-                <div className="crm-message__bubble"><p>{message.text}</p><span>{message.time} {message.sender === 'user' && <CheckCheck size={12} />}</span></div>
+        <>
+          <div className="crm-assistant-backdrop" onClick={() => setIsChatOpen(false)} aria-hidden="true" />
+          <aside className="crm-assistant" aria-label="Asistente IA">
+            <div className="crm-assistant__header">
+              <div className="crm-assistant__identity"><div className="crm-assistant__avatar"><Sparkles size={17} /><span /></div><div><strong>Asistente IA</strong><small>En línea</small></div></div>
+              <div className="crm-assistant__tools">
+                <button onClick={() => showToast('Iniciando llamada de voz...', 'info')} aria-label="Iniciar llamada de voz"><Phone size={14} /></button>
+                <button onClick={() => showToast('Videollamada en preparación...', 'info')} aria-label="Iniciar videollamada"><Video size={14} /></button>
+                <button onClick={() => setIsChatOpen(false)} aria-label="Cerrar asistente"><X size={15} /></button>
               </div>
-            ))}
-            {isAiTyping && <div className="crm-message__typing"><i /><i /><i /></div>}
-          </div>
-          <div className="crm-assistant__composer">
-            <button onClick={() => setInputMessage((previous) => `${previous} ✨`)}><Smile size={16} /></button>
-            <input value={inputMessage} onChange={(event) => setInputMessage(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') handleSendMessage(); }} placeholder="Escribe un mensaje..." />
-            <button onClick={() => showToast('Adjuntar archivo...', 'info')}><Paperclip size={15} /></button>
-            <button className="crm-send-button" onClick={handleSendMessage}><Send size={14} /></button>
-          </div>
-        </aside>
+            </div>
+            <div className="crm-assistant__intro"><Sparkles size={13} /> Insights automáticos de tu pipeline</div>
+            <div className="crm-assistant__messages custom-scrollbar">
+              <div className="crm-chat-day">Hoy</div>
+              {chatMessages.map((message) => (
+                <div key={message.id} className={`crm-message ${message.sender === 'user' ? 'crm-message--user' : ''}`}>
+                  <div className="crm-message__bubble"><p>{message.text}</p><span>{message.time} {message.sender === 'user' && <CheckCheck size={12} />}</span></div>
+                </div>
+              ))}
+              {isAiTyping && <div className="crm-message__typing" role="status" aria-label="El asistente está escribiendo"><i /><i /><i /></div>}
+            </div>
+            <div className="crm-assistant__composer">
+              <button onClick={() => setInputMessage((previous) => `${previous} ✨`)} aria-label="Agregar sugerencia"><Smile size={16} /></button>
+              <input value={inputMessage} onChange={(event) => setInputMessage(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') handleSendMessage(); }} placeholder="Escribe un mensaje..." />
+              <button onClick={() => showToast('Adjuntar archivo...', 'info')} aria-label="Adjuntar archivo"><Paperclip size={15} /></button>
+              <button className="crm-send-button" onClick={handleSendMessage} aria-label="Enviar mensaje"><Send size={14} /></button>
+            </div>
+          </aside>
+        </>
       )}
 
-      {!isChatOpen && <button className="crm-chat-reopen" onClick={() => setIsChatOpen(true)}><Sparkles size={15} /> Abrir asistente</button>}
+      {!isChatOpen && <button className="crm-chat-reopen" onClick={() => setIsChatOpen(true)} aria-label="Abrir asistente IA"><Sparkles size={15} /> Abrir asistente</button>}
     </div>
   );
 };
