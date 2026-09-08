@@ -76,6 +76,12 @@ import {
   INITIAL_EXPENSES,
 } from '../data/erpInitialData';
 import { isPrivateAppPath, navigateEnvironment } from '../lib/navigation';
+import {
+  auth,
+  firebaseSignOut,
+  isLiveFirebaseReady,
+  subscribeToAuthState,
+} from '../firebase';
 
 export interface ToastMessage {
   id: string;
@@ -133,6 +139,7 @@ interface CRMContextType {
   enterApp: () => void;
   isAuthenticated: boolean;
   setIsAuthenticated: (auth: boolean) => void;
+  isAuthReady: boolean;
   gmailAccessToken: string | null;
   setGmailAccessToken: (token: string | null) => void;
   isAuthModalOpen: boolean;
@@ -550,15 +557,54 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
-      return sessionStorage.getItem('clientum_is_authenticated') === 'true' || 
-             localStorage.getItem('clientum_is_authenticated') === 'true';
+      // A browser flag is only acceptable for the local demo fallback.
+      // Configured Firebase must restore a verified session instead.
+      if (isLiveFirebaseReady) return false;
+      return sessionStorage.getItem('clientum_is_authenticated') === 'true' ||
+        localStorage.getItem('clientum_is_authenticated') === 'true';
     } catch (e) {
       return false;
     }
   });
+  const [isAuthReady, setIsAuthReady] = useState(!isLiveFirebaseReady);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLiveFirebaseReady) {
+      setIsAuthReady(true);
+      return;
+    }
+
+    return subscribeToAuthState((firebaseUser) => {
+      if (!firebaseUser) {
+        setIsAuthenticated(false);
+        setIsAuthReady(true);
+        return;
+      }
+
+      const matchingUser = users.find(
+        (user) => user.email.toLowerCase() === (firebaseUser.email || '').toLowerCase(),
+      );
+      const restoredUser: User = {
+        ...(matchingUser || USERS[0]),
+        id: firebaseUser.uid,
+        email: firebaseUser.email || matchingUser?.email || USERS[0].email,
+        name: firebaseUser.displayName || matchingUser?.name || firebaseUser.email?.split('@')[0] || 'Usuario Clientum',
+        avatar: firebaseUser.photoURL || matchingUser?.avatar || USERS[0].avatar,
+      };
+
+      setCurrentUser(restoredUser);
+      try {
+        localStorage.setItem('clientum_crm_current_user', JSON.stringify(restoredUser));
+      } catch {
+        // Storage can be disabled by the browser; the in-memory session remains valid.
+      }
+      setIsAuthenticated(true);
+      setIsAuthReady(true);
+    });
+  }, [users]);
 
   // Webmail Cloudflare D1 Emails State
   const [webmailEmails, setWebmailEmails] = useState<WebmailEmail[]>(() => {
@@ -593,21 +639,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const enterApp = () => {
     if (!isAuthenticated) {
-      const defaultUser = USERS[0] || {
-        id: 'usr-1',
-        name: 'Fernando Díaz',
-        email: 'fernando.diaz@clientum.com.ar',
-        role: 'Administrador',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-      };
-      setCurrentUser(defaultUser);
-      setIsAuthenticated(true);
-      try {
-        sessionStorage.setItem('clientum_is_authenticated', 'true');
-        localStorage.setItem('clientum_is_authenticated', 'true');
-      } catch (e) {
-        console.warn('Storage error', e);
-      }
+      setIsAuthModalOpen(true);
+      return;
     }
     setIsPublicSiteVisible(false);
     setActiveTab('dashboard');
@@ -636,19 +669,29 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const login = (email: string, _pass?: string) => {
     const found = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    const firebaseUser = isLiveFirebaseReady ? auth.currentUser : null;
     const userToSet = found || {
-      id: 'usr-' + Date.now(),
+      id: firebaseUser?.uid || 'usr-' + Date.now(),
       name: email.split('@')[0].replace('.', ' ').replace(/^./, (c) => c.toUpperCase()),
       email,
       role: 'Administrador',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      avatar: firebaseUser?.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
     };
-    setCurrentUser(userToSet);
+    const authenticatedUser = firebaseUser
+      ? {
+          ...userToSet,
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || userToSet.name,
+          email: firebaseUser.email || userToSet.email,
+          avatar: firebaseUser.photoURL || userToSet.avatar,
+        }
+      : userToSet;
+    setCurrentUser(authenticatedUser);
     
     try {
-      localStorage.setItem('clientum_crm_current_user', JSON.stringify(userToSet));
+      localStorage.setItem('clientum_crm_current_user', JSON.stringify(authenticatedUser));
       sessionStorage.setItem('clientum_is_authenticated', 'true');
-      localStorage.setItem('clientum_is_authenticated', 'true');
+      if (!isLiveFirebaseReady) localStorage.setItem('clientum_is_authenticated', 'true');
       sessionStorage.setItem('clientum_view_mode', 'app');
     } catch (error) {
       console.warn('Storage access denied', error);
@@ -658,6 +701,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTab('dashboard');
     setIsAuthModalOpen(false);
     setIsPublicSiteVisible(false);
+    navigateEnvironment('/app');
   };
 
   const register = (name: string, email: string, _pass?: string, _company?: string) => {
@@ -683,9 +727,11 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTab('dashboard');
     setIsAuthModalOpen(false);
     setIsPublicSiteVisible(false);
+    navigateEnvironment('/app');
   };
 
   const logout = () => {
+    void firebaseSignOut();
     setIsAuthenticated(false);
     setGmailAccessToken(null);
     try {
@@ -2332,6 +2378,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         enterApp,
         isAuthenticated,
         setIsAuthenticated,
+        isAuthReady,
         gmailAccessToken,
         setGmailAccessToken,
         isAuthModalOpen,

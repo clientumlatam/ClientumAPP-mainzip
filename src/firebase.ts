@@ -59,6 +59,28 @@ export const auth: Auth = isLiveFirebaseReady
   ? getAuth(app as FirebaseApp)
   : (null as unknown as Auth);
 
+/**
+ * Subscribe to the real Firebase session when Firebase is configured.
+ * The no-op branch keeps the local demo build renderable without pretending
+ * that a demo session is a verified Firebase identity.
+ */
+export function subscribeToAuthState(
+  callback: (user: FirebaseUser | null) => void,
+): () => void {
+  if (!isLiveFirebaseReady) {
+    return () => {};
+  }
+
+  return onAuthStateChanged(
+    auth,
+    callback,
+    (error) => {
+      console.warn('Firebase auth state listener failed:', error);
+      callback(null);
+    },
+  );
+}
+
 // Safe Analytics initialization
 export let analytics: Analytics | null = null;
 if (typeof window !== 'undefined' && isLiveFirebaseReady && app) {
@@ -132,7 +154,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     if (err.code === 'auth/popup-closed-by-user') {
       return { success: false, error: 'Inicio de sesión cancelado por el usuario.' };
     }
-    if (!isDemoAuthFallbackEnabled) {
+    if (isLiveFirebaseReady || !isDemoAuthFallbackEnabled) {
       return { success: false, error: 'No se pudo iniciar sesión con Google.' };
     }
   }
@@ -177,7 +199,7 @@ export async function signInWithFacebook(): Promise<AuthResult> {
     if (err.code === 'auth/popup-closed-by-user') {
       return { success: false, error: 'Acceso con Facebook cancelado.' };
     }
-    if (!isDemoAuthFallbackEnabled) {
+    if (isLiveFirebaseReady || !isDemoAuthFallbackEnabled) {
       return { success: false, error: 'No se pudo iniciar sesión con Facebook.' };
     }
   }
@@ -222,7 +244,7 @@ export async function signInWithLinkedIn(): Promise<AuthResult> {
     if (err.code === 'auth/popup-closed-by-user') {
       return { success: false, error: 'Acceso con LinkedIn cancelado.' };
     }
-    if (!isDemoAuthFallbackEnabled) {
+    if (isLiveFirebaseReady || !isDemoAuthFallbackEnabled) {
       return { success: false, error: 'No se pudo iniciar sesión con LinkedIn.' };
     }
   }
@@ -268,7 +290,7 @@ export async function signInWithEmail(email: string, pass: string): Promise<Auth
     if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
       return { success: false, error: 'Credenciales incorrectas o usuario no encontrado.' };
     }
-    if (!isDemoAuthFallbackEnabled) {
+    if (isLiveFirebaseReady || !isDemoAuthFallbackEnabled) {
       return { success: false, error: 'No se pudo iniciar sesión.' };
     }
   }
@@ -323,7 +345,7 @@ export async function registerWithEmail(
     if (err.code === 'auth/email-already-in-use') {
       return { success: false, error: 'El correo electrónico ya está registrado en el sistema.' };
     }
-    if (!isDemoAuthFallbackEnabled) {
+    if (isLiveFirebaseReady || !isDemoAuthFallbackEnabled) {
       return { success: false, error: 'No se pudo crear la cuenta.' };
     }
   }
@@ -359,7 +381,7 @@ export async function sendFirebasePasswordReset(email: string): Promise<{ succes
     if (err.code === 'auth/user-not-found') {
       return { success: false, error: 'No existe una cuenta registrada con este correo electrónico.' };
     }
-    if (!isDemoAuthFallbackEnabled) {
+    if (isLiveFirebaseReady || !isDemoAuthFallbackEnabled) {
       return { success: false, error: 'No se pudo iniciar el proceso de recuperación.' };
     }
   }
@@ -395,7 +417,7 @@ export async function verifyResetToken(tokenOrCode: string): Promise<{ success: 
     }
   } catch (err: any) {
     console.warn('Live reset code verification error:', err);
-    if (!isDemoAuthFallbackEnabled) {
+    if (isLiveFirebaseReady || !isDemoAuthFallbackEnabled) {
       return { success: false, error: 'El código de recuperación es inválido o ha expirado.' };
     }
   }
@@ -439,7 +461,7 @@ export async function confirmPasswordResetWithToken(
     if (err.code === 'auth/invalid-action-code') {
       return { success: false, error: 'Código de recuperación inválido.' };
     }
-    if (!isDemoAuthFallbackEnabled) {
+    if (isLiveFirebaseReady || !isDemoAuthFallbackEnabled) {
       return { success: false, error: 'No se pudo actualizar la contraseña.' };
     }
   }

@@ -133,6 +133,22 @@ async function assertPrivateWorkspace(description) {
   });
 }
 
+async function signInWithLocalDemo() {
+  const hasUnauthenticatedCta = await evaluate(
+    '!![...document.querySelectorAll("button")].find((button) => button.innerText.includes("Ingresar al CRM"))',
+  );
+  if (hasUnauthenticatedCta) {
+    await clickButton('Ingresar al CRM');
+    await waitFor('the authentication modal', () =>
+      document.body?.innerText?.includes('Ingresa a tu cuenta comercial'),
+    );
+    await clickButton('Entrar con Demo Rápida');
+    return;
+  }
+
+  await clickButton('Ir al Dashboard');
+}
+
 async function assertUserApiKeysTab(description) {
   await waitFor(description, () => {
     const text = document.body?.innerText || '';
@@ -155,11 +171,10 @@ async function run() {
     console.log(`✓ unauthenticated ${privatePath} redirects to the public URL`);
   }
 
-  await clickButton('Ingresar al CRM');
+  await signInWithLocalDemo();
   await assertPrivateWorkspace('the demo/login action to enter the dashboard');
-  console.log('✓ demo/login action enters the dashboard');
+  console.log('✓ unauthenticated access opens login and local demo authentication enters the dashboard');
 
-  await clickButton('Módulos Avanzados');
   await clickButton('Configuración General');
   await waitFor('the settings view', () => document.body?.innerText?.includes('Integraciones & API Hub'));
   await clickButton('Auditoría & Logs');
@@ -174,7 +189,10 @@ async function run() {
   await assertPublicSite('the dashboard action to return to the public site');
   console.log('✓ public-site action returns to the landing experience');
 
-  await clickButton('Ingresar al CRM');
+  await waitFor('the active-session dashboard action', () =>
+    document.body?.innerText?.includes('Ir al Dashboard'),
+  );
+  await clickButton('Ir al Dashboard');
   await assertPrivateWorkspace('the dashboard before logout');
   await evaluate('document.querySelector("#sidebar-logout-btn")?.click()');
   await assertPublicSite('logout to return to the public site');

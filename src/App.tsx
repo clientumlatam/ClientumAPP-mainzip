@@ -13,7 +13,7 @@ const PrivateEnvironment = React.lazy(() => import('./components/app/PrivateEnvi
 
 const AppContent: React.FC = () => {
   const { resolvedTheme } = useTheme();
-  const { isPublicSiteVisible, isAuthenticated, openPublicSite, enterApp } = useCRM();
+  const { isPublicSiteVisible, isAuthenticated, isAuthReady, openPublicSite, enterApp } = useCRM();
   const [pathname, setPathname] = React.useState(() =>
     typeof window === 'undefined' ? '/' : window.location.pathname,
   );
@@ -27,6 +27,8 @@ const AppContent: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
+    if (!isAuthReady) return;
+
     if (isPrivateRoute && isAuthenticated) {
       if (isPublicSiteVisible) enterApp();
       return;
@@ -44,7 +46,7 @@ const AppContent: React.FC = () => {
     // A public URL always renders the public environment, even if a stale
     // sessionStorage view flag says "app".
     if (!isPrivateRoute && !isPublicSiteVisible) openPublicSite();
-  }, [enterApp, isAuthenticated, isPrivateRoute, isPublicSiteVisible, openPublicSite]);
+  }, [enterApp, isAuthReady, isAuthenticated, isPrivateRoute, isPublicSiteVisible, openPublicSite]);
 
   const publicEnvironment = (
     <div data-theme={resolvedTheme} className="min-h-screen w-screen overflow-x-hidden bg-[var(--bg-canvas)] text-[var(--text-primary)]">
@@ -65,6 +67,14 @@ const AppContent: React.FC = () => {
       <PrivateEnvironment />
     </React.Suspense>
   );
+
+  if (!isAuthReady && isPrivateRoute) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#07090e] text-sm text-slate-300">
+        Verificando tu sesión segura…
+      </div>
+    );
+  }
 
   return (
     <ProtectedRoute

@@ -13,12 +13,15 @@ import {
   ExternalLink,
   Sun,
   Moon,
+  Settings2,
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
 import { useTheme } from '../../context/ThemeContext';
 import { STAGES } from '../../data/initialData';
 import { Language, StageId } from '../../types';
 import { ClientumLogo } from '../common/ClientumLogo';
+import { MODULE_CREDENTIALS } from '../../data/moduleCredentials';
+import { ModuleCredentialsModal } from '../settings/ModuleCredentialsModal';
 
 export const Navbar: React.FC = () => {
   const {
@@ -44,6 +47,9 @@ export const Navbar: React.FC = () => {
   } = useCRM();
 
   const { resolvedTheme, toggleTheme } = useTheme();
+  const [isConfigOpen, setIsConfigOpen] = React.useState(false);
+  const configModuleId = activeTab === 'mapsProspecting' ? 'googleMaps' : activeTab;
+  const hasModuleCredentials = MODULE_CREDENTIALS.some((module) => module.id === configModuleId);
 
   const getTitle = () => {
     switch (activeTab) {
@@ -84,6 +90,7 @@ export const Navbar: React.FC = () => {
     filterState.priority !== 'all';
 
   return (
+    <>
     <header
       id="clientum-top-navbar"
       className="crm-top-navbar h-14 flex items-center justify-between px-4 gap-4 shrink-0 z-10 select-none"
@@ -193,6 +200,18 @@ export const Navbar: React.FC = () => {
 
       {/* Right Controls & Actions */}
       <div className="flex items-center gap-2">
+        {hasModuleCredentials && (
+          <button
+            type="button"
+            onClick={() => setIsConfigOpen(true)}
+            className="hidden md:flex items-center gap-1.5 rounded-lg border border-cyan-500/25 bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-700 shadow-xs transition-colors hover:bg-cyan-100"
+            title={`Configurar API de ${currentMeta.name}`}
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+            <span>Configurar API</span>
+          </button>
+        )}
+
         {/* Switch to Public Site button */}
         <button
           onClick={exitToPublicSite}
@@ -322,5 +341,10 @@ export const Navbar: React.FC = () => {
         </button>
       </div>
     </header>
+    <ModuleCredentialsModal
+      moduleId={isConfigOpen ? configModuleId : null}
+      onClose={() => setIsConfigOpen(false)}
+    />
+    </>
   );
 };

@@ -2,7 +2,7 @@
 
 **Fecha de revisión:** 2026-09-08  
 **Alcance:** inventario adjunto, `.env.example`, `SECRETS.md`, backend Express,
-cliente React y flujo de credenciales por usuario.
+cliente React y flujo de credenciales por tenant.
 
 ## Resumen ejecutivo
 
@@ -10,7 +10,7 @@ cliente React y flujo de credenciales por usuario.
   de trabajo. No se inspeccionaron valores secretos, por lo que su existencia
   no se considera una prueba de que el proveedor esté listo.
 - Las credenciales introducidas desde `Configuración` se guardan por
-  `user_id` y `module_id`, cifradas en PostgreSQL cuando está disponible. El
+  `tenant_id` y `module_id`, cifradas en PostgreSQL cuando está disponible. El
   navegador recibe únicamente metadatos enmascarados.
 - **Prospección Maps B2B** ya tiene configuración visible dentro del módulo.
   Cuando el usuario guarda `GOOGLE_MAPS_SERVER_API_KEY`, la búsqueda utiliza
@@ -28,26 +28,26 @@ cliente React y flujo de credenciales por usuario.
 | --- | --- | --- |
 | IA | `GEMINI_API_KEY` | Backend para `/api/ai/*` y categorización de gastos. Se rechazan valores vacíos o de documentación. |
 | Firebase público | `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_MEASUREMENT_ID` | Configuración pública del bundle y verificación server-side del ID token mediante Firebase Identity Toolkit. |
-| Persistencia | `DATABASE_URL` o `PGHOST`, `PGUSER`, `PGDATABASE` | PostgreSQL para credenciales de usuario y API Keys internas. Se prioriza la conexión administrada. |
+| Persistencia | `DATABASE_URL` o `PGHOST`, `PGUSER`, `PGDATABASE` | PostgreSQL para credenciales por tenant y API Keys internas. Se prioriza la conexión administrada. |
 | Cifrado/API Keys internas | `WORKFLOW_ENCRYPTION_KEY`, `API_KEY_PEPPER`, `SESSION_SECRET` | Se usa la primera disponible para cifrar el vault y generar hashes HMAC. `SESSION_SECRET` sigue siendo fallback técnico, no una sesión Express. |
 | SMTP | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Estado y envío de correo desde backend. La configuración se valida contra placeholders. |
 | WhatsApp webhook | `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Firma `x-hub-signature-256` y challenge de verificación de Meta. |
 | Administración | `NODE_ENV`, `CLIENTUM_API_KEY_ADMIN_IDS` | Separación demo/producción y autorización de administración de API Keys de otros usuarios. |
 
-### Credenciales por usuario
+### Credenciales por tenant
 
 Se aceptan desde la configuración del módulo y no son variables globales:
 
-- `GOOGLE_MAPS_SERVER_API_KEY` y `VITE_GOOGLE_MAPS_API_KEY` en
-  `moduleId=googleMaps`. La primera es la que usa el endpoint server-side;
-  la segunda queda reservada para una futura carga de Maps en el navegador.
-- `GEMINI_API_KEY` por módulo, con fallback a `aiAssistant` del mismo usuario y
-  luego a la clave de plataforma.
-- Campos de WhatsApp, Mercado Pago, AFIP, Cloudflare, SMTP y Google Maps
-  definidos en `src/data/moduleCredentials.ts`.
+- `GOOGLE_MAPS_SERVER_API_KEY` en `moduleId=googleMaps`, cuando cada empresa
+  utiliza su propio proyecto de Google.
+- Campos de WhatsApp, Mercado Pago, AFIP y Google Maps definidos en
+  `src/data/moduleCredentials.ts`.
 
-La separación es efectiva en producción porque el `user_id` se obtiene del
-Firebase ID token. El header `x-clientum-user-id` solo sirve para la demo local.
+La separación es efectiva en producción porque el usuario se obtiene del
+Firebase ID token y el servidor resuelve su membresía en
+`clientum_tenant_memberships`. El header `x-clientum-user-id` solo sirve para
+la demo local. El endpoint rechaza campos que pertenecen a la plataforma, como
+`GEMINI_API_KEY` o `CLOUDFLARE_API_TOKEN`.
 
 ### Declaradas, pero todavía no conectadas al runtime
 
@@ -81,9 +81,12 @@ Secrets.
    en producción.
 6. La validación de Gemini y SMTP rechaza placeholders, no solo valores
    presentes.
-7. Prospección Maps B2B tiene un botón **Configurar API** y usa la credencial
-   cifrada del usuario. La clave nunca se devuelve al cliente ni se registra.
-8. Si Google Places rechaza una búsqueda con una clave configurada, se devuelve
+7. Cada módulo del catálogo tiene el botón **Configurar API** en la barra
+   superior y reutiliza el mismo modal seguro. Los módulos sin credenciales
+   explican que usan configuración de plataforma.
+8. Prospección Maps B2B usa la credencial cifrada del tenant. La clave nunca
+   se devuelve al cliente ni se registra.
+9. Si Google Places rechaza una búsqueda con una clave configurada, se devuelve
    un error explícito en vez de presentar resultados demo como si fueran reales.
 
 ## Riesgos y trabajo pendiente
@@ -97,6 +100,8 @@ Secrets.
 - Mercado Pago, AFIP y envío saliente de WhatsApp requieren implementación
   backend, validación de firma/idempotencia y pruebas específicas antes de
   habilitar sus pantallas como “reales”.
+- La membresía multiusuario ya tiene tablas y resolución server-side, pero aún
+  falta una pantalla administrativa para invitar y retirar miembros del tenant.
 
 ## Verificación ejecutada
 

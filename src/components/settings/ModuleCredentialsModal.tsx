@@ -190,7 +190,7 @@ export const ModuleCredentialsModal: React.FC<ModuleCredentialsModalProps> = ({ 
         <div className="space-y-4 p-5">
           <div className="flex items-start gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-[11px] leading-relaxed text-emerald-100/80">
             <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-            <span>Estas credenciales pertenecen a <strong className="text-emerald-200">{currentUser.name}</strong>, se envían solo al backend y no se guardan en localStorage ni se muestran completas después de guardar.</span>
+            <span>Estas credenciales pertenecen al workspace de <strong className="text-emerald-200">{currentUser.name}</strong>, se cifran en el backend y no se guardan en localStorage ni se muestran completas después de guardar.</span>
           </div>
 
           {definition.fields.length === 0 ? (

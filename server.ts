@@ -26,7 +26,7 @@ type UserCredentialRecord = {
   values: Record<string, string>;
 };
 
-type UserCredentialVault = Record<string, Record<string, UserCredentialRecord>>;
+type TenantCredentialVault = Record<string, Record<string, UserCredentialRecord>>;
 type ServerApiKeyRecord = {
   id: string;
   name: string;
@@ -52,7 +52,102 @@ const userCredentialStorePath = process.env.USER_CREDENTIAL_STORE_PATH ||
 const userApiKeyStorePath = process.env.USER_API_KEY_STORE_PATH ||
   path.join(process.cwd(), ".data", "user-api-keys.enc.json");
 
-console.log(`Credential persistence: ${credentialDatabase ? "PostgreSQL" : "development file fallback"}`);
+console.log(`Credential persistence: ${credentialDatabase ? "PostgreSQL tenant vault" : "development file fallback"}`);
+
+async function ensureCredentialSchema(): Promise<void> {
+  if (!credentialDatabase) return;
+
+  await credentialDatabase.query(`
+    CREATE TABLE IF NOT EXISTS clientum_user_credentials (
+      user_id TEXT NOT NULL,
+      module_id TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      iv TEXT NOT NULL,
+      auth_tag TEXT NOT NULL,
+      encrypted_data TEXT NOT NULL,
+      PRIMARY KEY (user_id, module_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS clientum_user_api_keys (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      key_prefix TEXT NOT NULL,
+      scopes JSONB NOT NULL DEFAULT '[]'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
+      token_hash TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS clientum_tenants (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS clientum_tenant_memberships (
+      tenant_id TEXT NOT NULL REFERENCES clientum_tenants(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'owner',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (tenant_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS clientum_tenant_credentials (
+      tenant_id TEXT NOT NULL REFERENCES clientum_tenants(id) ON DELETE CASCADE,
+      module_id TEXT NOT NULL,
+      updated_by_user_id TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      iv TEXT NOT NULL,
+      auth_tag TEXT NOT NULL,
+      encrypted_data TEXT NOT NULL,
+      PRIMARY KEY (tenant_id, module_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS clientum_tenant_memberships_user_idx
+      ON clientum_tenant_memberships (user_id);
+  `);
+
+  // Existing releases stored credentials under user_id. Migrate those rows
+  // into each user's initial personal tenant without decrypting or exposing
+  // the encrypted payload.
+  await credentialDatabase.query(`
+    INSERT INTO clientum_tenants (id, name)
+    SELECT DISTINCT
+      'tenant_' || substr(md5(user_id), 1, 32),
+      'Workspace ' || left(user_id, 32)
+    FROM clientum_user_credentials
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO clientum_tenant_memberships (tenant_id, user_id, role)
+    SELECT DISTINCT
+      'tenant_' || substr(md5(user_id), 1, 32),
+      user_id,
+      'owner'
+    FROM clientum_user_credentials
+    ON CONFLICT (tenant_id, user_id) DO NOTHING;
+
+    INSERT INTO clientum_tenant_credentials
+      (tenant_id, module_id, updated_by_user_id, updated_at, iv, auth_tag, encrypted_data)
+    SELECT
+      'tenant_' || substr(md5(user_id), 1, 32),
+      module_id,
+      user_id,
+      updated_at,
+      iv,
+      auth_tag,
+      encrypted_data
+    FROM clientum_user_credentials
+    ON CONFLICT (tenant_id, module_id) DO NOTHING;
+  `);
+}
+
+const credentialSchemaReady = credentialDatabase
+  ? ensureCredentialSchema()
+  : Promise.resolve();
+void credentialSchemaReady.catch((error: any) => {
+  console.error("Credential schema initialization failed:", error?.message || error);
+});
 
 function getCredentialEncryptionKey(): Buffer {
   const configuredKey = (
@@ -99,15 +194,15 @@ function decryptJson<T>(encrypted: EncryptedPayload): T {
   ]).toString("utf8")) as T;
 }
 
-function loadUserCredentialVault(): UserCredentialVault {
+function loadTenantCredentialVault(): TenantCredentialVault {
   if (!existsSync(userCredentialStorePath)) return {};
 
-  return decryptJson<UserCredentialVault>(
+  return decryptJson<TenantCredentialVault>(
     JSON.parse(readFileSync(userCredentialStorePath, "utf8")) as EncryptedPayload,
   );
 }
 
-function saveUserCredentialVault(vault: UserCredentialVault): void {
+function saveTenantCredentialVault(vault: TenantCredentialVault): void {
   mkdirSync(path.dirname(userCredentialStorePath), { recursive: true });
   writeFileSync(userCredentialStorePath, JSON.stringify(encryptJson(vault)), { mode: 0o600 });
 }
@@ -126,6 +221,40 @@ function saveServerApiKeyVault(vault: ServerApiKeyVault): void {
 
 function hashServerApiKey(token: string): string {
   return createHmac("sha256", getCredentialEncryptionKey()).update(token).digest("hex");
+}
+
+function getTenantIdForUser(userId: string): string {
+  return `tenant_${createHash("sha256").update(userId).digest("hex").slice(0, 32)}`;
+}
+
+async function ensureTenantMembership(userId: string): Promise<string> {
+  if (!credentialDatabase) return getTenantIdForUser(userId);
+
+  await credentialSchemaReady;
+  const membership = await credentialDatabase.query<{ tenant_id: string }>(
+    `SELECT tenant_id
+     FROM clientum_tenant_memberships
+     WHERE user_id = $1
+     ORDER BY created_at ASC
+     LIMIT 1`,
+    [userId],
+  );
+  if (membership.rows[0]?.tenant_id) return membership.rows[0].tenant_id;
+
+  const tenantId = getTenantIdForUser(userId);
+  await credentialDatabase.query(
+    `INSERT INTO clientum_tenants (id, name)
+     VALUES ($1, $2)
+     ON CONFLICT (id) DO NOTHING`,
+    [tenantId, `Workspace ${userId.slice(0, 32)}`],
+  );
+  await credentialDatabase.query(
+    `INSERT INTO clientum_tenant_memberships (tenant_id, user_id, role)
+     VALUES ($1, $2, 'owner')
+     ON CONFLICT (tenant_id, user_id) DO NOTHING`,
+    [tenantId, userId],
+  );
+  return tenantId;
 }
 
 async function getRequestUserId(req: express.Request): Promise<string | null> {
@@ -187,6 +316,64 @@ const ADMIN_ROLE_NAMES = new Set([
   "super-administrador",
 ]);
 
+const TENANT_CREDENTIAL_FIELDS: Record<string, Set<string>> = {
+  whatsapp: new Set([
+    "WHATSAPP_ACCESS_TOKEN",
+    "WHATSAPP_APP_SECRET",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "WHATSAPP_BUSINESS_ACCOUNT_ID",
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+  ]),
+  chatbot: new Set([
+    "WHATSAPP_ACCESS_TOKEN",
+    "WHATSAPP_APP_SECRET",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "WHATSAPP_BUSINESS_ACCOUNT_ID",
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+  ]),
+  campaigns: new Set([
+    "WHATSAPP_ACCESS_TOKEN",
+    "WHATSAPP_APP_SECRET",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "WHATSAPP_BUSINESS_ACCOUNT_ID",
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+  ]),
+  sdrOutreach: new Set([
+    "WHATSAPP_ACCESS_TOKEN",
+    "WHATSAPP_APP_SECRET",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "WHATSAPP_BUSINESS_ACCOUNT_ID",
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+  ]),
+  tiendaDigital: new Set([
+    "WHATSAPP_ACCESS_TOKEN",
+    "WHATSAPP_APP_SECRET",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "WHATSAPP_BUSINESS_ACCOUNT_ID",
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+    "MERCADOPAGO_ACCESS_TOKEN",
+    "MERCADOPAGO_WEBHOOK_SECRET",
+    "MERCADOPAGO_PUBLIC_KEY",
+  ]),
+  erp: new Set([
+    "AFIP_CERTIFICATE_P12_BASE64",
+    "AFIP_PRIVATE_KEY",
+    "AFIP_PRIVATE_KEY_PASSWORD",
+    "AFIP_CUIT",
+    "AFIP_ENVIRONMENT",
+  ]),
+  payments: new Set([
+    "MERCADOPAGO_ACCESS_TOKEN",
+    "MERCADOPAGO_WEBHOOK_SECRET",
+    "MERCADOPAGO_PUBLIC_KEY",
+  ]),
+  googleMaps: new Set(["GOOGLE_MAPS_SERVER_API_KEY"]),
+};
+
+function getTenantCredentialFields(moduleId: string): Set<string> | null {
+  return TENANT_CREDENTIAL_FIELDS[moduleId] || null;
+}
+
 function isValidUserId(value: unknown): value is string {
   return typeof value === "string" && /^[a-zA-Z0-9:_-]{1,120}$/.test(value.trim());
 }
@@ -212,39 +399,40 @@ function getRequestedOwnerUserId(value: unknown, fallbackUserId: string): string
   return value.trim();
 }
 
-async function getUserCredentialValues(userId: string, moduleId: string): Promise<Record<string, string>> {
+async function getTenantCredentialValues(userId: string, moduleId: string): Promise<Record<string, string>> {
+  const allowedFields = getTenantCredentialFields(moduleId);
+  if (!allowedFields) return {};
+  const tenantId = await ensureTenantMembership(userId);
   if (credentialDatabase) {
     const result = await credentialDatabase.query<{
       iv: string;
       auth_tag: string;
       encrypted_data: string;
     }>(
-      "SELECT iv, auth_tag, encrypted_data FROM clientum_user_credentials WHERE user_id = $1 AND module_id = $2",
-      [userId, moduleId],
+      "SELECT iv, auth_tag, encrypted_data FROM clientum_tenant_credentials WHERE tenant_id = $1 AND module_id = $2",
+      [tenantId, moduleId],
     );
     if (!result.rows[0]) return {};
-    return decryptJson<Record<string, string>>({
+    const values = decryptJson<Record<string, string>>({
       iv: result.rows[0].iv,
       authTag: result.rows[0].auth_tag,
       data: result.rows[0].encrypted_data,
     });
+    return Object.fromEntries(
+      Object.entries(values).filter(([fieldId]) => allowedFields.has(fieldId)),
+    );
   }
 
-  const vault = loadUserCredentialVault();
-  return vault[userId]?.[moduleId]?.values || {};
+  const vault = loadTenantCredentialVault();
+  return Object.fromEntries(
+    Object.entries(vault[tenantId]?.[moduleId]?.values || {})
+      .filter(([fieldId]) => allowedFields.has(fieldId)),
+  );
 }
 
-async function getUserGeminiKey(userId: string | null, moduleId = "aiAssistant"): Promise<string | undefined> {
-  if (userId) {
-    const moduleValues = await getUserCredentialValues(userId, moduleId);
-    if (moduleValues.GEMINI_API_KEY && !isPlaceholderValue(moduleValues.GEMINI_API_KEY)) {
-      return moduleValues.GEMINI_API_KEY.trim();
-    }
-    const sharedValues = await getUserCredentialValues(userId, "aiAssistant");
-    if (sharedValues.GEMINI_API_KEY && !isPlaceholderValue(sharedValues.GEMINI_API_KEY)) {
-      return sharedValues.GEMINI_API_KEY.trim();
-    }
-  }
+async function getUserGeminiKey(_userId: string | null): Promise<string | undefined> {
+  // Gemini is a platform capability. Tenant credential records must not
+  // override the platform provider or turn a private API key into user data.
   const platformKey = process.env.GEMINI_API_KEY?.trim();
   return platformKey && !isPlaceholderValue(platformKey) ? platformKey : undefined;
 }
@@ -258,9 +446,10 @@ app.get("/api/user-credentials", async (req, res) => {
   }
 
   try {
-    const values = await getUserCredentialValues(userId, moduleId);
+    const tenantId = await ensureTenantMembership(userId);
+    const values = await getTenantCredentialValues(userId, moduleId);
     res.json({
-      userId,
+      tenantId,
       moduleId,
       fields: Object.keys(values).map((fieldId) => ({
         fieldId,
@@ -285,29 +474,47 @@ app.put("/api/user-credentials", async (req, res) => {
     res.status(400).json({ error: "Credential values must be an object." });
     return;
   }
+  const allowedFields = getTenantCredentialFields(moduleId);
+  if (!allowedFields) {
+    res.status(400).json({ error: "This module uses platform configuration or a dedicated connection flow." });
+    return;
+  }
 
   try {
+    const rawEntries = Object.entries(values as Record<string, unknown>);
+    const invalidField = rawEntries.find(([fieldId]) => !allowedFields.has(fieldId));
+    if (invalidField) {
+      res.status(400).json({ error: `The field ${invalidField[0]} is not a tenant credential.` });
+      return;
+    }
     const nextValues = Object.fromEntries(
-      Object.entries(values as Record<string, unknown>)
+      rawEntries
         .filter(([, value]) => typeof value === "string" && value.trim().length > 0)
-        .map(([fieldId, value]) => [fieldId.slice(0, 120), String(value).trim().slice(0, 10000)]),
+        .map(([fieldId, value]) => [fieldId, String(value).trim().slice(0, 10000)]),
     );
+    if (Object.keys(nextValues).length === 0) {
+      res.status(400).json({ error: "At least one tenant credential value is required." });
+      return;
+    }
     if (credentialDatabase) {
+      const tenantId = await ensureTenantMembership(userId);
       const encrypted = encryptJson(nextValues);
       await credentialDatabase.query(
-        `INSERT INTO clientum_user_credentials
-          (user_id, module_id, updated_at, iv, auth_tag, encrypted_data)
-         VALUES ($1, $2, NOW(), $3, $4, $5)
-         ON CONFLICT (user_id, module_id)
-         DO UPDATE SET updated_at = NOW(), iv = EXCLUDED.iv, auth_tag = EXCLUDED.auth_tag,
+        `INSERT INTO clientum_tenant_credentials
+          (tenant_id, module_id, updated_by_user_id, updated_at, iv, auth_tag, encrypted_data)
+         VALUES ($1, $2, $3, NOW(), $4, $5, $6)
+         ON CONFLICT (tenant_id, module_id)
+         DO UPDATE SET updated_by_user_id = EXCLUDED.updated_by_user_id,
+                       updated_at = NOW(), iv = EXCLUDED.iv, auth_tag = EXCLUDED.auth_tag,
                        encrypted_data = EXCLUDED.encrypted_data`,
-        [userId, moduleId, encrypted.iv, encrypted.authTag, encrypted.data],
+        [tenantId, moduleId, userId, encrypted.iv, encrypted.authTag, encrypted.data],
       );
     } else {
-      const vault = loadUserCredentialVault();
-      vault[userId] = vault[userId] || {};
-      vault[userId][moduleId] = { updatedAt: new Date().toISOString(), values: nextValues };
-      saveUserCredentialVault(vault);
+      const tenantId = getTenantIdForUser(userId);
+      const vault = loadTenantCredentialVault();
+      vault[tenantId] = vault[tenantId] || {};
+      vault[tenantId][moduleId] = { updatedAt: new Date().toISOString(), values: nextValues };
+      saveTenantCredentialVault(vault);
     }
     res.json({
       success: true,
@@ -330,16 +537,18 @@ app.delete("/api/user-credentials", async (req, res) => {
 
   try {
     if (credentialDatabase) {
+      const tenantId = await ensureTenantMembership(userId);
       await credentialDatabase.query(
-        "DELETE FROM clientum_user_credentials WHERE user_id = $1 AND module_id = $2",
-        [userId, moduleId],
+        "DELETE FROM clientum_tenant_credentials WHERE tenant_id = $1 AND module_id = $2",
+        [tenantId, moduleId],
       );
     } else {
-      const vault = loadUserCredentialVault();
-      if (vault[userId]) {
-        delete vault[userId][moduleId];
-        if (Object.keys(vault[userId]).length === 0) delete vault[userId];
-        saveUserCredentialVault(vault);
+      const tenantId = getTenantIdForUser(userId);
+      const vault = loadTenantCredentialVault();
+      if (vault[tenantId]) {
+        delete vault[tenantId][moduleId];
+        if (Object.keys(vault[tenantId]).length === 0) delete vault[tenantId];
+        saveTenantCredentialVault(vault);
       }
     }
     res.json({ success: true, moduleId });
@@ -993,7 +1202,7 @@ app.post("/api/ai/prospect", async (req, res) => {
 
     const userId = await getRequestUserId(req);
     const mapCredentials = userId
-      ? await getUserCredentialValues(userId, "googleMaps")
+      ? await getTenantCredentialValues(userId, "googleMaps")
       : {};
     const googleMapsKey = typeof mapCredentials.GOOGLE_MAPS_SERVER_API_KEY === "string" &&
       !isPlaceholderValue(mapCredentials.GOOGLE_MAPS_SERVER_API_KEY)
@@ -1067,7 +1276,7 @@ app.post("/api/ai/prospect", async (req, res) => {
       return;
     }
 
-    const requestGeminiKey = await getUserGeminiKey(userId, "googleMaps");
+    const requestGeminiKey = await getUserGeminiKey(userId);
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
@@ -1192,7 +1401,7 @@ app.post("/api/expense/categorize", async (req, res) => {
       return;
     }
 
-    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req), "erp");
+    const requestGeminiKey = await getUserGeminiKey(await getRequestUserId(req));
     if (isApiKeyPresent(requestGeminiKey)) {
       try {
         const response = await callGeminiWithRetry({
