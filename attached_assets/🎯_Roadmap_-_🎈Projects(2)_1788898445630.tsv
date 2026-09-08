@@ -1,0 +1,133 @@
+Title	URL	Priority	Start date	Target date	Quarter	Dev status	Linked pull requests	Sub-issues progress
+📩 Mail as standard Object	https://github.com/twentyhq/core-team-issues/issues/217				Q1 26			
+📎 Email Attachement	https://github.com/twentyhq/core-team-issues/issues/225				Q3 26			
+🔍 Nested Filters	https://github.com/twentyhq/core-team-issues/issues/213				Q2 26			2 / 3 (66%)
+👁️ Nested Fields	https://github.com/twentyhq/core-team-issues/issues/214				Q2 26			
+🔍 Settings Search	https://github.com/twentyhq/core-team-issues/issues/226				Q4 26			
+📮 Inbox V1	https://github.com/twentyhq/core-team-issues/issues/210				Q4 26			
+🔄 Subflows (Workflows)	https://github.com/twentyhq/core-team-issues/issues/18							
+[Extensibility] [twenty-sdk] [v2] Improve AppDevCommand so it uses manifest.json PATCH	https://github.com/twentyhq/core-team-issues/issues/1516							
+✨ PG vector Field Type	https://github.com/twentyhq/core-team-issues/issues/47							
+Ability to upload image and files through the REST API	https://github.com/twentyhq/core-team-issues/issues/187							
+Adjust config for integration test	https://github.com/twentyhq/core-team-issues/issues/176							
+Add the ability to drag and drop columns in table views.	https://github.com/twentyhq/core-team-issues/issues/151							
+Improve record navigation	https://github.com/twentyhq/core-team-issues/issues/129							
+Improve seeding perf	https://github.com/twentyhq/core-team-issues/issues/71							
+Add the ability to enable email correspondence on custom objects	https://github.com/twentyhq/core-team-issues/issues/51							
+@ Emails & Calendar	https://github.com/twentyhq/core-team-issues/issues/11							15 / 19 (78%)
+🚪Onboarding flow	https://github.com/twentyhq/core-team-issues/issues/10							19 / 21 (90%)
+👀 Views (Tables / Kanbans)	https://github.com/twentyhq/core-team-issues/issues/9							46 / 54 (85%)
+🔧 Settings	https://github.com/twentyhq/core-team-issues/issues/8							23 / 24 (95%)
+🔄 Workflows	https://github.com/twentyhq/core-team-issues/issues/7							69 / 86 (80%)
+💽 Data Model	https://github.com/twentyhq/core-team-issues/issues/6							32 / 40 (80%)
+↔️ Side Panel	https://github.com/twentyhq/core-team-issues/issues/1							18 / 18 (100%)
+We should store the html content of emails in S3 instead of Postgres	https://github.com/twentyhq/core-team-issues/issues/32							0 / 0 (0%)
+✨ User Experience	https://github.com/twentyhq/core-team-issues/issues/68							23 / 24 (95%)
+🤖 Developer Experience	https://github.com/twentyhq/core-team-issues/issues/78							12 / 13 (92%)
+Design: per-user / per-workflow / per-app credit caps	https://github.com/twentyhq/core-team-issues/issues/2392					Started	https://github.com/twentyhq/core-team-issues/pull/2393, https://github.com/twentyhq/core-team-issues/pull/2394, https://github.com/twentyhq/core-team-issues/pull/2395	
+[Extensibility] Add changelog to application	https://github.com/twentyhq/core-team-issues/issues/1839		Jun 22, 2026	Jun 22, 2026		Started		
+[Extensibility] Use ink in all twenty-sdk and create-twenty-app commands	https://github.com/twentyhq/core-team-issues/issues/2184		Jun 20, 2026	Jun 20, 2026		Started		
+🔗 Many to Many	https://github.com/twentyhq/core-team-issues/issues/2190					Started		
+🦠 Polymorphic relation type	https://github.com/twentyhq/core-team-issues/issues/186				Q1 26	Started		28 / 32 (87%)
+🗜️ Group by any field type	https://github.com/twentyhq/core-team-issues/issues/1762				Q2 26	Started		
+🪶 Relation name edition	https://github.com/twentyhq/core-team-issues/issues/1928				Q2 26	Started		
+💽 Event Data (Clickhouse) - Display external events in timeline	https://github.com/twentyhq/core-team-issues/issues/815				Q4 26	Started		
+Revamp input system	https://github.com/twentyhq/core-team-issues/issues/736				Q4 26	Started		2 / 12 (16%)
+🔀 Sub-field sorting	https://github.com/twentyhq/core-team-issues/issues/550				Q3 26	Started		2 / 2 (100%)
+💻 Formulas - Computed / Expressed fields	https://github.com/twentyhq/core-team-issues/issues/813				Q3 26	Started		
+[Workflows] Switch from active to draft to active version is buggy	https://github.com/twentyhq/core-team-issues/issues/1919					Started		
+[Extensibility] [Public domain] Follow ups	https://github.com/twentyhq/core-team-issues/issues/1550					Started		
+[Extensibility] [Technical] Use better Application fragments to avoid getting too much data	https://github.com/twentyhq/core-team-issues/issues/1723					Started		
+🧮 Formula Node	https://github.com/twentyhq/core-team-issues/issues/769					Started		
+Add success/failing scenarii in impersonation integration testsuite	https://github.com/twentyhq/core-team-issues/issues/1595					Started		
+Refacto - Remove context from workflow Filter and Search actions	https://github.com/twentyhq/core-team-issues/issues/1209					Started		
+Gather all event listener in one listener `packages/twenty-server/src/engine/core-modules/event-listener/event-listener.module.ts`	https://github.com/twentyhq/core-team-issues/issues/753					Started		
+[Workflow] When creating a workflow with a Code step, when clicking on Test, code is not snapshoted	https://github.com/twentyhq/core-team-issues/issues/1221					Started		
+Ability to filter secondary links/emails and other sub-array fields	https://github.com/twentyhq/core-team-issues/issues/901					Started		
+[Form] Add Select field settings to form action - custom field	https://github.com/twentyhq/core-team-issues/issues/623					Started		
+🔧 (State <-> Side panel relation) -> Add Node Selection context to Side Panel	https://github.com/twentyhq/core-team-issues/issues/518					Started		
+[Timebox] Refactor RecordShow components hierarchy	https://github.com/twentyhq/core-team-issues/issues/378					Started		
+Sync multiple calendars	https://github.com/twentyhq/core-team-issues/issues/128					Started		
+I can send mass-emails (with AWS SES Domain Validation)	https://github.com/twentyhq/core-team-issues/issues/152					Started		
+[Timebox 1h] - Workspace deletion								
+Monitoring - grafana dashboard on new AI metrics								
+AI - Tool optimization - Database CRUD								
+[Timebox 1h] - Tool optim - Main tool archi								
+AI - workflow build/repair use case								
+Billing - clean up orphaned and de-sync sub								
+AI Chat - Check credits "intra-turn"								
+AI Chat - Bug - File not read								
+Billing - Metered -> Licensed for resource usage								
+AI Chat - Cost optimization								
+Deploy and run command to migrate workflows' stepFilters values								
+View group add new and load more wrong cursor								
+View group backfill No Value								
+Rework and Merge Uploads to Activity								
+[Timebox] Recoil V3 on useSelectabeList								
+Create command to add Address to views								
+feat: add soft delete								
+Gitstart follow-up								
+[Timebox] Search v1								
+[Timebox] Gitstart follow-up								
+Release 0.30								
+Force redis installation into new self-hosting instances and local contributor guide								
+Update ts_vector column when label identifier is updated for custom object (+implement handleAlter)								
+Implement ts_vector search for notes								
+[Timebox] Gitstart follow-up								
+[Timebox - 4h] Perf issue								
+MCP - Add record url in response								
+MCP - Follow up								
+[Timebox] PR Review								
+[Timebox] Double check developer experience for install and deploy								
+Refactor import spreadsheet with new object metadata								
+[Metrics] Add a metric module to improve observability								
+Implement ts_vector search for Notes								
+Limit selected columns in ts vector results								
+Handle phones in ts vector								
+Store request count per workspace in Redis								
+Refactor Filter into RecordFilter in ViewBar and interfaces								
+Generate seed file from metadata								
+[placeholder] permissions								
+[TIME_BOX] E2E testing ObjectModel settings page								
+[TIME_BOX] Investigate nx/jest runner to basic jest runner migration								
+[Timebox] Investigate Metadata performance								
+Send feedback to user when workflow cannot be executed due to a Billing Exception								
+[UNIT_TEST] `UseUpdateOneRecord` hooks and optimistic cache side-effects + relations								
+[Timebox] Complete database prod migration								
+Update permissions doc								
+Server integration tests that cover user signup, workspace creation, workspace activation								
+Toto								
+Spread dependencies to package scope								
+Disable all workflow actions while creating one								
+Errors like "Uncompiled message detected" fill server logs	https://github.com/twentyhq/twenty/issues/11593					Done		
+App manifest asset URLs (logo, screenshots) are inconsistently resolved across deploy paths	https://github.com/twentyhq/twenty/issues/20203					Started		
+Workspace member: me filter not available in Dashboards	https://github.com/twentyhq/twenty/issues/20225					Done	https://github.com/twentyhq/twenty/pull/20266, https://github.com/twentyhq/twenty/pull/20971, https://github.com/twentyhq/twenty/pull/23282	
+v1.20 upgrade flips task/note bodyV2 metadata to TEXT; v2.x silently breaks tasks	https://github.com/twentyhq/twenty/issues/20596	Medium				Done		
+Remove custom file field maximum files limit and improve UX on attached files creation / edition / deletion	https://github.com/twentyhq/twenty/issues/20942					Done		
+Attachments should not be creatable if they are not editable in the UI	https://github.com/twentyhq/twenty/issues/21136					Done	https://github.com/twentyhq/twenty/pull/23217	
+You do not have permission to perform this action while trying to reset password	https://github.com/twentyhq/twenty/issues/21248					Done	https://github.com/Pantkartik/twenty/pull/1, https://github.com/twentyhq/twenty/pull/21269, https://github.com/twentyhq/twenty/pull/23335	
+Partial LINK field update corrupts data	https://github.com/twentyhq/twenty/issues/13211					Started	https://github.com/twentyhq/twenty/pull/22385	
+Workflow - The statuses on the list view and the workflow page are not consistent	https://github.com/twentyhq/twenty/issues/14408					Started	https://github.com/twentyhq/twenty/pull/23769	
+Consecutive HTTP CF	https://github.com/twentyhq/twenty/issues/14735					Started	https://github.com/twentyhq/twenty/pull/23467, https://github.com/twentyhq/twenty/pull/23850	
+Users with view-only permissions cannot use workflows	https://github.com/twentyhq/twenty/issues/15231					Started	https://github.com/twentyhq/twenty/pull/19057	
+Workflow builder breaks in many different ways when editing fast	https://github.com/twentyhq/twenty/issues/15682					Started	https://github.com/twentyhq/twenty/pull/21915, https://github.com/twentyhq/twenty/pull/23847	
+In self‑hosted Twenty with local storage, deleted avatars and attachments are not removed from disk	https://github.com/twentyhq/twenty/issues/16205					Started	https://github.com/twentyhq/twenty/pull/19258, https://github.com/twentyhq/twenty/pull/23770	
+Worker health status shows outage even though it's running	https://github.com/twentyhq/twenty/issues/16727					Started		
+[Workflow] Body from Notes are not well shared from one step to another	https://github.com/twentyhq/twenty/issues/17171					Started	https://github.com/twentyhq/twenty/pull/17210	
+Error: Cannot cast to number or null	https://github.com/twentyhq/twenty/issues/17677					Started		
+[Bug] Trigger to load new entries to late	https://github.com/twentyhq/twenty/issues/18819					Started	https://github.com/twentyhq/twenty/pull/18821	
+Deactivating Relations does not Prevent the use of that Relation	https://github.com/twentyhq/twenty/issues/19026					Started		
+Junction Relations UI not showing target object selection after upgrade to v1.22.4	https://github.com/twentyhq/twenty/issues/19801					Started		
+[Docs]: Switching to any language redirects to a 404 page	https://github.com/twentyhq/twenty/issues/19971					Started	https://github.com/twentyhq/twenty/pull/19979	
+Standard tabs in the record layout like Timeline, Tasks, Notes and Files are still showing even though the relation is completely removed from the object	https://github.com/twentyhq/twenty/issues/19990					Started		
+ConnectionProvider should support a logoUrl asset (not just a Tabler icon)	https://github.com/twentyhq/twenty/issues/20216					Started	https://github.com/twentyhq/twenty/pull/23556, https://github.com/twentyhq/twenty/pull/23612	
+ChatGPT Apps OAuth connect flow does not complete for Twenty MCP	https://github.com/twentyhq/twenty/issues/20296					Started		
+Twenty MCP: draft_email depends on connectedAccountId, but find_connected_accounts returns 0 records for connected Gmail accounts	https://github.com/twentyhq/twenty/issues/20407	Medium				Started		
+Marketplace catalog never garbage-collects orphaned applicationRegistration rows	https://github.com/twentyhq/twenty/issues/20424	Medium				Started		
+Security Bug Report: EXIF Metadata Not Stripped from Uploaded Organization Logos	https://github.com/twentyhq/twenty/issues/20477					Started	https://github.com/twentyhq/twenty/pull/20490, https://github.com/twentyhq/twenty/pull/23304, https://github.com/twentyhq/twenty/pull/23318	
+User-scoped navigation menu items can leak into other users' Favorites/sidebar	https://github.com/twentyhq/twenty/issues/20483	Medium				Started	https://github.com/twentyhq/twenty/pull/20492, https://github.com/twentyhq/twenty/pull/23712	
+Bug: `/settings/ai` throws GraphQL error "Cannot query field icon/universalIdentifier on MarketplaceApp" in v2.2.0	https://github.com/twentyhq/twenty/issues/20485	Medium				Started	https://github.com/twentyhq/twenty/pull/20488	
+Workflow `UPDATE_RECORD` step cleared `emails` field that was not in `objectRecord` / `fieldsToUpdate`	https://github.com/twentyhq/twenty/issues/20598	Medium				Started		
+Bug: Native rich-text field is unusable on mobile with soft keyboard open + long content	https://github.com/twentyhq/twenty/issues/20874					Started		
+Twenty AI fails with OpenAI Zero Data Retention: "Items are not persisted for Zero Data Retention organizations"	https://github.com/twentyhq/twenty/issues/20877					Started		
+App manifest cannot contribute view fields to views owned by another application (e.g. add app fields to "All Opportunities"	https://github.com/twentyhq/twenty/issues/20886					Started		

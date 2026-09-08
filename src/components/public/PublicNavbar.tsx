@@ -56,7 +56,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
   onOpenSimulator,
   onOpenAudit,
 }) => {
-  const { enterApp, setIsAuthModalOpen } = useCRM();
+  const { enterApp, setIsAuthModalOpen, isAuthenticated } = useCRM();
 
   // Dropdown states
   const [activeMenu, setActiveMenu] = useState<'product' | 'industries' | 'resources' | null>(null);
@@ -206,13 +206,22 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <span>{currency}</span>
             </button>
 
-            {/* Direct Login Link */}
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="font-medium text-slate-600 hover:text-blue-600 transition-colors cursor-pointer hidden sm:inline"
-            >
-              Iniciar Sesión
-            </button>
+            {/* Session action */}
+            {isAuthenticated ? (
+              <button
+                onClick={enterApp}
+                className="font-semibold text-blue-700 hover:text-blue-800 transition-colors cursor-pointer hidden sm:inline"
+              >
+                Ir al Dashboard
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="font-medium text-slate-600 hover:text-blue-600 transition-colors cursor-pointer hidden sm:inline"
+              >
+                Iniciar Sesión
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -688,12 +697,12 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <span>Pedir Demo</span>
             </button>
 
-            {/* Primary CTA: Ingresar al CRM */}
+            {/* Primary CTA: dashboard access */}
             <button
               onClick={enterApp}
               className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs tracking-wide shadow-md shadow-blue-600/20 transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
             >
-              <span>Ingresar al CRM</span>
+              <span>{isAuthenticated ? 'Ir al Dashboard' : 'Ingresar al CRM'}</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </button>
 
@@ -918,23 +927,27 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    setIsAuthModalOpen(true);
-                  }}
-                  className="py-2.5 rounded-xl border border-slate-300 font-bold text-xs text-slate-700 text-center"
-                >
-                  Iniciar Sesión
-                </button>
+                {!isAuthenticated && (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="py-2.5 rounded-xl border border-slate-300 font-bold text-xs text-slate-700 text-center"
+                  >
+                    Iniciar Sesión
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     enterApp();
                   }}
-                  className="py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs text-center shadow-md shadow-blue-600/20"
+                  className={`py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs text-center shadow-md shadow-blue-600/20 ${
+                    isAuthenticated ? 'col-span-2' : ''
+                  }`}
                 >
-                  Ingresar al CRM
+                  {isAuthenticated ? 'Ir al Dashboard' : 'Ingresar al CRM'}
                 </button>
               </div>
             </div>

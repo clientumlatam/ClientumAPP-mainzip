@@ -127,6 +127,7 @@ interface CRMContextType {
   isPublicSiteVisible: boolean;
   setIsPublicSiteVisible: (visible: boolean) => void;
   openPublicSite: () => void;
+  exitToPublicSite: () => void;
   enterApp: () => void;
   isAuthenticated: boolean;
   setIsAuthenticated: (auth: boolean) => void;
@@ -579,6 +580,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sessionStorage.setItem('clientum_view_mode', 'public');
     } catch (e) {}
   };
+  const exitToPublicSite = openPublicSite;
 
   const updateCurrentUser = (updates: Partial<User>) => {
     setCurrentUser((prev) => {
@@ -2251,6 +2253,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isPublicSiteVisible,
         setIsPublicSiteVisible,
         openPublicSite,
+        exitToPublicSite,
         enterApp,
         isAuthenticated,
         setIsAuthenticated,

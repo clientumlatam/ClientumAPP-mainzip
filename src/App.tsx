@@ -145,9 +145,17 @@ const MainContent: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const { resolvedTheme } = useTheme();
-  const { isPublicSiteVisible } = useCRM();
+  const { isPublicSiteVisible, isAuthenticated, openPublicSite } = useCRM();
 
-  if (isPublicSiteVisible) {
+  // Treat the private workspace as protected even when an old session flag
+  // requests app mode after the authentication state has expired or been cleared.
+  React.useEffect(() => {
+    if (!isPublicSiteVisible && !isAuthenticated) {
+      openPublicSite();
+    }
+  }, [isPublicSiteVisible, isAuthenticated, openPublicSite]);
+
+  if (isPublicSiteVisible || !isAuthenticated) {
     return (
       <div data-theme={resolvedTheme} className="min-h-screen w-screen overflow-x-hidden bg-[var(--bg-canvas)] text-[var(--text-primary)]">
         <PublicSite />
