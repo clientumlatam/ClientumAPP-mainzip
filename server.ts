@@ -8,6 +8,21 @@ import { Pool } from "pg";
 import dotenv from "dotenv";
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  CRM_ENTITY_TYPES,
+  claimDueAgentTasks,
+  countCrmRecords,
+  createAgentTask,
+  deleteCrmRecord,
+  finishAgentTask,
+  listAiChanges,
+  listCrmRecords,
+  listEvidence,
+  recordAiChange,
+  recordEvidence,
+  recordServerAudit,
+  upsertCrmRecords,
+} from "./server/crmRepository";
 
 dotenv.config();
 
@@ -304,7 +319,10 @@ const requireProductionAuthentication: express.RequestHandler = async (req, res,
 
 // AI and outbound email can consume paid provider credentials. Keep the local
 // demo usable, but require a Firebase-verified identity in production.
-app.use(["/api/ai", "/api/expense", "/api/email/send"], requireProductionAuthentication);
+app.use(
+  ["/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit"],
+  requireProductionAuthentication,
+);
 
 const ADMIN_ROLE_NAMES = new Set([
   "admin",
@@ -718,6 +736,305 @@ app.delete("/api/user-api-keys/:keyId", async (req, res) => {
   } catch (error: any) {
     console.error("Server API key revoke error:", error?.message || error);
     res.status(500).json({ error: "No se pudo revocar la API Key segura." });
+  }
+});
+
+// --- Persistent CRM domain, durable Agent OS tasks and provenance ---
+const getAuthenticatedTenant = async (req: express.Request, res: express.Response) => {
+  const userId = await getRequestUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: "A verified user session is required." });
+    return null;
+  }
+  if (!credentialDatabase) {
+    res.status(503).json({
+      error: "PostgreSQL is required for persistent CRM data.",
+      code: "POSTGRES_NOT_CONFIGURED",
+    });
+    return null;
+  }
+  const tenantId = await ensureTenantMembership(userId);
+  return { userId, tenantId };
+};
+
+const asRecordArrays = (value: unknown): Partial<Record<(typeof CRM_ENTITY_TYPES)[number], Record<string, unknown>[]>> => {
+  if (!value || typeof value !== "object") return {};
+  const payload = value as Record<string, unknown>;
+  const records: Partial<Record<(typeof CRM_ENTITY_TYPES)[number], Record<string, unknown>[]>> = {};
+  for (const entityType of CRM_ENTITY_TYPES) {
+    const list = payload[entityType];
+    if (!Array.isArray(list)) continue;
+    records[entityType] = list.filter(
+      (record): record is Record<string, unknown> =>
+        Boolean(record) && typeof record === "object" && typeof (record as { id?: unknown }).id === "string",
+    );
+  }
+  return records;
+};
+
+app.get("/api/crm/bootstrap", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const records = await listCrmRecords(credentialDatabase, context.tenantId);
+    const count = await countCrmRecords(credentialDatabase, context.tenantId);
+    res.json({ records, count, tenantId: context.tenantId });
+  } catch (error: any) {
+    console.error("CRM bootstrap read error:", error?.message || error);
+    res.status(500).json({ error: "No se pudieron cargar los registros persistentes." });
+  }
+});
+
+app.put("/api/crm/bootstrap", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const records = asRecordArrays(req.body);
+    const written = await upsertCrmRecords(credentialDatabase, context.tenantId, records);
+    await recordServerAudit(credentialDatabase, context.tenantId, {
+      userId: context.userId,
+      action: "crm.bootstrap.upsert",
+      metadata: {
+        entityCounts: Object.fromEntries(
+          CRM_ENTITY_TYPES.map((entityType) => [entityType, records[entityType]?.length || 0]),
+        ),
+      },
+    });
+    res.json({ success: true, written });
+  } catch (error: any) {
+    console.error("CRM bootstrap write error:", error?.message || error);
+    res.status(500).json({ error: "No se pudieron persistir los registros CRM." });
+  }
+});
+
+app.delete("/api/crm/records/:entityType/:entityId", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    if (!CRM_ENTITY_TYPES.includes(req.params.entityType as (typeof CRM_ENTITY_TYPES)[number])) {
+      res.status(400).json({ error: "Tipo de registro no permitido." });
+      return;
+    }
+    const deleted = await deleteCrmRecord(
+      credentialDatabase,
+      context.tenantId,
+      req.params.entityType,
+      req.params.entityId,
+    );
+    if (deleted) {
+      await recordServerAudit(credentialDatabase, context.tenantId, {
+        userId: context.userId,
+        action: "crm.record.delete",
+        entityType: req.params.entityType,
+        entityId: req.params.entityId,
+      });
+    }
+    res.json({ success: true, deleted });
+  } catch (error: any) {
+    console.error("CRM record delete error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo eliminar el registro persistente." });
+  }
+});
+
+app.post("/api/agent/tasks", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const body = req.body ?? {};
+    if (typeof body.kind !== "string" || !body.kind.trim()) {
+      res.status(400).json({ error: "Task kind is required." });
+      return;
+    }
+    const task = await createAgentTask(credentialDatabase, context.tenantId, context.userId, {
+      kind: body.kind.trim(),
+      dueAt: typeof body.dueAt === "string" ? body.dueAt : undefined,
+      priority: Number(body.priority),
+      maxAttempts: Number(body.maxAttempts),
+      input: body.input && typeof body.input === "object" ? body.input : {},
+      source: typeof body.source === "string" ? body.source : "user",
+      targetType: typeof body.targetType === "string" ? body.targetType : undefined,
+      targetId: typeof body.targetId === "string" ? body.targetId : undefined,
+    });
+    await recordServerAudit(credentialDatabase, context.tenantId, {
+      userId: context.userId,
+      action: "agent.task.create",
+      entityType: "agent_tasks",
+      entityId: task.id,
+      afterData: task,
+    });
+    res.status(201).json({ task });
+  } catch (error: any) {
+    console.error("Agent task create error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo crear la tarea durable." });
+  }
+});
+
+app.get("/api/agent/tasks", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const limit = Number(req.query.limit || 10);
+    const tasks = await claimDueAgentTasks(credentialDatabase, context.tenantId, limit);
+    res.json({ tasks });
+  } catch (error: any) {
+    console.error("Agent task claim error:", error?.message || error);
+    res.status(500).json({ error: "No se pudieron reclamar tareas del agente." });
+  }
+});
+
+app.post("/api/agent/tasks/:taskId/complete", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const status = req.body?.status;
+    if (!["completed", "failed", "cancelled"].includes(status)) {
+      res.status(400).json({ error: "Invalid task completion status." });
+      return;
+    }
+    const updated = await finishAgentTask(credentialDatabase, context.tenantId, req.params.taskId, {
+      status,
+      output: req.body?.output && typeof req.body.output === "object" ? req.body.output : {},
+      error: typeof req.body?.error === "string" ? req.body.error : undefined,
+    });
+    if (!updated) {
+      res.status(404).json({ error: "Agent task not found or not currently running." });
+      return;
+    }
+    await recordServerAudit(credentialDatabase, context.tenantId, {
+      userId: context.userId,
+      action: "agent.task.complete",
+      entityType: "agent_tasks",
+      entityId: req.params.taskId,
+      afterData: { status },
+    });
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Agent task completion error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo finalizar la tarea durable." });
+  }
+});
+
+app.get("/api/crm/evidence", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const evidence = await listEvidence(
+      credentialDatabase,
+      context.tenantId,
+      typeof req.query.entityType === "string" ? req.query.entityType : undefined,
+      typeof req.query.entityId === "string" ? req.query.entityId : undefined,
+    );
+    res.json({ evidence });
+  } catch (error: any) {
+    console.error("Evidence read error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo cargar la evidencia." });
+  }
+});
+
+app.post("/api/crm/evidence", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const body = req.body ?? {};
+    if (
+      typeof body.entityType !== "string" ||
+      typeof body.entityId !== "string" ||
+      typeof body.sourceType !== "string" ||
+      body.observedValue === undefined
+    ) {
+      res.status(400).json({ error: "Entity, source and observed value are required." });
+      return;
+    }
+    const evidence = await recordEvidence(credentialDatabase, context.tenantId, context.userId, {
+      entityType: body.entityType,
+      entityId: body.entityId,
+      fieldName: typeof body.fieldName === "string" ? body.fieldName : undefined,
+      observedValue: body.observedValue,
+      sourceType: body.sourceType,
+      sourceRef: typeof body.sourceRef === "string" ? body.sourceRef : undefined,
+      status: body.status,
+      metadata: body.metadata && typeof body.metadata === "object" ? body.metadata : {},
+    });
+    res.status(201).json({ evidence });
+  } catch (error: any) {
+    console.error("Evidence write error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo registrar la evidencia." });
+  }
+});
+
+app.get("/api/crm/ai-changes", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const changes = await listAiChanges(
+      credentialDatabase,
+      context.tenantId,
+      typeof req.query.entityType === "string" ? req.query.entityType : undefined,
+      typeof req.query.entityId === "string" ? req.query.entityId : undefined,
+    );
+    res.json({ changes });
+  } catch (error: any) {
+    console.error("AI change audit read error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo cargar la auditoría de IA." });
+  }
+});
+
+app.post("/api/crm/ai-changes", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const body = req.body ?? {};
+    if (
+      typeof body.action !== "string" ||
+      typeof body.entityType !== "string" ||
+      typeof body.entityId !== "string"
+    ) {
+      res.status(400).json({ error: "Action and entity are required." });
+      return;
+    }
+    const change = await recordAiChange(credentialDatabase, context.tenantId, {
+      actorUserId: context.userId,
+      model: typeof body.model === "string" ? body.model : undefined,
+      action: body.action,
+      entityType: body.entityType,
+      entityId: body.entityId,
+      beforeData: body.beforeData,
+      afterData: body.afterData,
+      reason: typeof body.reason === "string" ? body.reason : undefined,
+      evidenceIds: Array.isArray(body.evidenceIds) ? body.evidenceIds.filter((id: unknown) => typeof id === "string") : [],
+      status: body.status,
+    });
+    await recordServerAudit(credentialDatabase, context.tenantId, {
+      userId: context.userId,
+      actorType: "ai",
+      action: "ai.change.record",
+      entityType: body.entityType,
+      entityId: body.entityId,
+      afterData: change,
+    });
+    res.status(201).json({ change });
+  } catch (error: any) {
+    console.error("AI change audit write error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo registrar el cambio de IA." });
+  }
+});
+
+app.get("/api/audit/server", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const result = await credentialDatabase!.query(
+      `SELECT *
+       FROM clientum_server_audit_logs
+       WHERE tenant_id = $1
+       ORDER BY created_at DESC
+       LIMIT 500`,
+      [context.tenantId],
+    );
+    res.json({ logs: result.rows });
+  } catch (error: any) {
+    console.error("Server audit read error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo cargar la auditoría del servidor." });
   }
 });
 

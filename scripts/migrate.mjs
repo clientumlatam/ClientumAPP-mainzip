@@ -21,12 +21,16 @@ const pool = databaseUrl
   : new pg.Pool({ max: 2 });
 
 try {
-  const migration = await fs.readFile(
-    path.join(process.cwd(), "migrations", "001_tenant_credentials.sql"),
-    "utf8",
-  );
-  await pool.query(migration);
-  console.log("Applied migration 001_tenant_credentials.");
+  const migrationDir = path.join(process.cwd(), "migrations");
+  const migrations = (await fs.readdir(migrationDir))
+    .filter((file) => /^\d+_.*\.sql$/.test(file))
+    .sort();
+
+  for (const file of migrations) {
+    const migration = await fs.readFile(path.join(migrationDir, file), "utf8");
+    await pool.query(migration);
+    console.log(`Applied ${file}.`);
+  }
 } finally {
   await pool.end();
 }

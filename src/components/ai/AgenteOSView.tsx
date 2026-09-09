@@ -282,6 +282,24 @@ export const AgenteOSView: React.FC = () => {
     setIsExecuting(true);
 
     try {
+      const taskResponse = await fetch('/api/agent/tasks', {
+        method: 'POST',
+        headers: await getClientumAuthJsonHeaders(),
+        body: JSON.stringify({
+          kind: 'agent.prompt',
+          source: 'agente-os',
+          input: {
+            prompt: taskText,
+            agentId: selectedAgent.id,
+            agentName: selectedAgent.name,
+            department: selectedAgent.department,
+          },
+        }),
+      });
+      const durableTask = taskResponse.ok
+        ? await taskResponse.json() as { task?: { id?: string } }
+        : null;
+
       const res = await fetch('/api/ai/copilot', {
         method: 'POST',
          headers: await getClientumAuthJsonHeaders(),
@@ -294,6 +312,16 @@ export const AgenteOSView: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         const replyText = data.reply || data.text || 'Tarea analizada y ejecutada con éxito.';
+        if (durableTask?.task?.id) {
+          await fetch(`/api/agent/tasks/${encodeURIComponent(durableTask.task.id)}/complete`, {
+            method: 'POST',
+            headers: await getClientumAuthJsonHeaders(),
+            body: JSON.stringify({
+              status: 'completed',
+              output: { reply: replyText, agentId: selectedAgent.id },
+            }),
+          });
+        }
         setChatMessages(prev => [
           ...prev,
           {
@@ -306,6 +334,8 @@ export const AgenteOSView: React.FC = () => {
         throw new Error('Endpoint error');
       }
     } catch (err) {
+      // The durable task remains available for retry when the provider is
+      // unavailable; the fallback response never pretends delivery succeeded.
       setChatMessages(prev => [
         ...prev,
         {

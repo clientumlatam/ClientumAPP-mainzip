@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Activity,
@@ -570,6 +570,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
+  const [isCrmRemoteReady, setIsCrmRemoteReady] = useState(false);
 
   useEffect(() => {
     if (!isLiveFirebaseReady) {
@@ -605,6 +606,119 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsAuthReady(true);
     });
   }, [users]);
+
+  // PostgreSQL is the source of truth for the core CRM entities. The local
+  // state remains as an offline/demo fallback while the authenticated
+  // workspace is being hydrated.
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isAuthReady || !isAuthenticated || !currentUser.id) {
+      setIsCrmRemoteReady(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setIsCrmRemoteReady(false);
+    void (async () => {
+      try {
+        const response = await fetch('/api/crm/bootstrap', {
+          headers: await getClientumAuthJsonHeaders(currentUser),
+        });
+        if (!response.ok) throw new Error(`CRM bootstrap failed: ${response.status}`);
+        const payload = await response.json() as {
+          count?: number;
+          records?: {
+            opportunities?: Opportunity[];
+            companies?: Company[];
+            people?: Person[];
+            tasks?: Task[];
+            activities?: Activity[];
+          };
+        };
+
+        if (cancelled) return;
+        if (payload.count && payload.records) {
+          setOpportunities(ensureUniqueIds(payload.records.opportunities || [], 'opp'));
+          setCompanies(payload.records.companies || []);
+          setPeople(payload.records.people || []);
+          setTasks(payload.records.tasks || []);
+          setActivities(payload.records.activities || []);
+        } else {
+          await fetch('/api/crm/bootstrap', {
+            method: 'PUT',
+            headers: await getClientumAuthJsonHeaders(currentUser),
+            body: JSON.stringify({
+              opportunities,
+              companies,
+              people,
+              tasks,
+              activities,
+            }),
+          });
+        }
+        if (!cancelled) setIsCrmRemoteReady(true);
+      } catch (error) {
+        console.warn('Persistent CRM bootstrap unavailable; keeping local state:', error);
+        if (!cancelled) setIsCrmRemoteReady(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser.id, isAuthReady, isAuthenticated]);
+
+  // Persist the complete core snapshot after local mutations. Debouncing
+  // prevents a compound action (deal + activity + audit) from issuing a
+  // request for every individual state update.
+  const crmPersistTimer = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isCrmRemoteReady || !isAuthenticated || !currentUser.id) return;
+
+    if (crmPersistTimer.current !== null) {
+      window.clearTimeout(crmPersistTimer.current);
+    }
+    crmPersistTimer.current = window.setTimeout(() => {
+      void (async () => {
+        try {
+          await fetch('/api/crm/bootstrap', {
+            method: 'PUT',
+            headers: await getClientumAuthJsonHeaders(currentUser),
+            body: JSON.stringify({
+              opportunities,
+              companies,
+              people,
+              tasks,
+              activities,
+            }),
+          });
+        } catch (error) {
+          console.warn('Persistent CRM snapshot save failed:', error);
+        }
+      })();
+    }, 500);
+
+    return () => {
+      if (crmPersistTimer.current !== null) {
+        window.clearTimeout(crmPersistTimer.current);
+        crmPersistTimer.current = null;
+      }
+    };
+  }, [
+    activities,
+    companies,
+    currentUser.id,
+    currentUser.role,
+    currentUser.name,
+    currentUser.email,
+    isAuthenticated,
+    isCrmRemoteReady,
+    opportunities,
+    people,
+    tasks,
+  ]);
 
   // Webmail Cloudflare D1 Emails State
   const [webmailEmails, setWebmailEmails] = useState<WebmailEmail[]>(() => {
