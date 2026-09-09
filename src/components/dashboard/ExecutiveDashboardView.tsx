@@ -35,6 +35,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useCRM } from '../../context/CRMContext';
+import { DashboardOperationsStrip } from './DashboardOperationsStrip';
 
 interface MockDeal {
   id: string;
@@ -215,6 +216,8 @@ export const ExecutiveDashboardView: React.FC = () => {
           </div>
         </div>
 
+        <DashboardOperationsStrip onNavigate={setActiveTab} />
+
         <div className="crm-pipeline-heading">
           <div>
             <span className="crm-section-kicker">Dónde intervenir</span>
@@ -269,20 +272,20 @@ export const ExecutiveDashboardView: React.FC = () => {
 
         <div className="crm-kpi-grid">
           <div className="crm-kpi-card crm-kpi-card--accent">
-            <div className="crm-kpi-card__head"><span>Ingresos totales</span><span className="crm-kpi-icon"><TrendingUp size={17} /></span></div>
-            <strong>$ 124.800</strong><small><ArrowUpRight size={12} /> 18.8% <em>vs mes anterior</em></small>
+            <div className="crm-kpi-card__head"><span>Valor total del pipeline</span><span className="crm-kpi-icon"><TrendingUp size={17} /></span></div>
+            <strong>$ 582.000</strong><small><ArrowUpRight size={12} /> 18.8% <em>ponderado activo</em></small>
           </div>
           <div className="crm-kpi-card">
-            <div className="crm-kpi-card__head"><span>Negocios activos</span><span className="crm-kpi-icon"><BriefcaseBusiness size={17} /></span></div>
-            <strong>22</strong><small><ArrowUpRight size={12} /> 15.8% <em>vs mes anterior</em></small>
+            <div className="crm-kpi-card__head"><span>Negocios ganados</span><span className="crm-kpi-icon"><BriefcaseBusiness size={17} /></span></div>
+            <strong>18</strong><small><ArrowUpRight size={12} /> $ 124.800 <em>este mes</em></small>
           </div>
           <div className="crm-kpi-card">
             <div className="crm-kpi-card__head"><span>Tasa de cierre</span><span className="crm-kpi-icon"><Target size={17} /></span></div>
-            <strong>32.4%</strong><small><ArrowUpRight size={12} /> 6.2% <em>vs mes anterior</em></small>
+            <strong>38.5%</strong><small><ArrowUpRight size={12} /> 6.2% <em>conversión exitosa</em></small>
           </div>
           <div className="crm-kpi-card">
-            <div className="crm-kpi-card__head"><span>Ticket promedio</span><span className="crm-kpi-icon"><WalletCards size={17} /></span></div>
-            <strong>$ 6.218</strong><small><ArrowUpRight size={12} /> 9.3% <em>vs mes anterior</em></small>
+            <div className="crm-kpi-card__head"><span>Ciclo de venta</span><span className="crm-kpi-icon"><WalletCards size={17} /></span></div>
+            <strong>14 días</strong><small><ArrowUpRight size={12} /> 9.3% <em>tiempo promedio</em></small>
           </div>
         </div>
 
