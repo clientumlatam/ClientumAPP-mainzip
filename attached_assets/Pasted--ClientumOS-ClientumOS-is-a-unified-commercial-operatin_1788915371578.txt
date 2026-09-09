@@ -1,0 +1,764 @@
+# ClientumOS
+
+ClientumOS is a unified commercial operating system for Clientum Latam. It
+combines CRM, sales operations, customer communication, AI assistance, billing,
+ERP workflows, commerce, and marketing tools in one authenticated workspace.
+
+This repository is a pnpm monorepo containing the main web application, its API
+server, shared TypeScript packages, database schema, generated API clients, and
+the isolated UI preview environment.
+
+## Product capabilities
+
+### CRM and sales
+
+- Opportunities pipeline with Kanban and table views
+- Company and contact management
+- Tasks, follow-ups, and saved views
+- Analytics, forecasting, and business intelligence
+- MEDDIC lead scoring
+- AI-powered Maps prospecting
+- Record drawers, command palette, and global record creation
+
+### Communication and automation
+
+- Webmail Suite D1
+- WhatsApp CRM inbox
+- WhatsApp chatbot
+- WhatsApp campaigns and broadcasts
+- Visual workflows and flowcharts
+- Automation rules
+- Customer portal
+
+### AI and marketing
+
+- ClientumOS AI Copilot
+- AI assistant for CMO and sales strategy
+- GTM strategy generation
+- SDR outreach agent
+- AI ad copy studio
+- SEO audit and performance tools
+- Web development and embeddable widgets
+- Brochure generation
+- Knowledge base
+
+### Operations and commerce
+
+- ERP and AFIP invoicing
+- Expense tracking
+- Inventory management and movement history
+- MercadoPago collections
+- Public store and directory
+- E-commerce orders and catalog
+- Restaurant and kitchen display workflows
+- Subscriptions and customer segments
+- SaaS product and theme configuration
+
+### Platform features
+
+- Custom Objects Studio
+- CSV import and export
+- Light and dark themes
+- Clerk authentication and user profile management
+- Workspace persistence
+- Role-aware workspace access
+- Audit event history
+- PDF exports and reporting
+
+## Repository structure
+
+```text
+.
+├── artifacts/
+│   ├── api-server/          # Express API and production static-file server
+│   ├── clientum-crm/        # React/Vite ClientumOS application
+│   └── mockup-sandbox/      # Isolated UI component preview server
+├── lib/
+│   ├── api-client-react/    # Generated React Query hooks
+│   ├── api-spec/            # OpenAPI source and Orval codegen config
+│   ├── api-zod/             # Generated Zod request/response schemas
+│   └── db/                  # Drizzle client and PostgreSQL schema
+├── scripts/                 # Workspace utility scripts
+├── public/                  # Root-level shared public assets
+├── pnpm-workspace.yaml      # Workspace packages and dependency catalog
+├── tsconfig.json            # TypeScript project references for libraries
+└── package.json             # Root checks and build orchestration
+```
+
+### Workspace packages
+
+| Package | Purpose |
+| --- | --- |
+| `@workspace/clientum-crm` | Main React 19 and Vite web application |
+| `@workspace/api-server` | Express API for CRM state, AI, billing, and health |
+| `@workspace/api-spec` | OpenAPI contract and client code generation |
+| `@workspace/api-client-react` | Generated React Query client for the frontend |
+| `@workspace/api-zod` | Generated Zod schemas consumed by the API |
+| `@workspace/db` | Drizzle ORM client, tables, and database types |
+| `@workspace/mockup-sandbox` | Component preview and design canvas app |
+| `@workspace/scripts` | Small repository utility commands |
+
+## Runtime architecture
+
+```text
+Browser
+  │
+  ├── /                  ClientumOS React/Vite app
+  │       │
+  │       └── /api       Express API server
+  │                         ├── Clerk authentication
+  │                         ├── PostgreSQL via Drizzle
+  │                         ├── AI provider for Copilot and CMO assistant
+  │                         └── Stripe through the Replit connector
+  │
+  └── /__mockup          Isolated component preview server
+```
+
+The web application and API are separate services during development. In
+production, the API server also serves the built CRM frontend and falls back to
+its `index.html` for client-side routes.
+
+## Free deployment architecture
+
+ClientumOS uses one production path. Each service has a separate responsibility:
+
+```text
+GitHub
+  ├── source repository
+  └── GitHub Actions: typecheck and build on push/PR
+          │
+          └── Vercel Hobby
+                ├── React/Vite frontend
+                └── /api serverless Express function
+                          │
+                          ├── Neon Free PostgreSQL
+                          └── Clerk Hobby authentication
+
+Cloudflare Free
+  └── DNS for clientum.com.ar and www.clientum.com.ar
+
+Replit
+  └── development, previews, secret management, and local verification
+```
+
+| Service | Responsibility | Production rule |
+| --- | --- | --- |
+| GitHub | Source control and CI | The repository is the source of truth. |
+| Vercel | Public frontend and API hosting | Use the existing Vercel project; do not create a duplicate. |
+| Neon | PostgreSQL persistence | Use the Neon connection string as the only production database URL. |
+| Clerk | Authentication and sessions | Use one Clerk instance and configure every production domain there. |
+| Cloudflare | DNS and domain management | Point DNS to Vercel; do not route the same hostname to a Worker. |
+| Replit | Development and preview | Keep secrets in Replit; do not use preview as permanent production hosting. |
+
+The Cloudflare Worker/D1 files are retained as an optional manual deployment for
+legacy or experimental functionality. The automatic production path is
+Vercel + Neon, so the Cloudflare deployment workflow runs only with
+`workflow_dispatch`.
+
+### Deployment sequence
+
+1. Work in Replit and run the local checks.
+2. Push `main` to GitHub using a secure token with repository write access.
+3. GitHub Actions runs `.github/workflows/ci.yml`.
+4. Vercel builds the same `main` commit automatically through its Git integration.
+5. Vercel serves the frontend and `/api` function.
+6. Cloudflare continues to provide DNS for the Vercel domain.
+
+The Vercel build uses this sequence:
+
+```bash
+pnpm run typecheck:libs
+pnpm --filter @workspace/clientum-crm run build
+pnpm --filter @workspace/api-server run build
+pnpm --filter @workspace/api-server run typecheck
+```
+
+### Domain setup
+
+Use the root domain and `www` as the primary public Vercel domains:
+
+```text
+clientum.com.ar       CNAME  <Vercel-provided target>
+www.clientum.com.ar   CNAME  <Vercel-provided target>
+```
+
+Create the domains in Vercel first, then keep the corresponding Cloudflare DNS
+records DNS-only while Vercel verifies the domain and provisions TLS. Do not
+change Cloudflare records marked read-only, and do not configure one hostname
+for both a Vercel DNS record and a Cloudflare Worker route.
+
+## Artifacts and preview paths
+
+| Artifact | Preview path | Development command |
+| --- | --- | --- |
+| ClientumOS CRM | `/` | `pnpm --filter @workspace/clientum-crm run dev` |
+| API Server | `/api` | `pnpm --filter @workspace/api-server run dev` |
+| Component Preview Server | `/__mockup` | `pnpm --filter @workspace/mockup-sandbox run dev` |
+
+The artifact routing configuration is stored in each artifact's
+`.replit-artifact/artifact.toml`. The configured services provide `PORT` and
+`BASE_PATH`; application code should keep using the routed paths rather than
+hardcoded localhost URLs.
+
+## Getting started
+
+### Prerequisites
+
+- Node.js with pnpm enabled
+- A GitHub repository with a token that can push to `main`
+- A Vercel project linked to the GitHub repository
+- A Neon PostgreSQL project and connection string
+- A Clerk application with production domains configured
+- A Cloudflare zone for the public domain
+- A configured Stripe connection if billing is enabled
+- An AI provider configuration if AI endpoints are enabled
+
+### Install dependencies
+
+Run this from the repository root:
+
+```bash
+pnpm install
+```
+
+### Configure the environment
+
+Use the environment secret manager for credentials. Never commit secret values
+to the repository.
+
+For this project, credentials are token-only: use encrypted secrets or provider
+secret stores instead of OAuth files, `.env` files, credentials in Git URLs, or
+values hardcoded in workflows. Replit secrets are not automatically copied to
+GitHub or Vercel; configure the same logical variables in each provider's
+encrypted secret store when that provider needs them.
+
+#### Core server variables
+
+| Variable | Used by | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | `@workspace/db`, API server | PostgreSQL connection string; required by the database package |
+| `CLERK_PUBLISHABLE_KEY` | API server | Server-side Clerk configuration |
+| `CLERK_SECRET_KEY` | API server | Clerk proxy and production authentication |
+| `OPENAI_API_KEY` | AI routes | Enables `/api/ai/copilot` and `/api/ai/cmo` |
+| `PORT` | Services | Supplied by the configured artifact workflow |
+| `NODE_ENV` | API server | Use `production` for production behavior |
+| `LOG_LEVEL` | API logging | Optional logging level |
+| `WEBMAIL_WORKER_URL` | Webmail proxy | Optional Worker base URL; defaults to `https://webmail.clientum.com.ar` |
+| `WEBMAIL_PASSWORD` | Webmail proxy | Secret used only by the API server to authenticate with the Worker |
+
+#### Core frontend variables
+
+| Variable | Used by | Notes |
+| --- | --- | --- |
+| `VITE_CLERK_PUBLISHABLE_KEY` | CRM frontend | Required for Clerk sign-in and sign-up |
+| `VITE_CLERK_PROXY_URL` | CRM frontend | Optional published-domain Clerk proxy URL |
+| `BASE_PATH` / `BASE_URL` | CRM frontend | Supplied by the artifact routing configuration |
+
+### Provider secret checklist
+
+#### Replit development secrets
+
+The Replit secret manager should contain the development values needed by the
+workflows:
+
+```text
+CLERK_PUBLISHABLE_KEY
+CLERK_SECRET_KEY
+VITE_CLERK_PUBLISHABLE_KEY
+SESSION_SECRET
+OPENAI_API_KEY                 # only when AI routes are enabled
+WEBMAIL_PASSWORD               # only when Webmail is enabled
+NEON_DATABASE_URL              # source for a Neon-backed development run
+```
+
+`DATABASE_URL` is managed by the Replit runtime and must not be manually
+overwritten. To run schema commands against Neon explicitly, use the Neon
+secret without printing it:
+
+```bash
+DATABASE_URL="$NEON_DATABASE_URL" pnpm --filter @workspace/db run push
+```
+
+#### Vercel production secrets
+
+Add these as encrypted Production Environment Variables in the existing Vercel
+project:
+
+```text
+DATABASE_URL                 # value from Neon, never the Replit runtime value
+CLERK_PUBLISHABLE_KEY
+CLERK_SECRET_KEY
+VITE_CLERK_PUBLISHABLE_KEY
+SESSION_SECRET
+OPENAI_API_KEY               # only when AI routes are enabled
+WEBMAIL_PASSWORD             # only when Webmail is enabled
+```
+
+Do not place `VERCEL_TOKEN`, `NEON_API_KEY`, `CLOUDFLARE_API_TOKEN`, or
+`GITHUB_TOKEN` in frontend variables. They are automation credentials and belong
+only in the secure environment that performs the corresponding operation.
+
+#### GitHub Actions secrets
+
+The automatic CI workflow does not need production credentials. If the optional
+manual Cloudflare Worker workflow is used, add these as GitHub Actions secrets:
+
+```text
+CLOUDFLARE_API_TOKEN
+CLOUDFLARE_ACCOUNT_ID
+CLOUDFLARE_D1_DATABASE_ID
+CLERK_ISSUER
+VITE_CLERK_PUBLISHABLE_KEY
+```
+
+Use a short-lived or least-privilege token whenever the provider supports it.
+Never place a token in a workflow command, repository URL, commit, log, or
+README.
+
+### Configure the providers
+
+#### 1. GitHub
+
+The repository is `clientumlatam/clientum-dashboard-crm` and the production
+branch is `main`. A token used for automation needs permission to read and write
+repository contents. The local Git remote must remain a normal HTTPS URL without
+credentials:
+
+```bash
+git remote set-url github https://github.com/clientumlatam/clientum-dashboard-crm.git
+```
+
+Push with the secret supplied by the environment, not by writing it to the
+remote URL:
+
+```bash
+git -c http.extraheader="AUTHORIZATION: bearer $GITHUB_TOKEN" push github main
+```
+
+If GitHub returns `401 Bad credentials`, revoke the invalid token, create a new
+least-privilege token, and replace `GITHUB_TOKEN` in the secure secret manager.
+Do not paste the token into chat.
+
+#### 2. Neon
+
+Create or select one PostgreSQL project on the Neon Free plan and store its
+connection string as `NEON_DATABASE_URL`. Apply the Drizzle schema from a
+trusted environment:
+
+```bash
+DATABASE_URL="$NEON_DATABASE_URL" pnpm --filter @workspace/db run push
+```
+
+The API expects the production connection string under `DATABASE_URL` in
+Vercel. Keep Neon as the only production database; do not run CRM persistence
+against both Neon and Cloudflare D1.
+
+#### 3. Clerk
+
+Configure the Clerk application with:
+
+- `clientum.com.ar`
+- `www.clientum.com.ar`
+- the Vercel preview domain used during setup
+
+Store the publishable key, secret key, and frontend publishable key in the
+corresponding Replit and Vercel secret stores. The API validates the Clerk
+session; do not implement a second local authentication system.
+
+#### 4. Vercel
+
+Use the existing project `clientum-dashboard-crm`, linked to the GitHub
+repository. Its build configuration is in `vercel.json`; do not replace it
+with a second root directory or a separate API project. Add
+`clientum.com.ar` and `www.clientum.com.ar` as project domains, then confirm
+that the Vercel Production Environment contains the variables listed above.
+
+Vercel automatically creates a new deployment after a successful push to
+`main`. The deployment health check is:
+
+```bash
+curl -fsS https://clientum.com.ar/api/healthz
+```
+
+#### 5. Cloudflare
+
+Add the zone `clientum.com.ar` to Cloudflare and keep the nameservers active.
+Create the Vercel-provided CNAME records for the root domain and `www` as
+DNS-only records. Cloudflare remains the DNS provider while Vercel terminates
+the application TLS connection.
+
+The Cloudflare Worker/D1 workflow is optional and manual. It requires its own
+Cloudflare API token and D1 database ID; those values are never read from
+`wrangler.toml` or committed to Git.
+
+#### 6. Replit
+
+Use the configured artifact workflows for development:
+
+```text
+artifacts/clientum-crm: web
+artifacts/api-server: API Server
+artifacts/mockup-sandbox: Component Preview Server
+```
+
+The Replit preview paths are `/`, `/api`, and `/__mockup`. Run typechecks and
+builds in Replit before pushing to GitHub. Replit preview is for development;
+Vercel is the public production host.
+
+### Free-plan boundaries
+
+All six providers can be used without adding a paid resource, but their free
+plans have quotas and policy limits that can change. In particular:
+
+- Replit's free Starter publishing is intended for development and may go
+  offline after its free publication period.
+- Vercel Hobby has usage and account-policy limits; verify that the intended
+  commercial use is allowed before treating it as a business production plan.
+- Neon can suspend or limit free compute and storage; keep the database small
+  and monitor usage.
+- Clerk, GitHub Actions, and Cloudflare also enforce free-plan quotas.
+- A custom domain is not included just because Cloudflare DNS is free; domain
+  registration and renewal are separate.
+
+No provider should receive a credit card requirement through this repository.
+If a setup screen asks to enable paid usage, stop and keep the current free
+configuration rather than accepting an automatic upgrade.
+
+The repository also contains optional configuration for Firebase-backed
+features and server-side Webmail/SMTP integrations. Those variables are only
+needed when their corresponding modules are enabled:
+
+```text
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_APP_ID
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_DATABASE_ID
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_NEON_AUTH_URL
+SMTP_HOST
+SMTP_PASS
+SMTP_PORT
+SMTP_SECURE
+SMTP_USER
+WEBMAIL_WORKER_URL
+WEBMAIL_PASSWORD
+```
+
+The Webmail module uses `/api/webmail/emails` and `/api/webmail/send` as
+authenticated server-side proxy routes. The API server injects
+`WEBMAIL_PASSWORD` when calling the Worker; the browser never receives the
+token and does not call the Worker domain directly. Keep `WEBMAIL_PASSWORD` in
+Replit Secrets and only set `WEBMAIL_WORKER_URL` when using a Worker other than
+the documented default.
+
+### Start the services
+
+In the Replit environment, use the configured workflows. For a local package
+command, run each service in its own terminal:
+
+```bash
+pnpm --filter @workspace/clientum-crm run dev
+pnpm --filter @workspace/api-server run dev
+pnpm --filter @workspace/mockup-sandbox run dev
+```
+
+The main app is available at `/`. The API health check is available at
+`/api/healthz`, and the component preview environment is available at
+`/__mockup`.
+
+## Authentication and authorization
+
+ClientumOS uses Clerk for:
+
+- Sign-in and sign-up
+- Session state
+- User identity and profile data
+- API request authentication
+- Workspace membership identity
+
+The CRM API creates a personal workspace for a newly authenticated user when
+needed. Workspace members have one of these roles:
+
+| Role | Access |
+| --- | --- |
+| `owner` | Full workspace access |
+| `editor` | Can edit workspace data |
+| `viewer` | Read-only access |
+
+Workspace writes are rejected for viewers. The production API includes a Clerk
+Frontend API proxy at `/api/__clerk` for published custom-domain behavior.
+
+## Data model and persistence
+
+The database is PostgreSQL accessed through Drizzle ORM. The main tables are:
+
+- `crm_workspaces` — workspace identity and owner
+- `crm_workspace_members` — workspace membership and roles
+- `crm_workspace_snapshots` — current JSON workspace state
+- `crm_audit_events` — authenticated workspace change history
+- `crm_inventory_movements` — inventory quantity deltas
+- `crm_workspace_states` — legacy per-user snapshots kept for migration
+- `crm_stripe_customers` — user-to-Stripe customer mapping
+
+The CRM intentionally stores the flexible workspace model as JSON. The API
+validates the outer request shape, limits snapshots to 5 MB, tracks changed
+collections, and records inventory movements and audit events during saves.
+
+### Database commands
+
+Push the current Drizzle schema:
+
+```bash
+pnpm --filter @workspace/db run push
+```
+
+The force variant is destructive and should only be used after confirming that
+the schema change is safe:
+
+```bash
+pnpm --filter @workspace/db run push-force
+```
+
+Both commands require `DATABASE_URL`.
+
+## API
+
+The API is mounted under `/api`. The contract source is
+`lib/api-spec/openapi.yaml`, whose server base URL is `/api`.
+
+### Health
+
+- `GET /api/healthz` — returns service health
+
+### CRM workspace
+
+These routes require a valid Clerk session:
+
+- `GET /api/crm/state` — load the current workspace snapshot
+- `PUT /api/crm/state` — save workspace state for owners and editors
+- `GET /api/crm/audit?limit=100` — list audit events; `limit` is 1–200
+
+### AI
+
+These routes require a valid Clerk session and `OPENAI_API_KEY`:
+
+- `POST /api/ai/copilot` — conversational sales operations assistant
+- `POST /api/ai/cmo` — CMO and sales strategy assistant
+
+Copilot accepts user/assistant messages, an optional CRM context object, and
+`en`, `es`, or `pt` as the response language. The CMO assistant accepts a
+single query and the same language set. Invalid requests return `400`,
+unauthenticated requests return `401`, and a missing provider configuration
+returns `503`.
+
+### Billing
+
+Billing routes use Stripe through the Replit connector:
+
+- `GET /api/stripe/products` — list active products and recurring prices
+- `GET /api/stripe/subscription` — get the signed-in user's subscription
+- `GET /api/stripe/invoices` — list the signed-in user's invoices
+- `POST /api/stripe/checkout` — create a subscription checkout session
+- `POST /api/stripe/portal` — create a customer portal session
+
+The subscription, invoice, checkout, and portal routes require a valid Clerk
+session. The API creates and stores a Stripe customer mapping on first use.
+
+### Webmail
+
+These routes require a valid Clerk session. The API server authenticates with
+the configured Cloudflare Worker; the browser never receives
+`WEBMAIL_PASSWORD`:
+
+- `GET /api/webmail/emails?account=<email>&folder=<folder>` — list messages
+- `POST /api/webmail/send` — send a message with `from`, `to`, `subject`,
+  `body`, and optional `bodyHtml`
+
+Supported folders are `inbox`, `starred`, `sent`, `archived`, and `trash`.
+Invalid payloads return `400`, unauthenticated requests return `401`, missing
+server configuration returns `503`, and Worker/network failures return `502`.
+
+The CRM and Stripe routes are represented in the OpenAPI contract. The AI
+routes are implemented in the API server and should be added to the contract
+when their generated client types are required.
+
+## Frontend navigation
+
+Public routes:
+
+```text
+/                 Authentication landing page
+/sign-in          Clerk sign-in
+/sign-up          Clerk sign-up
+```
+
+Authenticated routes:
+
+```text
+/user-portal
+/user-portal/:module
+```
+
+Available portal modules include:
+
+```text
+gettingStarted
+publicStore
+webmail
+opportunities
+companies
+people
+tasks
+analytics
+powerSuite
+whatsapp
+erp
+restaurant
+ecommerce
+saasCluster
+sites
+saasTheme
+subscriptions
+segments
+chatbot
+automation
+knowledge
+mapsProspecting
+meddic
+campaigns
+aiAssistant
+gtmStrategy
+sdrOutreach
+adCopy
+payments
+clientPortal
+seoSuite
+webDev
+customObjects
+workflows
+csvStudio
+settings
+brochure
+```
+
+The router also normalizes legacy aliases such as `crm`, `store`, `tienda`,
+`domains`, `gmail`, and `industrias`.
+
+## API contract and generated clients
+
+When changing an API request or response:
+
+1. Update `lib/api-spec/openapi.yaml`.
+2. Regenerate the clients and Zod schemas.
+3. Update the server route to use the generated schemas where applicable.
+4. Import frontend hooks from `@workspace/api-client-react`.
+5. Run the workspace type checks.
+
+Run code generation with:
+
+```bash
+pnpm --filter @workspace/api-spec run codegen
+```
+
+Generated output is written to:
+
+```text
+lib/api-client-react/src/generated/
+lib/api-zod/src/generated/
+```
+
+Do not edit generated files by hand.
+
+## Development commands
+
+### Full workspace
+
+```bash
+pnpm run typecheck
+pnpm run build
+```
+
+`pnpm run typecheck` checks the composite libraries first and then checks the
+leaf applications. `pnpm run build` runs the library check and builds each
+workspace package with a build script.
+
+### Individual packages
+
+```bash
+pnpm --filter @workspace/clientum-crm run typecheck
+pnpm --filter @workspace/clientum-crm run build
+pnpm --filter @workspace/api-server run typecheck
+pnpm --filter @workspace/api-server run build
+pnpm --filter @workspace/scripts run typecheck
+pnpm --filter @workspace/scripts run hello
+```
+
+The API development command builds the server bundle before starting it:
+
+```bash
+pnpm --filter @workspace/api-server run dev
+```
+
+## Production behavior
+
+The CRM frontend builds to:
+
+```text
+artifacts/clientum-crm/dist/public
+```
+
+The API server builds to:
+
+```text
+artifacts/api-server/dist/index.mjs
+```
+
+In production, the API server:
+
+1. Starts with `NODE_ENV=production`.
+2. Serves the CRM static assets.
+3. Keeps `/api/*` requests on the Express API.
+4. Falls back to the CRM `index.html` for client-side application routes.
+5. Exposes `/api/healthz` as its startup health path.
+
+## Technology stack
+
+- React 19
+- Vite
+- TypeScript
+- Tailwind CSS
+- Wouter
+- TanStack React Query
+- Clerk
+- Express 5
+- Drizzle ORM
+- PostgreSQL
+- Zod
+- Orval
+- Stripe via Replit Connectors
+- OpenAI-compatible AI client
+- Radix UI primitives
+- Lucide icons
+- Recharts
+- Leaflet and React Leaflet
+- Framer Motion
+
+## Security and operational notes
+
+- Keep all credentials in the environment secret manager.
+- Do not commit `.env` files, API keys, session secrets, or provider tokens.
+- Do not expose server-only Clerk, database, Stripe, SMTP, or AI credentials to
+  frontend code.
+- Keep authenticated workspace routes protected by Clerk.
+- Preserve the viewer read-only rule when adding new write operations.
+- Keep audit and inventory movement writes in the same database transaction as
+  workspace saves.
+- Use the generated Zod schemas for contract-backed request and response
+  validation.
+- Treat `push-force` as a potentially destructive database operation.
+
+## License
+
+This project is private and intended for the ClientumOS product workspace.
