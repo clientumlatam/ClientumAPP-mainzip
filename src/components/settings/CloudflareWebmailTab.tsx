@@ -51,7 +51,7 @@ export const CloudflareWebmailTab: React.FC = () => {
     'Hola equipo de Clientum,\n\nQueremos evaluar la contratación del plan Enterprise para 25 ejecutivos comerciales. ¿Podrían coordinar una demo para el próximo jueves?\n\nSaludos cordiales,\nMartín Gómez - Gerente Comercial'
   );
 
-  // Demo emails list in D1 database
+  // Local demo emails; the app does not connect to D1 at runtime yet.
   const [emails, setEmails] = useState<WebmailMessage[]>([
     {
       id: 'msg-101',
@@ -120,7 +120,7 @@ export const CloudflareWebmailTab: React.FC = () => {
       setEmails((prev) => [newMsg, ...prev]);
       setSelectedEmail(newMsg);
       setIsSimulatingSend(false);
-      showToast('¡Email de prueba recibido por el Worker y guardado en D1!', 'success');
+      showToast('Email simulado localmente; no se envió ni se guardó en D1', 'info');
     }, 800);
   };
 
@@ -142,7 +142,7 @@ export const CloudflareWebmailTab: React.FC = () => {
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
               Arquitectura prevista de recepción mediante Cloudflare Email Routing hacia el Worker{' '}
-              <span className="font-mono text-blue-300 bg-[#1e2434] px-1.5 py-0.5 rounded">webmail-clientum</span> con persistencia en base de datos Cloudflare D1. Resuelve el descarte por deduplicación de Gmail y permite operar tu propio webmail en{' '}
+              <span className="font-mono text-blue-300 bg-[#1e2434] px-1.5 py-0.5 rounded">webmail-clientum</span>, con persistencia en Cloudflare D1 cuando se complete la conexión. Permite operar tu propio webmail en{' '}
               <a
                 href="https://webmail.clientum.com.ar"
                 target="_blank"
@@ -174,7 +174,7 @@ export const CloudflareWebmailTab: React.FC = () => {
             <span>Diagnóstico del Problema de Recepción en Gmail:</span>
           </div>
           <p className="text-[11px] leading-relaxed text-slate-300 pl-6">
-            Cuando envías un correo desde <span className="text-white font-mono">clientumlatam@gmail.com</span> hacia <span className="text-white font-mono">info@clientum.com.ar</span> y la regla de Cloudflare reenviaba a <span className="text-white font-mono">clientumlatam@gmail.com</span>, <strong>Gmail detecta el mismo Message-ID que acabas de enviar y lo descarta como duplicado</strong>. Al configurar la regla como <strong>"Send to a Worker" &rarr; webmail-clientum</strong>, el correo se almacena directamente en la base de datos D1 y se muestra en tu buzón sin ser bloqueado.
+            La configuración recomendada evita reenviar a <span className="text-white font-mono">clientumlatam@gmail.com</span>, porque Gmail puede detectar el mismo Message-ID y descartarlo como duplicado. La regla <strong>"Send to a Worker" &rarr; webmail-clientum</strong> queda pendiente de publicación y conexión con D1.
           </p>
         </div>
       </div>
@@ -433,7 +433,7 @@ export const CloudflareWebmailTab: React.FC = () => {
               id: 'cmd-5',
               step: 'Paso 5: Deployar Worker a Producción',
               cmd: 'npx wrangler deploy --config webmail-wrangler.jsonc',
-              desc: 'Publica el worker en Cloudflare Edge con dominio webmail.clientum.com.ar.',
+              desc: 'Publica el Worker en Cloudflare Edge y configura después el dominio webmail.clientum.com.ar.',
             },
             {
               id: 'cmd-6',

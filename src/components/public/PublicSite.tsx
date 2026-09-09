@@ -22,8 +22,15 @@ import { PublicSessionBanner } from './PublicSessionBanner';
 import { PublicRoutePath } from './publicRoutes';
 
 export const PublicSite: React.FC = () => {
-  // Current active route path
-  const [currentPath, setCurrentPath] = useState<PublicRoutePath>('/');
+  // Support both direct public URLs and the hash-based navigation used by
+  // the existing navbar.
+  const [currentPath, setCurrentPath] = useState<PublicRoutePath>(() => {
+    const hashPath = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
+    if (hashPath.startsWith('/')) return hashPath as PublicRoutePath;
+
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+    return (pathname || '/') as PublicRoutePath;
+  });
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
 
   // Modal states
@@ -31,17 +38,20 @@ export const PublicSite: React.FC = () => {
   const [isWhatsAppSimOpen, setIsWhatsAppSimOpen] = useState(false);
   const [isExpressAuditOpen, setIsExpressAuditOpen] = useState(false);
 
-  // Sync hash on mount / popstate if present
+    // Sync hash and direct public URL changes.
   useEffect(() => {
-    const handleHash = () => {
+    const handleRouteChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash && hash.startsWith('/')) {
-        setCurrentPath(hash as PublicRoutePath);
-      }
+      const nextPath = hash.startsWith('/') ? hash : window.location.pathname;
+      setCurrentPath((nextPath || '/') as PublicRoutePath);
     };
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    handleRouteChange();
+    window.addEventListener('hashchange', handleRouteChange);
+    window.addEventListener('popstate', handleRouteChange);
+    return () => {
+      window.removeEventListener('hashchange', handleRouteChange);
+      window.removeEventListener('popstate', handleRouteChange);
+    };
   }, []);
 
   const handleNavigate = (path: PublicRoutePath) => {
