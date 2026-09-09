@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import {
-  ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
+  AlertTriangle,
   BarChart3,
   Bell,
   BriefcaseBusiness,
+  CalendarDays,
   Check,
   CheckCheck,
+  CheckCircle2,
   ChevronDown,
+  Clock3,
   Filter,
   MoreHorizontal,
   Paperclip,
@@ -35,71 +38,10 @@ import {
   YAxis,
 } from 'recharts';
 import { useCRM } from '../../context/CRMContext';
-import { DashboardOperationsStrip } from './DashboardOperationsStrip';
+import { Opportunity, StageId } from '../../types';
+import { STAGES } from '../../data/initialData';
 
-interface MockDeal {
-  id: string;
-  name: string;
-  company: string;
-  amount: number;
-  stage: 'nuevo' | 'calificacion' | 'propuesta' | 'negociacion' | 'cerrado';
-  avatar: string;
-  won?: boolean;
-}
-
-const AVATARS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80',
-];
-
-const DASHBOARD_DEALS: MockDeal[] = [
-  { id: 'd-1', name: 'Importación de equipos', company: 'TechGlobal S.A.', amount: 7500, stage: 'nuevo', avatar: AVATARS[0] },
-  { id: 'd-2', name: 'Consultoría SAP', company: 'DataLogic', amount: 6000, stage: 'nuevo', avatar: AVATARS[1] },
-  { id: 'd-3', name: 'Software licencias', company: 'InnovaTech', amount: 5000, stage: 'nuevo', avatar: AVATARS[2] },
-  { id: 'd-4', name: 'Servicios en la nube', company: 'CloudWare', amount: 6000, stage: 'nuevo', avatar: AVATARS[3] },
-  { id: 'd-5', name: 'Desarrollo a medida', company: 'SoftBuild', amount: 12000, stage: 'calificacion', avatar: AVATARS[4] },
-  { id: 'd-6', name: 'Integración de sistemas', company: 'NetSolutions', amount: 9800, stage: 'calificacion', avatar: AVATARS[1] },
-  { id: 'd-7', name: 'Soporte 24/7', company: 'AdminCorp', amount: 7500, stage: 'calificacion', avatar: AVATARS[0] },
-  { id: 'd-8', name: 'Renovación de licencias', company: 'CompuStore', amount: 6000, stage: 'calificacion', avatar: AVATARS[3] },
-  { id: 'd-9', name: 'Plataforma e-learning', company: 'EduSmart', amount: 18000, stage: 'propuesta', avatar: AVATARS[2] },
-  { id: 'd-10', name: 'App móvil', company: 'MoviLab', amount: 15000, stage: 'propuesta', avatar: AVATARS[1] },
-  { id: 'd-11', name: 'Ciberseguridad', company: 'SecureIT', amount: 17500, stage: 'propuesta', avatar: AVATARS[5] },
-  { id: 'd-12', name: 'Data Analytics', company: 'MetricsPlus', amount: 17300, stage: 'propuesta', avatar: AVATARS[0] },
-  { id: 'd-13', name: 'ERP Implementación', company: 'GlobalTech', amount: 22000, stage: 'negociacion', avatar: AVATARS[4] },
-  { id: 'd-14', name: 'Outsourcing TI', company: 'BusinessCore', amount: 10000, stage: 'negociacion', avatar: AVATARS[1] },
-  { id: 'd-15', name: 'Infraestructura cloud', company: 'SkyNet', amount: 6000, stage: 'negociacion', avatar: AVATARS[2] },
-  { id: 'd-16', name: 'CRM Corporativo', company: 'SalesPro', amount: 18000, stage: 'cerrado', avatar: AVATARS[2], won: true },
-  { id: 'd-17', name: 'Mesa de ayuda', company: 'HelpDesk', amount: 12000, stage: 'cerrado', avatar: AVATARS[0], won: true },
-  { id: 'd-18', name: 'Capacitación', company: 'Formación IT', amount: 8200, stage: 'cerrado', avatar: AVATARS[5], won: true },
-  { id: 'd-19', name: 'Mantenimiento anual', company: 'FactorySoft', amount: 19000, stage: 'cerrado', avatar: AVATARS[3], won: true },
-];
-
-const REVENUE_DATA = [
-  { month: 'Ene', value: 18000 },
-  { month: 'Feb', value: 34000 },
-  { month: 'Mar', value: 48000 },
-  { month: 'Abr', value: 68000 },
-  { month: 'May', value: 52000 },
-  { month: 'Jun', value: 72000 },
-  { month: 'Jul', value: 94000 },
-  { month: 'Ago', value: 124800 },
-  { month: 'Sep', value: 86000 },
-  { month: 'Oct', value: 102000 },
-  { month: 'Nov', value: 114000 },
-  { month: 'Dic', value: 138000 },
-];
-
-const SOURCES_DATA = [
-  { name: 'Referidos', value: 35, count: 44, color: '#11c5b5' },
-  { name: 'Web', value: 25, count: 22, color: '#4388ff' },
-  { name: 'Redes sociales', value: 20, count: 25, color: '#8561ff' },
-  { name: 'Eventos', value: 10, count: 13, color: '#f59e0b' },
-  { name: 'Otros', value: 10, count: 12, color: '#64748b' },
-];
+const CHART_COLORS = ['#11c5b5', '#4388ff', '#8561ff', '#f59e0b', '#64748b'];
 
 interface ChatMessage {
   id: string;
@@ -108,22 +50,26 @@ interface ChatMessage {
   time: string;
 }
 
-type StageId = MockDeal['stage'];
-
-const STAGES: Array<{ id: StageId; label: string; color: string }> = [
-  { id: 'nuevo', label: 'Nuevo', color: '#3987ff' },
-  { id: 'calificacion', label: 'Calificación', color: '#16c7b6' },
-  { id: 'propuesta', label: 'Propuesta', color: '#4a8dff' },
-  { id: 'negociacion', label: 'Negociación', color: '#9d60ff' },
-  { id: 'cerrado', label: 'Cerrado', color: '#20c47b' },
-];
-
 const money = (amount: number) => `$ ${amount.toLocaleString('es-AR')}`;
+const dateOnly = (value: string) => new Date(`${value.slice(0, 10)}T00:00:00`);
+const formatShortDate = (value: string) =>
+  dateOnly(value).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
 
 export const ExecutiveDashboardView: React.FC = () => {
-  const { setActiveTab, openNewRecordModal, showToast } = useCRM();
-  const [deals, setDeals] = useState<MockDeal[]>(DASHBOARD_DEALS);
-  const [pipelineFilter, setPipelineFilter] = useState('Todos los pipelines');
+  const {
+    opportunities,
+    tasks,
+    activities,
+    people,
+    currentUser,
+    setActiveTab,
+    setSelectedRecord,
+    openNewRecordModal,
+    showToast,
+    moveOpportunityStage,
+    toggleTaskStatus,
+  } = useCRM();
+  const [pipelineFilter, setPipelineFilter] = useState<'Todos los negocios' | Opportunity['type']>('Todos los negocios');
   const [isPipelineDropdownOpen, setIsPipelineDropdownOpen] = useState(false);
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -132,6 +78,52 @@ export const ExecutiveDashboardView: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { id: 'm-1', sender: 'assistant', text: 'Hola. Puedo resumir tus negocios, revisar pendientes o ayudarte a preparar el próximo paso.', time: 'Ahora' },
   ]);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const filteredOpportunities = opportunities.filter((opportunity) =>
+    pipelineFilter === 'Todos los negocios' || opportunity.type === pipelineFilter,
+  );
+  const activeOpportunities = filteredOpportunities.filter(({ stage }) => stage !== 'won' && stage !== 'lost');
+  const pipelineTotal = activeOpportunities.reduce((total, opportunity) => total + opportunity.amount, 0);
+  const weightedPipeline = activeOpportunities.reduce(
+    (total, opportunity) => total + opportunity.amount * (opportunity.probability / 100),
+    0,
+  );
+  const wonDeals = opportunities.filter(({ stage }) => stage === 'won');
+  const decidedDeals = opportunities.filter(({ stage }) => stage === 'won' || stage === 'lost');
+  const winRate = decidedDeals.length ? Math.round((wonDeals.length / decidedDeals.length) * 1000) / 10 : 0;
+  const averageCycleDays = opportunities.length
+    ? Math.round(opportunities.reduce((total, opportunity) => {
+      const created = dateOnly(opportunity.createdAt).getTime();
+      const close = dateOnly(opportunity.closeDate).getTime();
+      return total + Math.max(0, (close - created) / 86400000);
+    }, 0) / opportunities.length)
+    : 0;
+  const pendingTasks = tasks.filter((task) => task.status !== 'Completed');
+  const overdueTasks = pendingTasks.filter((task) => dateOnly(task.dueDate) < today);
+  const staleOpportunities = activeOpportunities
+    .filter((opportunity) => (today.getTime() - dateOnly(opportunity.updatedAt).getTime()) / 86400000 > 7)
+    .sort((left, right) => right.amount - left.amount);
+  const revenueData = Array.from(
+    wonDeals.reduce((months, opportunity) => {
+      const date = dateOnly(opportunity.closeDate);
+      const month = date.toLocaleDateString('es-AR', { month: 'short' });
+      months.set(month, (months.get(month) || 0) + opportunity.amount);
+      return months;
+    }, new Map<string, number>()),
+  ).map(([month, value]) => ({ month, value }));
+  const sourceData = Array.from(
+    opportunities.reduce((types, opportunity) => {
+      types.set(opportunity.type, (types.get(opportunity.type) || 0) + 1);
+      return types;
+    }, new Map<Opportunity['type'], number>()),
+  ).map(([name, count], index, all) => ({
+    name,
+    count,
+    value: all.length ? Math.round((count / opportunities.length) * 100) : 0,
+    color: CHART_COLORS[index % CHART_COLORS.length],
+  }));
 
   const handleDragStart = (event: React.DragEvent, id: string) => {
     event.dataTransfer.setData('text/plain', id);
@@ -142,10 +134,10 @@ export const ExecutiveDashboardView: React.FC = () => {
     event.preventDefault();
     const dealId = event.dataTransfer.getData('text/plain') || draggedDealId;
     if (!dealId) return;
-    setDeals((previous) => previous.map((deal) => (
-      deal.id === dealId ? { ...deal, stage: targetStage, won: targetStage === 'cerrado' ? true : deal.won } : deal
-    )));
-    showToast(`Negocio movido a ${STAGES.find((stage) => stage.id === targetStage)?.label}`, 'success');
+    const deal = opportunities.find((opportunity) => opportunity.id === dealId);
+    if (!deal || deal.stage === targetStage) return;
+    moveOpportunityStage(dealId, targetStage);
+    showToast(`Negocio movido a ${STAGES.find((stage) => stage.id === targetStage)?.name}`, 'success');
     setDraggedDealId(null);
   };
 
@@ -186,18 +178,18 @@ export const ExecutiveDashboardView: React.FC = () => {
       <section className="crm-dashboard__content">
         <div className="crm-dashboard__header">
           <div>
-            <div className="crm-eyebrow"><span className="crm-status-dot" /> VISTA EJECUTIVA · ACTUALIZADO AHORA</div>
+            <div className="crm-eyebrow"><span className="crm-status-dot" /> VISTA EJECUTIVA · DATOS DEL CRM</div>
             <h1>Resumen ejecutivo</h1>
-            <p>Entendé cómo está el negocio y dónde conviene intervenir hoy.</p>
+            <p>Entendé cómo está el negocio y dónde conviene intervenir primero.</p>
           </div>
           <div className="crm-dashboard__actions">
             <div className="crm-select-wrap">
               <button className="crm-select-button" onClick={() => setIsPipelineDropdownOpen((open) => !open)}>
-                {pipelineFilter}<ChevronDown size={14} />
+                  {pipelineFilter}<ChevronDown size={14} />
               </button>
               {isPipelineDropdownOpen && (
                 <div className="crm-dropdown">
-                  {['Todos los pipelines', 'Pipeline B2B', 'Enterprise Latam', 'Pymes & Partners'].map((item) => (
+                    {(['Todos los negocios', 'New Business', 'Expansion', 'Renewal'] as const).map((item) => (
                     <button key={item} onClick={() => { setPipelineFilter(item); setIsPipelineDropdownOpen(false); }}>{item}</button>
                   ))}
                 </div>
@@ -216,7 +208,77 @@ export const ExecutiveDashboardView: React.FC = () => {
           </div>
         </div>
 
-        <DashboardOperationsStrip onNavigate={setActiveTab} />
+        <section className="crm-attention-panel" aria-labelledby="crm-attention-title">
+          <div className="crm-attention-panel__header">
+            <div>
+              <span className="crm-section-kicker">Próxima acción</span>
+              <h2 id="crm-attention-title">Atención prioritaria</h2>
+              <p>{overdueTasks.length} tareas vencidas · {staleOpportunities.length} negocios sin actividad reciente · {activities.length} registros de actividad</p>
+            </div>
+            <button type="button" className="crm-report-link" onClick={() => setActiveTab('tasks')}>
+              Ver actividades <ArrowRight size={13} />
+            </button>
+          </div>
+          <div className="crm-attention-list">
+            {pendingTasks.slice(0, 3).map((task) => (
+              <div
+                key={task.id}
+                className="crm-attention-item"
+              >
+                <button
+                  type="button"
+                  className="crm-attention-item__main"
+                  onClick={() => { setSelectedRecord({ type: 'task', id: task.id }); setActiveTab('tasks'); }}
+                >
+                  <span className={`crm-attention-item__icon ${dateOnly(task.dueDate) < today ? 'is-warning' : 'is-info'}`}>
+                    {dateOnly(task.dueDate) < today ? <AlertTriangle size={14} /> : <CalendarDays size={14} />}
+                  </span>
+                  <span className="crm-attention-item__body">
+                    <strong>{task.title}</strong>
+                    <small>{dateOnly(task.dueDate) < today ? `Vencida · ${formatShortDate(task.dueDate)}` : `Vence ${formatShortDate(task.dueDate)}`}</small>
+                  </span>
+                </button>
+                <span className="crm-attention-item__action">
+                  <button
+                    type="button"
+                    onClick={() => toggleTaskStatus(task.id)}
+                    aria-label={`Completar ${task.title}`}
+                    title="Marcar como completada"
+                  >
+                    <CheckCircle2 size={15} />
+                  </button>
+                </span>
+              </div>
+            ))}
+            {pendingTasks.length === 0 && (
+              <div className="crm-attention-empty">
+                <CheckCircle2 size={16} /> No hay tareas pendientes.
+              </div>
+            )}
+            {pendingTasks.length > 3 && (
+              <button type="button" className="crm-attention-more" onClick={() => setActiveTab('tasks')}>
+                +{pendingTasks.length - 3} actividades más
+              </button>
+            )}
+          </div>
+          {staleOpportunities.length > 0 && (
+            <div className="crm-stale-deals">
+              <div className="crm-stale-deals__label"><Clock3 size={13} /> Negocios que necesitan seguimiento</div>
+              <div className="crm-stale-deals__list">
+                {staleOpportunities.slice(0, 3).map((opportunity) => (
+                  <button
+                    key={opportunity.id}
+                    type="button"
+                    onClick={() => { setSelectedRecord({ type: 'opportunity', id: opportunity.id }); setActiveTab('opportunities'); }}
+                  >
+                    <span>{opportunity.name}</span>
+                    <strong>{money(opportunity.amount)}</strong>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
 
         <div className="crm-pipeline-heading">
           <div>
@@ -228,8 +290,8 @@ export const ExecutiveDashboardView: React.FC = () => {
 
         <div className="crm-board-shell">
           <div className="crm-board-scroll">
-            {STAGES.map((stage) => {
-              const columnDeals = deals.filter((deal) => deal.stage === stage.id);
+            {STAGES.filter((stage) => stage.id !== 'lost').map((stage) => {
+              const columnDeals = filteredOpportunities.filter((deal) => deal.stage === stage.id);
               const total = columnDeals.reduce((sum, deal) => sum + deal.amount, 0);
               return (
                 <div
@@ -249,15 +311,25 @@ export const ExecutiveDashboardView: React.FC = () => {
                         key={deal.id}
                         draggable
                         onDragStart={(event) => handleDragStart(event, deal.id)}
+                        onClick={() => { setSelectedRecord({ type: 'opportunity', id: deal.id }); setActiveTab('opportunities'); }}
                         className="crm-deal-card"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setSelectedRecord({ type: 'opportunity', id: deal.id });
+                            setActiveTab('opportunities');
+                          }
+                        }}
                       >
-                        <div className="crm-deal-card__top"><span>{deal.company}</span><MoreHorizontal size={13} /></div>
+                        <div className="crm-deal-card__top"><span>{deal.companyName || 'Sin empresa'}</span><MoreHorizontal size={13} /></div>
                         <h3>{deal.name}</h3>
                         <div className="crm-deal-card__footer">
                           <strong>{money(deal.amount)}</strong>
                           <div className="crm-deal-card__person">
-                            {deal.won && <span className="crm-won"><Check size={10} /> Ganado</span>}
-                            <img src={deal.avatar} alt="" />
+                            {deal.stage === 'won' && <span className="crm-won"><Check size={10} /> Ganado</span>}
+                            <img src={people.find((person) => person.id === deal.contactId)?.avatar || currentUser.avatar} alt="" />
                           </div>
                         </div>
                       </article>
@@ -273,31 +345,31 @@ export const ExecutiveDashboardView: React.FC = () => {
         <div className="crm-kpi-grid">
           <div className="crm-kpi-card crm-kpi-card--accent">
             <div className="crm-kpi-card__head"><span>Valor total del pipeline</span><span className="crm-kpi-icon"><TrendingUp size={17} /></span></div>
-            <strong>$ 582.000</strong><small><ArrowUpRight size={12} /> 18.8% <em>ponderado activo</em></small>
+            <strong>{money(pipelineTotal)}</strong><small><ArrowUpRight size={12} /> {money(weightedPipeline)} <em>ponderado activo</em></small>
           </div>
           <div className="crm-kpi-card">
             <div className="crm-kpi-card__head"><span>Negocios ganados</span><span className="crm-kpi-icon"><BriefcaseBusiness size={17} /></span></div>
-            <strong>18</strong><small><ArrowUpRight size={12} /> $ 124.800 <em>este mes</em></small>
+            <strong>{wonDeals.length}</strong><small><ArrowUpRight size={12} /> {money(wonDeals.reduce((total, deal) => total + deal.amount, 0))} <em>valor ganado</em></small>
           </div>
           <div className="crm-kpi-card">
             <div className="crm-kpi-card__head"><span>Tasa de cierre</span><span className="crm-kpi-icon"><Target size={17} /></span></div>
-            <strong>38.5%</strong><small><ArrowUpRight size={12} /> 6.2% <em>conversión exitosa</em></small>
+            <strong>{winRate.toLocaleString('es-AR')}%</strong><small><ArrowUpRight size={12} /> {decidedDeals.length} <em>negocios decididos</em></small>
           </div>
           <div className="crm-kpi-card">
             <div className="crm-kpi-card__head"><span>Ciclo de venta</span><span className="crm-kpi-icon"><WalletCards size={17} /></span></div>
-            <strong>14 días</strong><small><ArrowUpRight size={12} /> 9.3% <em>tiempo promedio</em></small>
+            <strong>{averageCycleDays} días</strong><small><ArrowUpRight size={12} /> {opportunities.length} <em>negocios analizados</em></small>
           </div>
         </div>
 
         <div className="crm-analytics-grid">
           <section className="crm-panel crm-revenue-panel">
             <div className="crm-panel__header">
-              <div><div className="crm-panel__title"><BarChart3 size={16} /> Ingresos <button className="crm-period">Este año <ChevronDown size={12} /></button></div><p>Evolución de ingresos por mes</p></div>
-              <div className="crm-panel__total"><span>Ingresos totales</span><strong>$ 1.024.600</strong><small><ArrowUpRight size={11} /> 22.4% vs año anterior</small></div>
+              <div><div className="crm-panel__title"><BarChart3 size={16} /> Ingresos <button className="crm-period">Negocios ganados <ChevronDown size={12} /></button></div><p>Valor de negocios en estado ganado</p></div>
+              <div className="crm-panel__total"><span>Ingresos registrados</span><strong>{money(wonDeals.reduce((total, deal) => total + deal.amount, 0))}</strong><small><ArrowUpRight size={11} /> {wonDeals.length} <em>cierres registrados</em></small></div>
             </div>
             <div className="crm-revenue-chart">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={REVENUE_DATA} margin={{ top: 12, right: 6, left: -20, bottom: 0 }}>
+                <AreaChart data={revenueData} margin={{ top: 12, right: 6, left: -20, bottom: 0 }}>
                   <defs><linearGradient id="crmRevenueGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1bcfc0" stopOpacity={0.28} /><stop offset="100%" stopColor="#1bcfc0" stopOpacity={0} /></linearGradient></defs>
                   <XAxis dataKey="month" stroke="#6f829c" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis stroke="#6f829c" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value / 1000}K`} />
@@ -313,12 +385,12 @@ export const ExecutiveDashboardView: React.FC = () => {
             <div className="crm-sources-content">
               <div className="crm-donut">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart><Pie data={SOURCES_DATA} cx="50%" cy="50%" innerRadius={46} outerRadius={66} paddingAngle={3} dataKey="value" stroke="none">{SOURCES_DATA.map((entry) => <Cell key={entry.name} fill={entry.color} />)}</Pie></PieChart>
+                   <PieChart><Pie data={sourceData} cx="50%" cy="50%" innerRadius={46} outerRadius={66} paddingAngle={3} dataKey="value" stroke="none">{sourceData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}</Pie></PieChart>
                 </ResponsiveContainer>
-                <div><strong>126</strong><span>Total</span></div>
+                <div><strong>{opportunities.length}</strong><span>Total</span></div>
               </div>
               <div className="crm-source-list">
-                {SOURCES_DATA.map((item) => <div key={item.name}><span><i style={{ background: item.color }} />{item.name}</span><strong>{item.value}% <em>({item.count})</em></strong></div>)}
+                {sourceData.map((item) => <div key={item.name}><span><i style={{ background: item.color }} />{item.name}</span><strong>{item.value}% <em>({item.count})</em></strong></div>)}
               </div>
             </div>
             <button className="crm-report-link" onClick={() => setActiveTab('analytics')}>Ver reporte completo <ArrowRight size={13} /></button>
