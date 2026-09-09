@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import Papa from 'papaparse';
 import {
+  AlertTriangle,
+  Building2,
   FileSpreadsheet,
   Upload,
   ArrowRight,
@@ -10,13 +12,113 @@ import {
   Sparkles,
   Download,
   FileText,
+  GitMerge,
+  RotateCcw,
   Table,
+  UsersRound,
   X
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
+import { getClientumAuthJsonHeaders } from '../../lib/api';
+
+type ValidationIssue = { row: number; message: string; severity: 'error' | 'warning' };
+type ValidationReport = { errors: ValidationIssue[]; warnings: ValidationIssue[] };
+type DuplicateCandidate = {
+  pairKey: string;
+  entityType: 'companies' | 'people';
+  matchField: 'email' | 'phone' | 'domain' | 'name';
+  matchValue: string;
+  primary: Record<string, any>;
+  duplicate: Record<string, any>;
+};
+
+const normalizeValue = (value: unknown, field: DuplicateCandidate['matchField']): string => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return '';
+  if (field === 'phone') return raw.replace(/[^\d+]/g, '');
+  if (field === 'domain') return raw.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+  if (field === 'name') {
+    return raw.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+  }
+  return raw;
+};
+
+const displayRecordName = (record: Record<string, any>): string =>
+  [record.firstName, record.lastName].filter(Boolean).join(' ').trim() || record.name || record.email || record.domain || record.id;
+
+const buildValidationReport = (
+  target: 'opportunities' | 'companies' | 'people',
+  rows: any[],
+  people: Record<string, any>[],
+  companies: Record<string, any>[],
+): ValidationReport => {
+  const errors: ValidationIssue[] = [];
+  const warnings: ValidationIssue[] = [];
+  const seenKeys = new Set<string>();
+
+  rows.forEach((row, index) => {
+    const rowNumber = index + 2;
+    const name = String(row.name || row.dealName || row.companyName || row.firstName || '').trim();
+
+    if (target === 'opportunities') {
+      if (!name) errors.push({ row: rowNumber, message: 'El deal necesita un nombre.', severity: 'error' });
+      if (row.amount !== undefined && row.amount !== '' && !Number.isFinite(Number(row.amount))) {
+        errors.push({ row: rowNumber, message: 'El importe debe ser numérico.', severity: 'error' });
+      }
+    }
+
+    if (target === 'companies') {
+      const domain = normalizeValue(row.domain, 'domain');
+      if (!name) errors.push({ row: rowNumber, message: 'La empresa necesita un nombre.', severity: 'error' });
+      if (!domain) errors.push({ row: rowNumber, message: 'La empresa necesita un dominio para detectar duplicados.', severity: 'error' });
+      if (domain && !domain.includes('.')) warnings.push({ row: rowNumber, message: 'El dominio no parece tener formato completo.', severity: 'warning' });
+      const key = domain || normalizeValue(name, 'name');
+      if (key && seenKeys.has(`company:${key}`)) warnings.push({ row: rowNumber, message: 'Repite una empresa dentro del mismo archivo.', severity: 'warning' });
+      if (key) seenKeys.add(`company:${key}`);
+      if (domain && companies.some((company) => normalizeValue(company.domain, 'domain') === domain)) {
+        warnings.push({ row: rowNumber, message: `Ya existe una empresa con el dominio ${domain}.`, severity: 'warning' });
+      }
+    }
+
+    if (target === 'people') {
+      const firstName = String(row.firstName || row.name?.split(' ')[0] || '').trim();
+      const email = normalizeValue(row.email, 'email');
+      const phone = normalizeValue(row.phone, 'phone');
+      if (!firstName) errors.push({ row: rowNumber, message: 'El contacto necesita nombre.', severity: 'error' });
+      if (!email && !phone) errors.push({ row: rowNumber, message: 'El contacto necesita email o teléfono.', severity: 'error' });
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push({ row: rowNumber, message: 'El email no tiene un formato válido.', severity: 'error' });
+      }
+      if (email && people.some((person) => normalizeValue(person.email, 'email') === email)) {
+        warnings.push({ row: rowNumber, message: `Ya existe un contacto con el email ${email}.`, severity: 'warning' });
+      }
+      if (phone && people.some((person) => normalizeValue(person.phone, 'phone') === phone)) {
+        warnings.push({ row: rowNumber, message: 'Ya existe un contacto con el mismo teléfono.', severity: 'warning' });
+      }
+      for (const key of [`email:${email}`, `phone:${phone}`]) {
+        if (key !== 'email:' && key !== 'phone:' && seenKeys.has(`person:${key}`)) {
+          warnings.push({ row: rowNumber, message: 'Repite un contacto dentro del mismo archivo.', severity: 'warning' });
+        }
+        if (key !== 'email:' && key !== 'phone:') seenKeys.add(`person:${key}`);
+      }
+    }
+  });
+
+  return { errors, warnings };
+};
 
 export const CSVStudioView: React.FC = () => {
-  const { importCSVData, exportOpportunitiesCSV, showToast } = useCRM();
+  const {
+    importCSVData,
+    exportOpportunitiesCSV,
+    showToast,
+    people,
+    companies,
+    currentUser,
+    lastImport,
+    undoLastImport,
+    refreshCrmData,
+  } = useCRM();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [importTarget, setImportTarget] = useState<'opportunities' | 'companies' | 'people'>('opportunities');
@@ -25,6 +127,17 @@ export const CSVStudioView: React.FC = () => {
   const [parsedRows, setParsedRows] = useState<any[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [isParsed, setIsParsed] = useState(false);
+  const [validationReport, setValidationReport] = useState<ValidationReport>({ errors: [], warnings: [] });
+  const [duplicateCandidates, setDuplicateCandidates] = useState<DuplicateCandidate[]>([]);
+  const [isScanningDuplicates, setIsScanningDuplicates] = useState(false);
+  const [resolvingPair, setResolvingPair] = useState<string | null>(null);
+
+  const applyParsedRows = (rows: any[], fields: string[]) => {
+    setHeaders(fields);
+    setParsedRows(rows);
+    setValidationReport(buildValidationReport(importTarget, rows, people, companies));
+    setIsParsed(true);
+  };
 
   const handleParse = (data: string, isFile: boolean = false) => {
     Papa.parse(data, {
@@ -35,9 +148,7 @@ export const CSVStudioView: React.FC = () => {
           showToast(`Error parsing CSV: ${results.errors[0].message}`, 'error');
           return;
         }
-        setHeaders(results.meta.fields || []);
-        setParsedRows(results.data);
-        setIsParsed(true);
+        applyParsedRows(results.data as any[], results.meta.fields || []);
         showToast(`Parsed ${results.data.length} rows successfully`, 'success');
       },
       error: (error) => {
@@ -58,9 +169,7 @@ export const CSVStudioView: React.FC = () => {
           showToast(`Error parsing CSV file: ${results.errors[0].message}`, 'error');
           return;
         }
-        setHeaders(results.meta.fields || []);
-        setParsedRows(results.data);
-        setIsParsed(true);
+        applyParsedRows(results.data as any[], results.meta.fields || []);
         showToast(`Parsed ${results.data.length} rows successfully`, 'success');
       }
     });
@@ -76,10 +185,62 @@ export const CSVStudioView: React.FC = () => {
 
   const handleExecuteImport = () => {
     if (parsedRows.length === 0) return;
+    if (validationReport.errors.length > 0) {
+      showToast('Corrige los errores de validación antes de importar.', 'error');
+      return;
+    }
     importCSVData(importTarget, parsedRows);
     setIsParsed(false);
     setParsedRows([]);
     setPastedData('');
+    setValidationReport({ errors: [], warnings: [] });
+  };
+
+  const scanDuplicates = async () => {
+    setIsScanningDuplicates(true);
+    try {
+      const response = await fetch('/api/crm/duplicates', {
+        headers: await getClientumAuthJsonHeaders(currentUser),
+      });
+      const payload = await response.json() as { duplicates?: DuplicateCandidate[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || 'No se pudo analizar la base.');
+      setDuplicateCandidates(payload.duplicates || []);
+      showToast(`${payload.duplicates?.length || 0} posibles duplicados encontrados.`, 'info');
+    } catch (error: any) {
+      showToast(error?.message || 'No se pudo analizar la base.', 'error');
+    } finally {
+      setIsScanningDuplicates(false);
+    }
+  };
+
+  const resolveDuplicate = async (candidate: DuplicateCandidate, action: 'merge' | 'dismiss') => {
+    setResolvingPair(candidate.pairKey);
+    try {
+      const response = await fetch('/api/crm/duplicates/resolve', {
+        method: 'POST',
+        headers: await getClientumAuthJsonHeaders(currentUser),
+        body: JSON.stringify({
+          entityType: candidate.entityType,
+          primaryId: candidate.primary.id,
+          duplicateId: candidate.duplicate.id,
+          action,
+        }),
+      });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(payload.error || 'No se pudo resolver el duplicado.');
+      if (action === 'merge') await refreshCrmData();
+      setDuplicateCandidates((previous) => previous.filter((item) => item.pairKey !== candidate.pairKey));
+      showToast(action === 'merge' ? 'Registros fusionados correctamente.' : 'Coincidencia descartada.', 'success');
+    } catch (error: any) {
+      showToast(error?.message || 'No se pudo resolver el duplicado.', 'error');
+    } finally {
+      setResolvingPair(null);
+    }
+  };
+
+  const changeImportTarget = (target: 'opportunities' | 'companies' | 'people') => {
+    setImportTarget(target);
+    if (isParsed) setValidationReport(buildValidationReport(target, parsedRows, people, companies));
   };
 
   return (
@@ -110,6 +271,15 @@ export const CSVStudioView: React.FC = () => {
           <Download className="w-4 h-4 text-emerald-400" />
           Export Deals to CSV
         </button>
+         {lastImport && (
+           <button
+             onClick={() => void undoLastImport()}
+             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-200 text-xs font-semibold transition-all"
+           >
+             <RotateCcw className="w-4 h-4" />
+             Undo last import ({lastImport.count})
+           </button>
+         )}
       </div>
 
       {/* Grid: Config & Input */}
@@ -124,7 +294,7 @@ export const CSVStudioView: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-2">
               <button
-                onClick={() => setImportTarget('opportunities')}
+                 onClick={() => changeImportTarget('opportunities')}
                 className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${
                   importTarget === 'opportunities'
                     ? 'bg-blue-600 border-blue-500 text-white shadow-md'
@@ -134,7 +304,7 @@ export const CSVStudioView: React.FC = () => {
                 Deals
               </button>
               <button
-                onClick={() => setImportTarget('companies')}
+                 onClick={() => changeImportTarget('companies')}
                 className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${
                   importTarget === 'companies'
                     ? 'bg-blue-600 border-blue-500 text-white shadow-md'
@@ -144,7 +314,7 @@ export const CSVStudioView: React.FC = () => {
                 Companies
               </button>
               <button
-                onClick={() => setImportTarget('people')}
+                 onClick={() => changeImportTarget('people')}
                 className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${
                   importTarget === 'people'
                     ? 'bg-blue-600 border-blue-500 text-white shadow-md'
@@ -213,20 +383,56 @@ export const CSVStudioView: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => {setIsParsed(false); setParsedRows([]);}}
+                     onClick={() => {
+                       setIsParsed(false);
+                       setParsedRows([]);
+                       setValidationReport({ errors: [], warnings: [] });
+                     }}
                     className="px-3 py-1.5 rounded-lg border border-[#2b3348] text-slate-400 text-xs font-semibold hover:text-white"
                   >
                     Clear
                   </button>
                   <button
                     onClick={handleExecuteImport}
-                    className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg flex items-center gap-2 transition-all"
+                     disabled={validationReport.errors.length > 0}
+                     className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold shadow-lg flex items-center gap-2 transition-all"
                   >
                     <Sparkles className="w-4 h-4" />
                     Import All {parsedRows.length} Records Now
                   </button>
                 </div>
               </div>
+
+               {(validationReport.errors.length > 0 || validationReport.warnings.length > 0) && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                   {validationReport.errors.length > 0 && (
+                     <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3">
+                       <div className="flex items-center gap-2 text-red-300 text-xs font-bold">
+                         <AlertCircle className="w-4 h-4" />
+                         {validationReport.errors.length} errores bloquean la importación
+                       </div>
+                       <ul className="mt-2 space-y-1 text-[11px] text-red-200/80">
+                         {validationReport.errors.slice(0, 5).map((issue, index) => (
+                           <li key={`${issue.row}-${index}`}>Fila {issue.row}: {issue.message}</li>
+                         ))}
+                       </ul>
+                     </div>
+                   )}
+                   {validationReport.warnings.length > 0 && (
+                     <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                       <div className="flex items-center gap-2 text-amber-300 text-xs font-bold">
+                         <AlertTriangle className="w-4 h-4" />
+                         {validationReport.warnings.length} advertencias para revisar
+                       </div>
+                       <ul className="mt-2 space-y-1 text-[11px] text-amber-200/80">
+                         {validationReport.warnings.slice(0, 5).map((issue, index) => (
+                           <li key={`${issue.row}-${index}`}>Fila {issue.row}: {issue.message}</li>
+                         ))}
+                       </ul>
+                     </div>
+                   )}
+                 </div>
+               )}
 
               {/* Data Table Preview */}
               <div className="rounded-xl border border-[#1e222d] bg-[#090b0e] overflow-x-auto">
@@ -269,6 +475,74 @@ export const CSVStudioView: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mt-6 p-5 rounded-2xl border border-[#1e222d] bg-[#0d0f14] shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#1e222d]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-300">
+              <GitMerge className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white">Data quality & duplicate review</h2>
+              <p className="text-xs text-slate-500">Find duplicate contacts by email/phone and companies by domain/name.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => void scanDuplicates()}
+            disabled={isScanningDuplicates}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold transition-all"
+          >
+            <AlertTriangle className="w-4 h-4" />
+            {isScanningDuplicates ? 'Scanning…' : 'Scan workspace'}
+          </button>
+        </div>
+
+        {duplicateCandidates.length === 0 ? (
+          <div className="py-8 text-center">
+            <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-400 mb-2" />
+            <p className="text-xs text-slate-400">No pending duplicate matches. Run a scan to check the workspace.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#1e222d]">
+            {duplicateCandidates.map((candidate) => (
+              <div key={candidate.pairKey} className="py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  {candidate.entityType === 'people'
+                    ? <UsersRound className="w-4 h-4 mt-1 text-blue-300" />
+                    : <Building2 className="w-4 h-4 mt-1 text-amber-300" />}
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                      <span className="font-semibold">{displayRecordName(candidate.primary)}</span>
+                      <span className="text-slate-600">↔</span>
+                      <span className="font-semibold">{displayRecordName(candidate.duplicate)}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Coinciden por {candidate.matchField}: <span className="text-slate-300">{candidate.matchValue}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => void resolveDuplicate(candidate, 'dismiss')}
+                    disabled={resolvingPair === candidate.pairKey}
+                    className="px-3 py-2 rounded-lg border border-[#2b3348] text-slate-400 hover:text-white disabled:opacity-50 text-xs font-semibold"
+                  >
+                    Dismiss
+                  </button>
+                  <button
+                    onClick={() => void resolveDuplicate(candidate, 'merge')}
+                    disabled={resolvingPair === candidate.pairKey}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold"
+                  >
+                    <GitMerge className="w-3.5 h-3.5" />
+                    Merge into first
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

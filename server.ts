@@ -13,15 +13,19 @@ import {
   CRM_ENTITY_TYPES,
   claimDueAgentTasks,
   countCrmRecords,
+  createCrmImportBatch,
   createAgentTask,
   deleteCrmRecord,
   finishAgentTask,
   listAiChanges,
+  listCrmDuplicates,
   listCrmRecords,
   listEvidence,
   recordAiChange,
   recordEvidence,
   recordServerAudit,
+  resolveCrmDuplicate,
+  undoCrmImportBatch,
   upsertCrmRecords,
 } from "./server/crmRepository";
 
@@ -1039,6 +1043,28 @@ const asRecordArrays = (value: unknown): Partial<Record<(typeof CRM_ENTITY_TYPES
   return records;
 };
 
+const validateCrmPayload = (
+  records: Partial<Record<(typeof CRM_ENTITY_TYPES)[number], Record<string, unknown>[]>>,
+) => {
+  const errors: string[] = [];
+  let total = 0;
+  for (const entityType of CRM_ENTITY_TYPES) {
+    const values = records[entityType];
+    if (!values) continue;
+    total += values.length;
+    if (values.length > 5000) errors.push(`${entityType} supera el máximo de 5.000 registros por operación.`);
+    for (const record of values) {
+      const id = typeof record.id === "string" ? record.id.trim() : "";
+      if (!id || id.length > 160) errors.push(`${entityType} contiene un id inválido.`);
+      if (JSON.stringify(record).length > 250_000) errors.push(`${entityType} contiene un registro demasiado grande.`);
+      if (errors.length >= 25) break;
+    }
+    if (errors.length >= 25) break;
+  }
+  if (total > 10_000) errors.push("La operación supera el máximo de 10.000 registros.");
+  return errors;
+};
+
 app.get("/api/crm/bootstrap", async (req, res) => {
   try {
     const context = await getAuthenticatedTenant(req, res);
@@ -1057,6 +1083,11 @@ app.put("/api/crm/bootstrap", async (req, res) => {
     const context = await getAuthenticatedTenant(req, res);
     if (!context) return;
     const records = asRecordArrays(req.body);
+    const validationErrors = validateCrmPayload(records);
+    if (validationErrors.length > 0) {
+      res.status(400).json({ error: "El snapshot CRM no pasó la validación.", details: validationErrors });
+      return;
+    }
     const written = await upsertCrmRecords(credentialDatabase, context.tenantId, records);
     await recordServerAudit(credentialDatabase, context.tenantId, {
       userId: context.userId,
@@ -1071,6 +1102,112 @@ app.put("/api/crm/bootstrap", async (req, res) => {
   } catch (error: any) {
     console.error("CRM bootstrap write error:", error?.message || error);
     res.status(500).json({ error: "No se pudieron persistir los registros CRM." });
+  }
+});
+
+app.get("/api/crm/duplicates", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const requestedType = String(req.query.entityType || "").trim();
+    const entityType = requestedType === "people" || requestedType === "companies" ? requestedType : undefined;
+    if (requestedType && !entityType) {
+      res.status(400).json({ error: "El tipo de duplicado debe ser people o companies." });
+      return;
+    }
+    const duplicates = await listCrmDuplicates(credentialDatabase, context.tenantId, entityType);
+    res.json({ duplicates, count: duplicates.length });
+  } catch (error: any) {
+    console.error("CRM duplicate scan error:", error?.message || error);
+    res.status(500).json({ error: "No se pudieron analizar los duplicados." });
+  }
+});
+
+app.post("/api/crm/duplicates/resolve", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const body = req.body ?? {};
+    const entityType = body.entityType === "people" || body.entityType === "companies" ? body.entityType : null;
+    const action = body.action === "merge" || body.action === "dismiss" ? body.action : null;
+    const primaryId = typeof body.primaryId === "string" ? body.primaryId.trim() : "";
+    const duplicateId = typeof body.duplicateId === "string" ? body.duplicateId.trim() : "";
+    if (!entityType || !action || !primaryId || !duplicateId || primaryId === duplicateId) {
+      res.status(400).json({ error: "La resolución de duplicados requiere tipo, ids distintos y una acción válida." });
+      return;
+    }
+    const result = await resolveCrmDuplicate(credentialDatabase, context.tenantId, context.userId, {
+      entityType,
+      primaryId,
+      duplicateId,
+      action,
+    });
+    await recordServerAudit(credentialDatabase, context.tenantId, {
+      userId: context.userId,
+      action: `crm.duplicate.${action}`,
+      entityType,
+      entityId: primaryId,
+      metadata: { duplicateId, pairKey: result.pairKey, updatedCount: result.updatedCount },
+    });
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error("CRM duplicate resolution error:", error?.message || error);
+    res.status(400).json({ error: error?.message || "No se pudo resolver el duplicado." });
+  }
+});
+
+app.post("/api/crm/import-batches", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const body = req.body ?? {};
+    const entityType = body.entityType === "opportunities" || body.entityType === "companies" || body.entityType === "people"
+      ? body.entityType
+      : null;
+    const batchId = typeof body.id === "string" ? body.id.trim() : "";
+    const records = Array.isArray(body.records)
+      ? body.records.filter((record: unknown): record is Record<string, unknown> =>
+        Boolean(record) && typeof record === "object" && typeof (record as Record<string, unknown>).id === "string",
+      )
+      : [];
+    if (!entityType || !batchId || records.length === 0) {
+      res.status(400).json({ error: "La importación requiere un batch, una entidad y registros válidos." });
+      return;
+    }
+    const result = await createCrmImportBatch(credentialDatabase, context.tenantId, context.userId, {
+      id: batchId,
+      entityType,
+      records,
+    });
+    await recordServerAudit(credentialDatabase, context.tenantId, {
+      userId: context.userId,
+      action: "crm.import.create",
+      entityType,
+      metadata: { batchId, count: result.count },
+    });
+    res.status(201).json({ success: true, batch: result });
+  } catch (error: any) {
+    console.error("CRM import batch error:", error?.message || error);
+    res.status(400).json({ error: error?.message || "No se pudo registrar la importación." });
+  }
+});
+
+app.delete("/api/crm/import-batches/:batchId", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+    const result = await undoCrmImportBatch(credentialDatabase, context.tenantId, req.params.batchId);
+    if (result.undone) {
+      await recordServerAudit(credentialDatabase, context.tenantId, {
+        userId: context.userId,
+        action: "crm.import.undo",
+        metadata: { batchId: req.params.batchId, deleted: result.deleted },
+      });
+    }
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error("CRM import undo error:", error?.message || error);
+    res.status(400).json({ error: error?.message || "No se pudo revertir la importación." });
   }
 });
 

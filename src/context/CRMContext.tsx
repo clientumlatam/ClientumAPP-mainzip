@@ -195,6 +195,9 @@ interface CRMContextType {
 
   // CSV Data Import Engine
   importCSVData: (target: 'opportunities' | 'companies' | 'people', items: any[]) => number;
+  lastImport: { id: string; target: 'opportunities' | 'companies' | 'people'; count: number } | null;
+  undoLastImport: () => Promise<boolean>;
+  refreshCrmData: () => Promise<boolean>;
 
   // ERP Suite
   invoices: Invoice[];
@@ -571,6 +574,43 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
   const [isCrmRemoteReady, setIsCrmRemoteReady] = useState(false);
+  const [lastImport, setLastImport] = useState<{
+    id: string;
+    target: 'opportunities' | 'companies' | 'people';
+    recordIds: string[];
+    count: number;
+  } | null>(null);
+  const importBatchPersistenceRef = useRef<Promise<void> | null>(null);
+
+  const refreshCrmData = async (): Promise<boolean> => {
+    if (!isAuthReady || !isAuthenticated || !currentUser.id) return false;
+    try {
+      const response = await fetch('/api/crm/bootstrap', {
+        headers: await getClientumAuthJsonHeaders(currentUser),
+      });
+      if (!response.ok) throw new Error(`CRM bootstrap failed: ${response.status}`);
+      const payload = await response.json() as {
+        records?: {
+          opportunities?: Opportunity[];
+          companies?: Company[];
+          people?: Person[];
+          tasks?: Task[];
+          activities?: Activity[];
+        };
+      };
+      if (!payload.records) return false;
+      setOpportunities(ensureUniqueIds(payload.records.opportunities || [], 'opp'));
+      setCompanies(payload.records.companies || []);
+      setPeople(payload.records.people || []);
+      setTasks(payload.records.tasks || []);
+      setActivities(payload.records.activities || []);
+      setIsCrmRemoteReady(true);
+      return true;
+    } catch (error) {
+      console.warn('Persistent CRM refresh unavailable:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     if (!isLiveFirebaseReady) {
@@ -1474,6 +1514,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // --- CSV IMPORT ENGINE ---
   const importCSVData = (target: 'opportunities' | 'companies' | 'people', items: any[]): number => {
     let count = 0;
+    let importedRecords: Array<{ id: string; [key: string]: any }> = [];
     if (target === 'opportunities') {
       const newDeals: Opportunity[] = items.map((item, idx) => ({
         id: 'opp-import-' + Date.now() + '-' + idx,
@@ -1493,6 +1534,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         tags: item.tags ? String(item.tags).split(';') : ['CSV Import'],
       }));
       setOpportunities((prev) => [...newDeals, ...prev]);
+      importedRecords = newDeals;
       count = newDeals.length;
     } else if (target === 'companies') {
       const newComps: Company[] = items.map((item, idx) => ({
@@ -1510,6 +1552,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createdAt: new Date().toISOString(),
       }));
       setCompanies((prev) => [...newComps, ...prev]);
+      importedRecords = newComps;
       count = newComps.length;
     } else if (target === 'people') {
       const newPeople: Person[] = items.map((item, idx) => ({
@@ -1526,12 +1569,74 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lastActivityDate: new Date().toISOString(),
       }));
       setPeople((prev) => [...newPeople, ...prev]);
+      importedRecords = newPeople;
       count = newPeople.length;
+    }
+
+    const batch = {
+      id: `import-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      target,
+      recordIds: importedRecords.map((record) => record.id),
+      count,
+    };
+    setLastImport(batch);
+    if (isCrmRemoteReady && isAuthenticated && currentUser.id && importedRecords.length > 0) {
+      importBatchPersistenceRef.current = (async () => {
+        try {
+          const headers = await getClientumAuthJsonHeaders(currentUser);
+          const response = await fetch('/api/crm/import-batches', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              id: batch.id,
+              entityType: target,
+              records: importedRecords,
+            }),
+          });
+          if (!response.ok) throw new Error(`Import batch tracking failed: ${response.status}`);
+        } catch (error) {
+          console.warn('Import batch tracking unavailable; local undo remains available:', error);
+        }
+      })();
     }
 
     triggerConfetti();
     showToast(`Successfully imported ${count} ${target} records!`, 'success');
     return count;
+  };
+
+  const undoLastImport = async (): Promise<boolean> => {
+    const batch = lastImport;
+    if (!batch) return false;
+
+    if (batch.target === 'opportunities') {
+      setOpportunities((prev) => prev.filter((record) => !batch.recordIds.includes(record.id)));
+    } else if (batch.target === 'companies') {
+      setCompanies((prev) => prev.filter((record) => !batch.recordIds.includes(record.id)));
+    } else {
+      setPeople((prev) => prev.filter((record) => !batch.recordIds.includes(record.id)));
+    }
+
+    if (isCrmRemoteReady && isAuthenticated && currentUser.id) {
+      try {
+        await importBatchPersistenceRef.current;
+        const headers = await getClientumAuthJsonHeaders(currentUser);
+        const response = await fetch(`/api/crm/import-batches/${encodeURIComponent(batch.id)}`, {
+          method: 'DELETE',
+          headers,
+        });
+        if (!response.ok && response.status !== 404) {
+          console.warn(`Import undo persistence failed: ${response.status}`);
+        }
+      } catch (error) {
+        console.warn('Import undo persistence unavailable; local undo applied:', error);
+      }
+    }
+
+    importBatchPersistenceRef.current = null;
+    setLastImport(null);
+    showToast(`Reverted the last import (${batch.count} records)`, 'info');
+    return true;
   };
 
   // Reset to initial demo
@@ -2534,6 +2639,9 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addSavedView,
         deleteSavedView,
         importCSVData,
+        lastImport,
+        undoLastImport,
+        refreshCrmData,
         resetToDemoData,
         loadClientumLeads,
         exportOpportunitiesCSV,

@@ -11,7 +11,7 @@ export const CRM_ENTITY_TYPES = [
 
 export type CrmEntityType = (typeof CRM_ENTITY_TYPES)[number];
 
-type JsonRecord = Record<string, unknown>;
+export type JsonRecord = Record<string, unknown>;
 
 const createId = (prefix: string) => `${prefix}-${Date.now()}-${randomBytes(5).toString("hex")}`;
 
@@ -99,6 +99,319 @@ export async function deleteCrmRecord(
     [tenantId, entityType, entityId],
   );
   return (result.rowCount || 0) > 0;
+}
+
+export type DuplicateEntityType = "companies" | "people";
+
+export interface CrmDuplicateCandidate {
+  pairKey: string;
+  entityType: DuplicateEntityType;
+  matchField: "email" | "phone" | "domain" | "name";
+  matchValue: string;
+  primary: JsonRecord;
+  duplicate: JsonRecord;
+}
+
+const normalizeDuplicateValue = (value: unknown, field: CrmDuplicateCandidate["matchField"]): string => {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  if (field === "email") return raw;
+  if (field === "phone") return raw.replace(/[^\d+]/g, "");
+  if (field === "domain") return raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  return raw.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+};
+
+const duplicatePairKey = (entityType: DuplicateEntityType, leftId: string, rightId: string): string =>
+  `${entityType}:${[leftId, rightId].sort().join("|")}`;
+
+export async function listCrmDuplicates(
+  pool: Pool | null,
+  tenantId: string,
+  entityType?: DuplicateEntityType,
+): Promise<CrmDuplicateCandidate[]> {
+  if (!pool) return [];
+  const records = await listCrmRecords(pool, tenantId);
+  const decisions = await pool.query<{ pair_key: string }>(
+    `SELECT pair_key
+     FROM clientum_crm_duplicate_decisions
+     WHERE tenant_id = $1`,
+    [tenantId],
+  );
+  const dismissed = new Set(decisions.rows.map((row) => row.pair_key));
+  const candidates: CrmDuplicateCandidate[] = [];
+  const types: DuplicateEntityType[] = entityType ? [entityType] : ["people", "companies"];
+
+  for (const currentType of types) {
+    const source = records[currentType];
+    const fields: CrmDuplicateCandidate["matchField"][] = currentType === "people"
+      ? ["email", "phone"]
+      : ["domain", "name"];
+
+    for (const field of fields) {
+      const groups = new Map<string, JsonRecord[]>();
+      for (const record of source) {
+        const value = currentType === "people"
+          ? record[field]
+          : field === "name"
+            ? record.name
+            : record.domain;
+        const normalized = normalizeDuplicateValue(value, field);
+        if (!normalized) continue;
+        const group = groups.get(normalized) || [];
+        group.push(record);
+        groups.set(normalized, group);
+      }
+
+      for (const [matchValue, group] of groups) {
+        if (group.length < 2) continue;
+        for (let index = 1; index < group.length; index += 1) {
+          const primary = group[0];
+          const duplicate = group[index];
+          const primaryId = String(primary.id);
+          const duplicateId = String(duplicate.id);
+          const pairKey = duplicatePairKey(currentType, primaryId, duplicateId);
+          if (dismissed.has(pairKey)) continue;
+          if (candidates.some((candidate) => candidate.pairKey === pairKey)) continue;
+          candidates.push({
+            pairKey,
+            entityType: currentType,
+            matchField: field,
+            matchValue,
+            primary,
+            duplicate,
+          });
+        }
+      }
+    }
+  }
+
+  return candidates;
+}
+
+const isBlankValue = (value: unknown): boolean =>
+  value === null || value === undefined || (typeof value === "string" && value.trim().length === 0);
+
+const mergeCrmRecords = (primary: JsonRecord, duplicate: JsonRecord): JsonRecord => {
+  const merged: JsonRecord = { ...duplicate, ...primary };
+  for (const [key, value] of Object.entries(duplicate)) {
+    if (isBlankValue(merged[key]) && !isBlankValue(value)) merged[key] = value;
+  }
+  for (const key of ["tags"]) {
+    const values = [...(Array.isArray(primary[key]) ? primary[key] : []), ...(Array.isArray(duplicate[key]) ? duplicate[key] : [])]
+      .filter((value, index, list) => list.indexOf(value) === index);
+    if (values.length > 0) merged[key] = values;
+  }
+  merged.updatedAt = new Date().toISOString();
+  return merged;
+};
+
+export async function resolveCrmDuplicate(
+  pool: Pool | null,
+  tenantId: string,
+  userId: string,
+  input: {
+    entityType: DuplicateEntityType;
+    primaryId: string;
+    duplicateId: string;
+    action: "dismiss" | "merge";
+  },
+) {
+  if (!pool) throw new Error("PostgreSQL is required for duplicate resolution.");
+  if (input.primaryId === input.duplicateId) throw new Error("A record cannot be merged with itself.");
+
+  const pairKey = duplicatePairKey(input.entityType, input.primaryId, input.duplicateId);
+  await pool.query("BEGIN");
+  try {
+    const records = await pool.query<{ entity_type: CrmEntityType; entity_id: string; data: JsonRecord }>(
+      `SELECT entity_type, entity_id, data
+       FROM clientum_crm_records
+       WHERE tenant_id = $1
+         AND (
+           (entity_type = $2 AND entity_id IN ($3, $4))
+           OR (entity_type IN ('opportunities', 'companies', 'people', 'tasks', 'activities'))
+         )`,
+      [tenantId, input.entityType, input.primaryId, input.duplicateId],
+    );
+    const targetRows = records.rows.filter(
+      (row) => row.entity_type === input.entityType
+        && (row.entity_id === input.primaryId || row.entity_id === input.duplicateId),
+    );
+    const primaryRow = targetRows.find((row) => row.entity_id === input.primaryId);
+    const duplicateRow = targetRows.find((row) => row.entity_id === input.duplicateId);
+    if (!primaryRow || !duplicateRow) throw new Error("Duplicate records were not found in this workspace.");
+
+    await pool.query(
+      `INSERT INTO clientum_crm_duplicate_decisions
+        (tenant_id, entity_type, pair_key, action, primary_id, duplicate_id, created_by_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (tenant_id, entity_type, pair_key)
+       DO UPDATE SET action = EXCLUDED.action, primary_id = EXCLUDED.primary_id,
+         duplicate_id = EXCLUDED.duplicate_id, created_by_user_id = EXCLUDED.created_by_user_id,
+         created_at = NOW()`,
+      [
+        tenantId,
+        input.entityType,
+        pairKey,
+        input.action === "merge" ? "merged" : "dismissed",
+        input.primaryId,
+        input.duplicateId,
+        userId,
+      ],
+    );
+
+    if (input.action === "dismiss") {
+      await pool.query("COMMIT");
+      return { action: "dismissed", pairKey, updatedCount: 0, removedId: null };
+    }
+
+    const merged = mergeCrmRecords(primaryRow.data, duplicateRow.data);
+    const updatedRows: Array<{ entityType: CrmEntityType; record: JsonRecord }> = [
+      { entityType: input.entityType, record: { ...merged, id: input.primaryId } },
+    ];
+
+    for (const row of records.rows) {
+      if (row.entity_id === input.duplicateId && row.entity_type === input.entityType) continue;
+      let nextRecord = row.data;
+      let changed = false;
+
+      if (input.entityType === "people") {
+        if (row.entity_type === "opportunities" && row.data.contactId === input.duplicateId) {
+          nextRecord = { ...nextRecord, contactId: input.primaryId, contactName: mergedName(merged) };
+          changed = true;
+        }
+        if (row.entity_type === "tasks" && row.data.targetType === "person" && row.data.targetId === input.duplicateId) {
+          nextRecord = { ...nextRecord, targetId: input.primaryId, targetName: mergedName(merged) };
+          changed = true;
+        }
+        if (row.entity_type === "activities" && row.data.targetType === "person" && row.data.targetId === input.duplicateId) {
+          nextRecord = { ...nextRecord, targetId: input.primaryId };
+          changed = true;
+        }
+      } else {
+        if (row.entity_type === "people" && row.data.companyId === input.duplicateId) {
+          nextRecord = { ...nextRecord, companyId: input.primaryId, companyName: String(merged.name || "") };
+          changed = true;
+        }
+        if (row.entity_type === "opportunities" && row.data.companyId === input.duplicateId) {
+          nextRecord = { ...nextRecord, companyId: input.primaryId, companyName: String(merged.name || "") };
+          changed = true;
+        }
+        if (row.entity_type === "activities" && row.data.targetType === "company" && row.data.targetId === input.duplicateId) {
+          nextRecord = { ...nextRecord, targetId: input.primaryId };
+          changed = true;
+        }
+      }
+
+      if (changed) updatedRows.push({ entityType: row.entity_type, record: nextRecord });
+    }
+
+    for (const { entityType, record } of updatedRows) {
+      await pool.query(
+        `INSERT INTO clientum_crm_records
+          (tenant_id, entity_type, entity_id, data, created_at, updated_at)
+         VALUES ($1, $2, $3, $4::jsonb, COALESCE(($4::jsonb->>'createdAt')::timestamptz, NOW()), NOW())
+         ON CONFLICT (tenant_id, entity_type, entity_id)
+         DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
+        [tenantId, entityType, String(record.id), JSON.stringify(record)],
+      );
+    }
+    await pool.query(
+      `DELETE FROM clientum_crm_records
+       WHERE tenant_id = $1 AND entity_type = $2 AND entity_id = $3`,
+      [tenantId, input.entityType, input.duplicateId],
+    );
+    await pool.query("COMMIT");
+    return {
+      action: "merged",
+      pairKey,
+      updatedCount: updatedRows.length,
+      removedId: input.duplicateId,
+      mergedId: input.primaryId,
+    };
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    throw error;
+  }
+}
+
+const mergedName = (record: JsonRecord): string =>
+  [record.firstName, record.lastName].filter((value) => !isBlankValue(value)).join(" ").trim()
+  || String(record.name || record.email || record.id || "");
+
+export async function createCrmImportBatch(
+  pool: Pool | null,
+  tenantId: string,
+  userId: string,
+  input: { id: string; entityType: "opportunities" | "companies" | "people"; records: JsonRecord[] },
+) {
+  if (!pool) throw new Error("PostgreSQL is required for reversible imports.");
+  if (!/^[a-zA-Z0-9:_-]{1,120}$/.test(input.id)) throw new Error("Invalid import batch id.");
+  if (input.records.length === 0 || input.records.length > 5000) throw new Error("Import batch size is invalid.");
+
+  await pool.query("BEGIN");
+  try {
+    const recordIds: string[] = [];
+    for (const record of input.records) {
+      const entityId = typeof record.id === "string" ? record.id : "";
+      if (!entityId || entityId.length > 160) continue;
+      recordIds.push(entityId);
+      await pool.query(
+        `INSERT INTO clientum_crm_records
+          (tenant_id, entity_type, entity_id, data, created_at, updated_at)
+         VALUES ($1, $2, $3, $4::jsonb, COALESCE(($4::jsonb->>'createdAt')::timestamptz, NOW()), NOW())
+         ON CONFLICT (tenant_id, entity_type, entity_id)
+         DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
+        [tenantId, input.entityType, entityId, JSON.stringify(record)],
+      );
+    }
+    await pool.query(
+      `INSERT INTO clientum_crm_import_batches
+        (id, tenant_id, entity_type, record_ids, created_by_user_id)
+       VALUES ($1, $2, $3, $4::jsonb, $5)
+       ON CONFLICT (id) DO UPDATE SET record_ids = EXCLUDED.record_ids, undone_at = NULL`,
+      [input.id, tenantId, input.entityType, JSON.stringify(recordIds), userId],
+    );
+    await pool.query("COMMIT");
+    return { id: input.id, entityType: input.entityType, count: recordIds.length };
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    throw error;
+  }
+}
+
+export async function undoCrmImportBatch(pool: Pool | null, tenantId: string, batchId: string) {
+  if (!pool) throw new Error("PostgreSQL is required to undo imports.");
+  await pool.query("BEGIN");
+  try {
+    const batch = await pool.query<{ entity_type: "opportunities" | "companies" | "people"; record_ids: string[] }>(
+      `SELECT entity_type, record_ids
+       FROM clientum_crm_import_batches
+       WHERE id = $1 AND tenant_id = $2 AND undone_at IS NULL
+       FOR UPDATE`,
+      [batchId, tenantId],
+    );
+    const row = batch.rows[0];
+    if (!row) {
+      await pool.query("ROLLBACK");
+      return { undone: false, deleted: 0 };
+    }
+    const recordIds = Array.isArray(row.record_ids) ? row.record_ids : [];
+    const deleted = await pool.query(
+      `DELETE FROM clientum_crm_records
+       WHERE tenant_id = $1 AND entity_type = $2 AND entity_id = ANY($3::text[])`,
+      [tenantId, row.entity_type, recordIds],
+    );
+    await pool.query(
+      `UPDATE clientum_crm_import_batches SET undone_at = NOW()
+       WHERE id = $1 AND tenant_id = $2`,
+      [batchId, tenantId],
+    );
+    await pool.query("COMMIT");
+    return { undone: true, deleted: deleted.rowCount || 0 };
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    throw error;
+  }
 }
 
 export interface AgentTaskInput {
