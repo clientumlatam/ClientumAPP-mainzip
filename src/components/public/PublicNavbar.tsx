@@ -201,14 +201,30 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             {/* 1. PRODUCTO MEGA-MENU TRIGGER */}
             <div className="relative">
               <button
-                onClick={() => setActiveMenu(activeMenu === 'product' ? null : 'product')}
-                className={`px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
+                id="public-header-product-link"
+                type="button"
+                onClick={() => handleNavClick('/producto')}
+                aria-current={currentPath === '/producto' ? 'page' : undefined}
+                className={`px-3 py-2 rounded-l-xl transition-all cursor-pointer ${
                   activeMenu === 'product' || currentPath.startsWith('/producto') || currentPath === '/clientum-crm'
                     ? 'text-blue-700 bg-blue-50 font-bold'
                     : 'hover:text-blue-600 hover:bg-slate-100'
                 }`}
               >
                 <span>Producto</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Abrir menú de Producto"
+                aria-haspopup="menu"
+                aria-expanded={activeMenu === 'product'}
+                onClick={() => setActiveMenu(activeMenu === 'product' ? null : 'product')}
+                className={`px-1.5 py-2 rounded-r-xl transition-all cursor-pointer ${
+                  activeMenu === 'product' || currentPath.startsWith('/producto') || currentPath === '/clientum-crm'
+                    ? 'text-blue-700 bg-blue-50 font-bold'
+                    : 'hover:text-blue-600 hover:bg-slate-100'
+                }`}
+              >
                 <ChevronDown
                   className={`w-3.5 h-3.5 transition-transform duration-200 ${
                     activeMenu === 'product' ? 'rotate-180 text-blue-600' : 'text-slate-400'
