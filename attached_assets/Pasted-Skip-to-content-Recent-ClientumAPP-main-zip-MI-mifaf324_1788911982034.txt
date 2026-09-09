@@ -1,0 +1,1540 @@
+Skip to content
+
+    Recent
+    ClientumAPP-main.zip
+
+MI
+mifaf32430
+mifaf32430
+
+Commands
+assets
+attached_assets
+34
+dist
+docs
+1
+secrets-architecture.md
+secrets-audit.md
+M
+migrations
+001_tenant_credentials.sql
+public
+screenshots
+scripts
+2
+src
+3
+components
+2
+context
+data
+1
+clientumCatalog.ts
+clientumLeads.ts
+erpInitialData.ts
+initialData.ts
+moduleCredentials.ts
+M
+rbacInitialData.ts
+webmailInitialData.ts
+i18n
+lib
+services
+App.tsx
+firebase.ts
+index.css
+main.tsx
+types.ts
+features.md
+firebase-applet-config.json
+firestore.rules
+index.html
+metadata.json
+NAVIGATION.md
+replit.md
+SECRETS.md
+server.ts
+M
+tsconfig.json
+vite.config.ts
+zipFile.zip
+Packager files
+bun.lock
+package-lock.json
+package.json
+M
+Attached Image
+Attached Image
+
+Add authenticated user login
+Free
+17 minutes ago
+Inspecting implementation details
+Inspecting implementation details
+
+Voy a revisar la estructura actual y el flujo de autenticación existente para agregar el login sin romper la navegación ni la configuración actual. Luego lo integraré, verificaré el flujo completo y ajustaré la vista al estilo de la app.
+5 actions
+
+Veo que el proyecto ya tiene Firebase y funciones de autenticación preparadas; ahora voy a conectar ese backend al estado de la aplicación y revisar si falta la pantalla de acceso o la protección de rutas.
+Show less
+Opened App.tsx
+Opened firebase.ts
+Opened main.tsx
+Opened index.css
+Searched src, server.ts for "onAuthStateChanged|signInWith|authState|currentUser|AuthResult|/api/auth|authorization|Bearer|logout|Cerrar sesión"
+Read lines 240–430 of server.ts
+Opened CRMContext.tsx
+Opened CRMContext.tsx
+Opened AuthScreen.tsx
+Opened AuthModal.tsx
+Opened ProtectedRoute.tsx
+Opened PublicSite.tsx
+Opened SocialAuthButtons.tsx
+Opened navigation.ts
+
+El código actual muestra un problema importante: existe el formulario, pero enterApp() puede marcar la sesión como autenticada sin credenciales y el contexto no sincroniza el estado con Firebase. Voy a corregir eso para que el acceso privado requiera una sesión real de Firebase (manteniendo únicamente el demo local en desarrollo), y haré que el usuario autenticado se refleje en el perfil y en las llamadas al servidor.
+17 actions
+
+Voy a hacer el cambio en tres capas: Firebase será la fuente de verdad de la sesión, el CRM dejará de abrir el dashboard sin autenticación, y la navegación mostrará el modal de acceso cuando corresponda. También evitaré que las credenciales inválidas se conviertan accidentalmente en una sesión demo cuando Firebase sí está configurado.
+4 actions
+
+La protección y la sincronización ya están implementadas. Ahora voy a ejecutar el chequeo de TypeScript y revisar el arranque del workflow para detectar errores de integración o estados de sesión inconsistentes.
+4 actions
+
+El chequeo de TypeScript y el build de producción pasan correctamente. Haré una verificación visual final del portal y del acceso al CRM, además de revisar que la sesión demo no se habilite en producción por accidente.
+10 actions
+
+La vista protegida se comporta bien: visitar /app sin sesión vuelve al portal público, y el workflow no muestra errores nuevos. Voy a ejecutar el smoke test de navegación existente para confirmar también el acceso demo local, logout y protección de rutas de extremo a extremo.
+2 actions
+
+El smoke test encontró un desajuste esperado por el cambio: antes el botón entraba directamente al demo; ahora abre el login, que es lo correcto para una sesión autenticada. Antes de actualizar el smoke test, voy a confirmar por navegador que el modal aparece y que el botón de demo solo funciona en desarrollo.
+Show less
+Ran an inline script with node
+Evaluating Firebase registration
+Evaluating Firebase registration
+Edited navigation-smoke.mjs
+Running scripts for checks
+Running scripts for checks
+Ran the smoke:navigation script
+Updating authentication flow
+Updating authentication flow
+
+El smoke test reveló un segundo detalle real: el login sí autentica al usuario, pero no cambiaba la URL al workspace privado. Voy a corregir ese salto en login/registro (incluido SSO) y volver a ejecutar el flujo completo.
+12 actions
+
+El flujo principal ya pasa. El último fallo es solo del smoke test al volver desde el portal: como la sesión sigue activa, el botón cambia de “Ingresar al CRM” a “Ir al Dashboard”. Ajusto esa expectativa y ejecuto la verificación final.
+9 actions
+
+El flujo completo ya pasa: rutas privadas redirigen sin sesión, el login abre el modal, la demo local entra al CRM, el logout revoca el acceso y el modo app no puede reabrirse sin sesión. Haré el último build y revisaré los logs antes de entregarlo.
+8 actions
+
+Implementé el login autenticado para ClientumCRM.
+
+Cambios principales:
+
+    Firebase ahora es la fuente de verdad de la sesión mediante onAuthStateChanged.
+    Las rutas privadas (/app, /dashboard, /crm, /erp) quedan protegidas.
+    El botón “Ingresar al CRM” abre el modal de login en lugar de entrar directamente.
+    Login, registro y SSO redirigen correctamente al workspace privado.
+    Logout cierra también la sesión de Firebase.
+    Las credenciales inválidas de Firebase ya no se convierten en una sesión demo.
+    El acceso demo queda limitado al entorno de desarrollo.
+    El smoke test fue actualizado para validar el nuevo flujo autenticado.
+
+Verificaciones completadas:
+
+    npm run lint
+    npm run build
+    npm run smoke:navigation
+    Preview visual sin errores nuevos de navegador ni workflow.
+
+El proyecto queda listo para publicar.
+Worked for 5 minutes
+Publish
+Domain
+Available
+.replit.app
+Who can access your app
+PublicAnyone on the internet with the URL
+Checkpoint made 11 minutes ago
+Pasted-Inventario-de-secretos-y-configuraciones-por-m-dulo-Doc_1788908856497.txt
+Attached Image
+Attached Image
+Free
+8 minutes ago
+
+Recibí el inventario de secretos y las referencias visuales del módulo de prospección. No veo una instrucción nueva explícita sobre qué cambiar con estos archivos; voy a confirmar el objetivo antes de modificar el proyecto.
+5 actions
+
+El documento confirma que el siguiente trabajo posible está alrededor de Prospección Maps B2B, sus credenciales y la separación entre configuración pública y secretos backend. Las capturas muestran el módulo y su modal de configuración, pero no indican qué comportamiento quieres que implemente.
+ObjetivoCompletar el modal de credenciales y guardado seguro por usuario
+Additional commentspara todos kis modulos  Inventario de secretos y configuraciones por módulo
+
+    Documento de referencia para configurar ClientumCRM de forma segura.
+
+    Importante: este archivo contiene nombres de variables y ejemplos de formato, nunca valores reales. Los secretos deben guardarse en Replit Secrets o en una integración OAuth/API administrada; no deben escribirse en el código, en localStorage, en commits ni en este documento.
+
+Estado actual del proyecto
+
+    Auditoría actualizada el 2026-09-08: los nombres de las variables disponibles fueron contrastados con el código. Por seguridad, nunca se inspeccionan ni se imprimen valores de Secrets desde esta documentación. Consulta docs/secrets-audit.md para la matriz completa de variables usadas, credenciales por usuario y trabajo pendiente.
+
+Regla de separación
+
+    Secretos de la plataforma: viven en Replit Secrets o en variables de entorno del backend. Son compartidos por la aplicación completa y nunca se cargan en el tab de API Keys de un usuario.
+    API Keys de usuario: se crean y revocan desde Configuración → Integraciones & API Hub → API Keys por usuario. Pertenecen a un user_id, tienen scopes de módulos y no son variables de entorno.
+    Token de API: el valor completo se muestra una sola vez al generarlo. La interfaz no lo persiste en localStorage; en producción debe guardarse únicamente su hash en el backend.
+
+Variable	Estado	Uso actual
+GEMINI_API_KEY	Registrada; validar valor	El backend la consume en /api/ai/*. Los placeholders se consideran no configurados y activan solo el resultado demo/fallback.
+SESSION_SECRET	Registrada; reservada	El servidor no usa sesiones Express. Solo participa como último fallback técnico del cifrado interno si no existe WORKFLOW_ENCRYPTION_KEY ni API_KEY_PEPPER.
+VITE_FIREBASE_*	Registradas como configuración pública	Se inyectan en el bundle cliente. Firebase no se inicializa con valores vacíos y los fallbacks de autenticación están limitados a desarrollo.
+DATABASE_URL / PG*	Administradas por Replit	El servidor usa PostgreSQL para credenciales por usuario y API Keys internas. No deben solicitarse ni configurarse manualmente.
+Reglas de seguridad
+
+    Nunca pegues una API key, token, contraseña, certificado o clave privada en el chat o en un archivo .md.
+    Las variables VITE_* llegan al navegador. Solo deben contener configuración pública o claves restringidas por dominio; nunca tokens privados, secretos de webhook o claves de administración.
+    Todo token de servidor debe leerse desde process.env y usarse únicamente en endpoints backend.
+    Los webhooks deben validar firma y timestamp antes de procesar eventos.
+    Las credenciales de terceros deben preferirse mediante una integración OAuth/API administrada cuando esté disponible.
+    Para producción conviene usar valores separados de desarrollo y producción.
+    Si un proveedor permite permisos por alcance, crear una credencial con el mínimo alcance necesario.
+
+1. Gestión comercial
+Resumen Ejecutivo
+
+No requiere secretos adicionales. Actualmente utiliza datos locales del workspace y métricas calculadas en el cliente.
+
+Si en el futuro se conecta analítica externa:
+
+    GA_MEASUREMENT_ID — configuración pública, no es un secreto.
+    POSTHOG_PUBLIC_KEY — clave pública restringida por dominio, no reemplaza una clave privada de servidor.
+    POSTHOG_API_KEY — solo si se envían eventos desde el backend.
+
+Centro de funciones
+
+Este menú no necesita credenciales propias. Reutiliza las de los módulos que abre:
+
+    Diagnóstico: sin secreto adicional.
+    IA: GEMINI_API_KEY.
+    Pagos: variables de Mercado Pago.
+    SMS: variables del proveedor SMS elegido.
+    Datos: credenciales del almacenamiento persistente que se conecte.
+    Acceso: configuración pública de Firebase y, si se agregan sesiones server-side, SESSION_SECRET.
+
+Pipeline Negocios, Empresas, Contactos y Tareas & Actividades
+
+No requieren secretos adicionales en la versión actual. Los datos se mantienen en el estado del CRM y en el almacenamiento local del navegador.
+
+Para una persistencia server-side futura:
+
+    DATABASE_URL — administrada automáticamente por Replit; no configurarla manualmente.
+    DB_ENCRYPTION_KEY — secreto recomendado si se cifran campos sensibles antes de almacenarlos.
+
+Reportes & BI
+
+No requiere secretos adicionales actualmente. Recharts y los datos del CRM se ejecutan localmente.
+
+Para una futura fuente de datos externa, guardar el token de esa fuente solo en backend; no exponerlo con VITE_.
+Webmail Cloudflare (D1)
+
+El inbox actual usa datos de demostración y no consume Cloudflare en runtime. Para conectar el Worker y D1 en producción, usar:
+Variable	Tipo	Propósito
+CLOUDFLARE_API_TOKEN	Secreto	Token con permisos mínimos para el Worker/D1 necesarios.
+CLOUDFLARE_ACCOUNT_ID	Configuración	Identificador de cuenta de Cloudflare.
+CLOUDFLARE_D1_DATABASE_ID	Configuración	Identificador de la base D1.
+CLOUDFLARE_EMAIL_WORKER_URL	Configuración	URL del Worker que expone el correo.
+CLOUDFLARE_EMAIL_WORKER_SECRET	Secreto	Firma compartida entre ClientumCRM y el Worker.
+WEBMAIL_ENCRYPTION_KEY	Secreto	Cifrado de contenido o credenciales si el Worker lo requiere.
+
+No enviar CLOUDFLARE_API_TOKEN al navegador.
+WhatsApp CRM
+
+El módulo actual funciona como vista de CRM/demo. Para Meta WhatsApp Cloud API, configurar únicamente en backend:
+Variable	Tipo	Propósito
+WHATSAPP_ACCESS_TOKEN	Secreto	Token de acceso de Meta.
+WHATSAPP_APP_SECRET	Secreto	Validación de firmas de Meta.
+WHATSAPP_PHONE_NUMBER_ID	Configuración	Número emisor de WhatsApp Business.
+WHATSAPP_BUSINESS_ACCOUNT_ID	Configuración	Cuenta de WhatsApp Business.
+WHATSAPP_WEBHOOK_VERIFY_TOKEN	Secreto	Token usado durante la verificación del webhook.
+WHATSAPP_WEBHOOK_URL	Configuración	URL pública registrada en Meta.
+
+WHATSAPP_ACCESS_TOKEN y WHATSAPP_APP_SECRET nunca deben aparecer en componentes React.
+Facturación AFIP (CAE)
+
+La pantalla actual simula la emisión de comprobantes. Para producción, solicitar el certificado y la clave privada por el mecanismo seguro de secretos, nunca por chat:
+Variable	Tipo	Propósito
+AFIP_CUIT	Configuración sensible	CUIT emisor.
+AFIP_ENVIRONMENT	Configuración	homologacion o produccion; no debe depender de un valor implícito.
+AFIP_CERTIFICATE_P12_BASE64	Secreto	Certificado digital codificado para el backend.
+AFIP_PRIVATE_KEY	Secreto	Clave privada del certificado, si el proveedor la entrega separada.
+AFIP_PRIVATE_KEY_PASSWORD	Secreto	Contraseña del certificado.
+AFIP_WSAA_URL	Configuración	Endpoint de autenticación WSAA.
+AFIP_WSFEX_URL	Configuración	Endpoint del web service de facturación utilizado.
+AFIP_TOKEN_CACHE_KEY	Secreto	Solo si se cachea el token de autorización cifrado.
+
+La generación del CAE debe estar protegida por permisos, idempotencia, auditoría y separación estricta entre homologación y producción.
+2. Ventas y cierre
+Propuestas & Presupuestos
+
+No requiere secretos en la versión actual.
+
+Si se habilita envío real de propuestas por correo:
+
+    RESEND_API_KEY o SENDGRID_API_KEY — elegir un solo proveedor.
+    MAIL_FROM_ADDRESS — configuración pública del remitente.
+    MAIL_FROM_NAME — configuración pública del nombre remitente.
+    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD — alternativa SMTP; SMTP_PASSWORD es secreto.
+
+Prospección Maps B2B
+
+La app tiene fallback/demo y el backend de prospección no requiere Google Maps para el resultado de demostración. Para geocodificación o Places real:
+
+    VITE_GOOGLE_MAPS_API_KEY — clave pública restringida por dominio y APIs.
+    GOOGLE_MAPS_SERVER_API_KEY — clave privada para llamadas server-side, si se necesita separar el consumo backend.
+
+No utilizar una clave con acceso irrestricto en el frontend.
+Lead Scoring MEDDIC
+
+No requiere secretos adicionales. Si el scoring pasa a usar IA, reutiliza GEMINI_API_KEY; no crear una clave separada por vista.
+Chatbot WhatsApp 24/7
+
+Reutiliza:
+
+    GEMINI_API_KEY — respuestas generativas, si se habilitan.
+    WHATSAPP_ACCESS_TOKEN.
+    WHATSAPP_APP_SECRET.
+    WHATSAPP_PHONE_NUMBER_ID.
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN.
+
+Ver la sección WhatsApp CRM para la descripción de cada variable.
+Campañas Masivas
+
+Para WhatsApp, reutiliza las variables de Meta. Para email, elegir un solo proveedor:
+
+    RESEND_API_KEY — recomendado para una API de envío simple.
+    SENDGRID_API_KEY — alternativa.
+    EMAIL_WEBHOOK_SIGNING_SECRET — firma de eventos de entrega.
+    UNSUBSCRIBE_SIGNING_SECRET — firma de enlaces de baja.
+
+Los tokens de campaña deben tener límites de velocidad, consentimiento y auditoría; no guardarlos en el navegador.
+3. Inteligencia artificial
+Agent OS, Asistente Gemini, Estrategias GTM y Agente SDR Outreach
+
+Todos estos módulos reutilizan una sola variable:
+Variable	Estado	Uso
+GEMINI_API_KEY	Requerida para IA real	Se consume en server.ts mediante los endpoints /api/ai/*.
+
+La aplicación tiene respuestas de fallback cuando la clave no está presente, pero eso no equivale a una conexión real con Gemini. No exponer esta variable con VITE_GEMINI_API_KEY.
+4. Operaciones y sistema
+Cobros Mercado Pago
+
+La UI actual genera links simulados. Para pagos reales:
+Variable	Tipo	Propósito
+MERCADOPAGO_ACCESS_TOKEN	Secreto	Crear preferencias, consultar pagos y emitir reembolsos autorizados.
+MERCADOPAGO_WEBHOOK_SECRET	Secreto	Validar notificaciones de Mercado Pago.
+VITE_MERCADOPAGO_PUBLIC_KEY	Pública restringida	Componentes de checkout del navegador, si se usan.
+MERCADOPAGO_ENVIRONMENT	Configuración	sandbox o production.
+MERCADOPAGO_SELLER_ID	Configuración sensible	Identificador de la cuenta receptora, si el flujo lo requiere.
+
+MERCADOPAGO_ACCESS_TOKEN y MERCADOPAGO_WEBHOOK_SECRET deben permanecer en backend. Para este proyecto no están conectados todavía.
+Tienda Digital WhatsApp
+
+Reutiliza las credenciales de WhatsApp y Mercado Pago. Si se conecta Shopify, agregar solo mediante una integración administrada o backend:
+
+    SHOPIFY_SHOP_DOMAIN — configuración.
+    SHOPIFY_STOREFRONT_ACCESS_TOKEN — token de Storefront con alcance mínimo.
+    SHOPIFY_ADMIN_ACCESS_TOKEN — secreto de administración; nunca frontend.
+    SHOPIFY_WEBHOOK_SECRET — secreto para validar eventos.
+
+No agregar credenciales de Shopify si la tienda continúa siendo local/demo.
+Campus Academia LMS
+
+No requiere secretos adicionales en la implementación actual.
+
+Si se habilitan videos o almacenamiento privado, usar el proveedor de storage correspondiente en backend y una clave de firma temporal; no guardar URLs firmadas permanentes en el código.
+Workflows & Flujos
+
+El constructor actual trabaja con datos locales. Para ejecutar acciones externas:
+
+    WEBHOOK_SIGNING_SECRET — firma de webhooks propios.
+    WORKFLOW_ENCRYPTION_KEY — cifrado de credenciales almacenadas en flujos.
+    N8N_API_KEY — solo si se conecta n8n.
+    MAKE_WEBHOOK_SECRET — solo si se conecta Make.
+    ZAPIER_WEBHOOK_SECRET — solo si se conecta Zapier.
+
+No se deben guardar tokens de terceros dentro de la configuración serializada del workflow sin cifrado.
+Custom Objects Studio
+
+No requiere secretos adicionales. Actualmente es un estudio local de objetos, campos y registros.
+CSV Import & Export
+
+No requiere secretos adicionales. Los archivos se procesan en el navegador. Si en el futuro se suben a un bucket, usar URLs firmadas de vida corta y la credencial únicamente en backend.
+Gestor de Dominios
+
+Para Cloudflare DNS/SSL:
+
+    CLOUDFLARE_API_TOKEN — secreto con permisos acotados a la zona.
+    CLOUDFLARE_ACCOUNT_ID — configuración.
+    CLOUDFLARE_ZONE_ID — configuración.
+    CLOUDFLARE_ZONE_NAME — configuración.
+
+No usar un token global de Cloudflare si alcanza un token limitado a una zona.
+Configuración General
+Acceso autenticado y Firebase
+
+Estas variables se usan para inicializar el SDK cliente de Firebase. No son secretos de servidor, pero deben estar configuradas por entorno y protegidas por restricciones de Firebase:
+VITE_FIREBASE_API_KEY=<configuración pública restringida>
+VITE_FIREBASE_AUTH_DOMAIN=<dominio Firebase>
+VITE_FIREBASE_PROJECT_ID=<id del proyecto>
+VITE_FIREBASE_STORAGE_BUCKET=<bucket>
+VITE_FIREBASE_MESSAGING_SENDER_ID=<sender id>
+VITE_FIREBASE_APP_ID=<app id>
+VITE_FIREBASE_MEASUREMENT_ID=<measurement id opcional>
+
+Si se agregan operaciones Firebase Admin desde el servidor, usar una integración o un secreto separado, por ejemplo:
+
+    FIREBASE_SERVICE_ACCOUNT_JSON — secreto server-side.
+    FIREBASE_ADMIN_PROJECT_ID — configuración.
+
+No colocar una cuenta de servicio en VITE_*.
+Sesiones del servidor
+
+    SESSION_SECRET — secreto server-side para firmar sesiones, cookies o CSRF si se incorpora un middleware de sesiones.
+
+Actualmente ClientumCRM usa Firebase y flags de sesión del navegador; no hay middleware Express que consuma SESSION_SECRET.
+Integraciones y API Hub
+
+El panel actual simula/guarda localmente parte de las integraciones. Para producción:
+
+    GOOGLE_CLIENT_ID — configuración OAuth.
+    GOOGLE_CLIENT_SECRET — secreto OAuth server-side.
+    GOOGLE_OAUTH_REDIRECT_URI — configuración.
+    SLACK_BOT_TOKEN — secreto.
+    SLACK_SIGNING_SECRET — secreto.
+    SLACK_WEBHOOK_URL — secreto; no exponerlo en la UI.
+    API_KEY_PEPPER — secreto para hashear claves internas antes de persistirlas.
+
+Cuando exista un conector OAuth de Replit para el proveedor, preferirlo antes que administrar manualmente GOOGLE_CLIENT_SECRET o tokens de refresco.
+Auditoría y seguridad
+
+No requiere una credencial externa actualmente. Para enviar alertas:
+
+    SECURITY_ALERT_WEBHOOK_SECRET — firma de notificaciones.
+    SECURITY_ALERT_WEBHOOK_URL — URL de destino; tratarla como sensible.
+
+5. Menú lateral y asignación rápida
+Ítem del menú	Variables que realmente necesita
+Resumen Ejecutivo	Ninguna
+Centro de funciones	Reutiliza las del módulo elegido
+Pipeline Negocios	Ninguna
+Webmail Cloudflare (D1)	CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_D1_DATABASE_ID, CLOUDFLARE_EMAIL_WORKER_SECRET
+Empresas	Ninguna
+Contactos	Ninguna
+Tareas & Actividades	Ninguna
+Reportes & BI	Ninguna; analítica futura según proveedor
+WhatsApp CRM	WHATSAPP_ACCESS_TOKEN, WHATSAPP_APP_SECRET, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_WEBHOOK_VERIFY_TOKEN
+Facturación AFIP (CAE)	AFIP_CERTIFICATE_P12_BASE64, AFIP_PRIVATE_KEY, AFIP_PRIVATE_KEY_PASSWORD, AFIP_CUIT
+Propuestas & Presupuestos	Ninguna; email futuro: RESEND_API_KEY o SENDGRID_API_KEY
+Prospección Maps B2B	VITE_GOOGLE_MAPS_API_KEY y, si aplica, GOOGLE_MAPS_SERVER_API_KEY
+Lead Scoring MEDDIC	Ninguna; IA opcional: GEMINI_API_KEY
+Chatbot WhatsApp 24/7	Variables de WhatsApp + GEMINI_API_KEY opcional
+Campañas Masivas	WhatsApp o RESEND_API_KEY/SENDGRID_API_KEY
+Agent OS	GEMINI_API_KEY
+Asistente Gemini	GEMINI_API_KEY
+Estrategias GTM	GEMINI_API_KEY
+Agente SDR Outreach	GEMINI_API_KEY + canal de envío elegido
+Cobros Mercado Pago	MERCADOPAGO_ACCESS_TOKEN, MERCADOPAGO_WEBHOOK_SECRET, VITE_MERCADOPAGO_PUBLIC_KEY
+Tienda Digital WhatsApp	WhatsApp + Mercado Pago; Shopify solo si se conecta
+Campus Academia LMS	Ninguna en la versión actual
+Workflows & Flujos	WORKFLOW_ENCRYPTION_KEY + secretos del proveedor conectado
+Custom Objects Studio	Ninguna
+CSV Import & Export	Ninguna
+Gestor de Dominios	CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ZONE_ID
+Configuración General	Firebase VITE_*, SESSION_SECRET si se agregan sesiones
+6. SMS: proveedor a elegir
+
+El Centro de funciones ya prepara la configuración y el mensaje SMS, pero no hay proveedor conectado en el código actual. Elegir un solo proveedor:
+Opción recomendada: Twilio
+
+    TWILIO_ACCOUNT_SID — configuración sensible.
+    TWILIO_AUTH_TOKEN — secreto.
+    TWILIO_MESSAGING_SERVICE_SID — configuración.
+    TWILIO_FROM_NUMBER — configuración.
+    TWILIO_WEBHOOK_SIGNING_SECRET — secreto para callbacks.
+
+Alternativas
+
+    MessageBird: MESSAGEBIRD_ACCESS_KEY, MESSAGEBIRD_ORIGINATOR, MESSAGEBIRD_WEBHOOK_SECRET.
+    Vonage: VONAGE_API_KEY, VONAGE_API_SECRET, VONAGE_BRAND_NAME, VONAGE_SIGNATURE_SECRET.
+
+No solicitar ni guardar las variables de las tres opciones a la vez. La conexión debe gestionarse mediante una integración o Secrets y el envío real debe vivir en backend.
+Worked for 18 seconds
+Checkpoint made 8 minutes ago
+Inspecting code modules
+Inspecting code modules
+
+Voy a ampliar la configuración de credenciales para cubrir todos los módulos del inventario, manteniendo la separación entre secretos de plataforma y credenciales por usuario. Primero revisaré el modal actual, el catálogo de módulos y los endpoints de persistencia; después completaré la UI y verificaré que ningún secreto termine en localStorage o en el bundle del navegador.
+25 actions
+
+Encontré dos huecos importantes: el catálogo no cubría explícitamente Calendario/Mensajes y el guardado parcial podía sobrescribir campos ya configurados. Voy a corregir ambos, además de mostrar en el modal qué variables son de plataforma y cuáles sí pertenecen al workspace, sin revelar valores ni permitir editar secretos globales desde el navegador.
+Show less
+Troubleshooting patching issues
+Troubleshooting patching issues
+Edited moduleCredentials.ts
+Opened moduleCredentials.ts
+Patching data
+Patching data
+Troubleshooting a patch failure
+Troubleshooting a patch failure
+Edited moduleCredentials.ts
+Edited moduleCredentials.ts
+Edited moduleCredentials.ts
+Edited moduleCredentials.ts
+Edited ModuleCredentialsModal.tsx
+Edited server.ts
+Fixing sidebar configuration
+Fixing sidebar configuration
+Edited Sidebar.tsx
+Inspecting modules and tests
+Inspecting modules and tests
+
+La base ya está actualizada: el modal ahora diferencia credenciales del workspace frente a configuración de plataforma, acepta selección de entorno AFIP, y el backend conserva campos previamente guardados cuando se actualiza solo uno. Ahora voy a compilar y corregir cualquier incompatibilidad antes de completar la cobertura de pruebas.
+Show less
+Checked code style
+Planning smoke tests
+Planning smoke tests
+Opened navigation-smoke.mjs
+Opened secrets-audit.md
+Edited secrets-audit.md
+Figuring out resume and issues
+Figuring out resume and issues
+Checked code style and 1 other action
+Viewed code changes and 1 other action
+Refreshed logs
+Verifying app visuals
+Verifying app visuals
+
+La compilación está limpia y el workflow sigue activo sin errores de navegador. Haré ahora la prueba de navegación completa y una comprobación visual del modal ampliado para confirmar que la cobertura de módulos no rompió el flujo existente.
+2 actions
+
+El flujo existente sigue pasando. Para validar específicamente la ampliación solicitada, agregaré al smoke test una comprobación breve de módulos sin credenciales propias (Calendario/Mensajes) y de un módulo mixto (Maps: configuración de plataforma + credencial del workspace).
+5 actions
+
+La prueba ampliada también pasó: Calendario y Mensajes muestran su configuración administrada, y Maps separa correctamente la credencial del workspace de la configuración pública de plataforma. Queda una mejora de seguridad independiente que conviene dejar propuesta: probar aislamiento entre workspaces y preservación de credenciales parciales directamente contra el backend.
+Propuesta de prueba creada
+
+El trabajo principal está terminado y la prueba adicional quedó propuesta como seguimiento. Haré una última validación de tipos, formato del diff y búsqueda de persistencia insegura antes de entregarlo.
+3 actions
+
+Listo. Completé el sistema de credenciales para todos los módulos del inventario.
+Cambios realizados
+
+    El mismo modal seguro está disponible desde la barra superior y el menú lateral para todos los módulos, incluidos:
+        Calendario
+        Mensajes
+        IA
+        WhatsApp
+        AFIP
+        Mercado Pago
+        Maps B2B
+        Campañas
+        Workflows
+        Cloudflare
+        Configuración general
+    Se agregaron campos específicos para las credenciales pertenecientes al workspace.
+    AFIP ahora permite seleccionar entre Homologación y Producción.
+    El modal diferencia claramente:
+        Credenciales del workspace.
+        Configuración pública.
+        Secretos administrados por backend.
+        Conexiones OAuth o administradas.
+    Las credenciales de plataforma no se pueden editar desde el navegador.
+    Las actualizaciones parciales ya no eliminan otros campos previamente guardados.
+    Las API Keys generadas quedan limitadas al scope del módulo correspondiente.
+    Los secretos nunca se guardan en localStorage, no se devuelven completos al cliente y permanecen cifrados en backend/PostgreSQL.
+    Se actualizaron la auditoría de secretos y el smoke test.
+
+Verificación
+
+    npm run lint — correcto.
+    npm run build — correcto.
+    npm run smoke:navigation — correcto.
+    Validación visual del portal — correcta.
+    Smoke test ampliado para Calendario, Mensajes y Maps — correcto.
+    git diff --check — correcto.
+    No se encontraron persistencias inseguras de API keys, tokens o secretos en localStorage.
+
+Las integraciones reales de AFIP, Mercado Pago, WhatsApp y otros proveedores todavía requieren sus endpoints backend específicos; esta entrega deja lista y segura la configuración de sus credenciales.
+Worked for 4 minutes
+
+Confirmar que las credenciales de cada workspace permanecen aisladas Qué y por qué
+
+El modal y el backend ya guardan credenciales cifradas por workspace y fusionan actualizaciones parciales. Falta una prueba automatizada que demuestre que un usuario no puede leer o modificar las credenciales de otro workspace y que actualizar un solo campo no elimina los restantes. Hecho cuando
+Un usuario autenticado solo puede leer y eliminar las credenciales de su workspace.
+Una actualización parcial conserva los campos cifrados que no se enviaron nuevamente.
+Un intento de usar un módulo o campo no permitido devuelve un error sin persistir datos.
+
+Archivos relevantes
+server.ts
+migrations/001_tenant_credentials.sql
+src/components/settings/ModuleCredentialsModal.tsx
+scripts/navigation-smoke.mjs
+Free
+2 minutes ago
+Evaluating testing framework
+Evaluating testing framework
+
+Voy a convertir esta tarea en una prueba end-to-end contra los endpoints reales de credenciales. Usará dos usuarios de prueba efímeros, verificará lectura, aislamiento, actualización parcial y validaciones, y limpiará las credenciales al finalizar para no dejar secretos ni datos de prueba persistidos.
+3 actions
+
+La prueba ya está creada, pero ajusto un detalle para que demuestre realmente la actualización parcial: usaré un módulo con dos credenciales permitidas (Mercado Pago), en lugar de Maps que solo tiene un campo editable.
+Worked for 35 seconds
+
+You've reached your daily free quota limit. It will reset at 12:00 AM UTC.
+
+Skip to content
+
+    Recent
+    ClientumAPP-main.zip
+
+VA
+vavahe9437
+vavahe9437
+
+Commands
+.agents
+.config
+.data
+.git
+assets
+.aistudio
+attached_assets
+9
+dist
+assets
+index.html
+server.cjs
+server.cjs.map
+sw.js
+docs
+secrets-architecture.md
+secrets-audit.md
+migrations
+public
+sw.js
+screenshots
+feature-hub-dashboard.jpg
+smtp-integration-final.jpg
+scripts
+src
+components
+context
+data
+i18n
+lib
+services
+App.tsx
+firebase.ts
+index.css
+main.tsx
+types.ts
+.env.example
+.gitignore
+features.md
+firebase-applet-config.json
+firestore.rules
+index.html
+metadata.json
+NAVIGATION.md
+replit.md
+SECRETS.md
+server.ts
+tsconfig.json
+vite.config.ts
+zipFile.zip
+Packager files
+.upm
+node_modules
+bun.lock
+package-lock.json
+package.json
+Config files
+.replit
+Inventario de secretos y configuraciones por módulo
+
+    Documento de referencia para configurar ClientumCRM de forma segura.
+
+    Importante: este archivo contiene nombres de variables y ejemplos de formato, nunca valores reales. Los secretos deben guardarse en Replit Secrets o en una integración OAuth/API administrada; no deben escribirse en el código, en localStorage, en commits ni en este documento.
+
+Estado actual del proyecto
+
+    Auditoría actualizada el 2026-09-08: los nombres de las variables disponibles fueron contrastados con el código. Por seguridad, nunca se inspeccionan ni se imprimen valores de Secrets desde esta documentación. Consulta docs/secrets-audit.md para la matriz completa de variables usadas, credenciales por usuario y trabajo pendiente.
+
+Regla de separación
+
+    Secretos de la plataforma: viven en Replit Secrets o en variables de entorno del backend. Son compartidos por la aplicación completa y nunca se cargan en el tab de API Keys de un usuario.
+    API Keys de usuario: se crean y revocan desde Configuración → Integraciones & API Hub → API Keys por usuario. Pertenecen a un user_id, tienen scopes de módulos y no son variables de entorno.
+    Token de API: el valor completo se muestra una sola vez al generarlo. La interfaz no lo persiste en localStorage; en producción debe guardarse únicamente su hash en el backend.
+
+Variable	Estado	Uso actual
+GEMINI_API_KEY	Registrada; validar valor	El backend la consume en /api/ai/*. Los placeholders se consideran no configurados y activan solo el resultado demo/fallback.
+SESSION_SECRET	Registrada; reservada	El servidor no usa sesiones Express. Solo participa como último fallback técnico del cifrado interno si no existe WORKFLOW_ENCRYPTION_KEY ni API_KEY_PEPPER.
+VITE_FIREBASE_*	Registradas como configuración pública	Se inyectan en el bundle cliente. Firebase no se inicializa con valores vacíos y los fallbacks de autenticación están limitados a desarrollo.
+DATABASE_URL / PG*	Administradas por Replit	El servidor usa PostgreSQL para credenciales por usuario y API Keys internas. No deben solicitarse ni configurarse manualmente.
+Reglas de seguridad
+
+    Nunca pegues una API key, token, contraseña, certificado o clave privada en el chat o en un archivo .md.
+    Las variables VITE_* llegan al navegador. Solo deben contener configuración pública o claves restringidas por dominio; nunca tokens privados, secretos de webhook o claves de administración.
+    Todo token de servidor debe leerse desde process.env y usarse únicamente en endpoints backend.
+    Los webhooks deben validar firma y timestamp antes de procesar eventos.
+    Las credenciales de terceros deben preferirse mediante una integración OAuth/API administrada cuando esté disponible.
+    Para producción conviene usar valores separados de desarrollo y producción.
+    Si un proveedor permite permisos por alcance, crear una credencial con el mínimo alcance necesario.
+
+1. Gestión comercial
+Resumen Ejecutivo
+
+No requiere secretos adicionales. Actualmente utiliza datos locales del workspace y métricas calculadas en el cliente.
+
+Si en el futuro se conecta analítica externa:
+
+    GA_MEASUREMENT_ID — configuración pública, no es un secreto.
+    POSTHOG_PUBLIC_KEY — clave pública restringida por dominio, no reemplaza una clave privada de servidor.
+    POSTHOG_API_KEY — solo si se envían eventos desde el backend.
+
+Centro de funciones
+
+Este menú no necesita credenciales propias. Reutiliza las de los módulos que abre:
+
+    Diagnóstico: sin secreto adicional.
+    IA: GEMINI_API_KEY.
+    Pagos: variables de Mercado Pago.
+    SMS: variables del proveedor SMS elegido.
+    Datos: credenciales del almacenamiento persistente que se conecte.
+    Acceso: configuración pública de Firebase y, si se agregan sesiones server-side, SESSION_SECRET.
+
+Pipeline Negocios, Empresas, Contactos y Tareas & Actividades
+
+No requieren secretos adicionales en la versión actual. Los datos se mantienen en el estado del CRM y en el almacenamiento local del navegador.
+
+Para una persistencia server-side futura:
+
+    DATABASE_URL — administrada automáticamente por Replit; no configurarla manualmente.
+    DB_ENCRYPTION_KEY — secreto recomendado si se cifran campos sensibles antes de almacenarlos.
+
+Reportes & BI
+
+No requiere secretos adicionales actualmente. Recharts y los datos del CRM se ejecutan localmente.
+
+Para una futura fuente de datos externa, guardar el token de esa fuente solo en backend; no exponerlo con VITE_.
+Webmail Cloudflare (D1)
+
+El inbox actual usa datos de demostración y no consume Cloudflare en runtime. Para conectar el Worker y D1 en producción, usar:
+Variable	Tipo	Propósito
+CLOUDFLARE_API_TOKEN	Secreto	Token con permisos mínimos para el Worker/D1 necesarios.
+CLOUDFLARE_ACCOUNT_ID	Configuración	Identificador de cuenta de Cloudflare.
+CLOUDFLARE_D1_DATABASE_ID	Configuración	Identificador de la base D1.
+CLOUDFLARE_EMAIL_WORKER_URL	Configuración	URL del Worker que expone el correo.
+CLOUDFLARE_EMAIL_WORKER_SECRET	Secreto	Firma compartida entre ClientumCRM y el Worker.
+WEBMAIL_ENCRYPTION_KEY	Secreto	Cifrado de contenido o credenciales si el Worker lo requiere.
+
+No enviar CLOUDFLARE_API_TOKEN al navegador.
+WhatsApp CRM
+
+El módulo actual funciona como vista de CRM/demo. Para Meta WhatsApp Cloud API, configurar únicamente en backend:
+Variable	Tipo	Propósito
+WHATSAPP_ACCESS_TOKEN	Secreto	Token de acceso de Meta.
+WHATSAPP_APP_SECRET	Secreto	Validación de firmas de Meta.
+WHATSAPP_PHONE_NUMBER_ID	Configuración	Número emisor de WhatsApp Business.
+WHATSAPP_BUSINESS_ACCOUNT_ID	Configuración	Cuenta de WhatsApp Business.
+WHATSAPP_WEBHOOK_VERIFY_TOKEN	Secreto	Token usado durante la verificación del webhook.
+WHATSAPP_WEBHOOK_URL	Configuración	URL pública registrada en Meta.
+
+WHATSAPP_ACCESS_TOKEN y WHATSAPP_APP_SECRET nunca deben aparecer en componentes React.
+Facturación AFIP (CAE)
+
+La pantalla actual simula la emisión de comprobantes. Para producción, solicitar el certificado y la clave privada por el mecanismo seguro de secretos, nunca por chat:
+Variable	Tipo	Propósito
+AFIP_CUIT	Configuración sensible	CUIT emisor.
+AFIP_ENVIRONMENT	Configuración	homologacion o produccion; no debe depender de un valor implícito.
+AFIP_CERTIFICATE_P12_BASE64	Secreto	Certificado digital codificado para el backend.
+AFIP_PRIVATE_KEY	Secreto	Clave privada del certificado, si el proveedor la entrega separada.
+AFIP_PRIVATE_KEY_PASSWORD	Secreto	Contraseña del certificado.
+AFIP_WSAA_URL	Configuración	Endpoint de autenticación WSAA.
+AFIP_WSFEX_URL	Configuración	Endpoint del web service de facturación utilizado.
+AFIP_TOKEN_CACHE_KEY	Secreto	Solo si se cachea el token de autorización cifrado.
+
+La generación del CAE debe estar protegida por permisos, idempotencia, auditoría y separación estricta entre homologación y producción.
+2. Ventas y cierre
+Propuestas & Presupuestos
+
+No requiere secretos en la versión actual.
+
+Si se habilita envío real de propuestas por correo:
+
+    RESEND_API_KEY o SENDGRID_API_KEY — elegir un solo proveedor.
+    MAIL_FROM_ADDRESS — configuración pública del remitente.
+    MAIL_FROM_NAME — configuración pública del nombre remitente.
+    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD — alternativa SMTP; SMTP_PASSWORD es secreto.
+
+Prospección Maps B2B
+
+La app tiene fallback/demo y el backend de prospección no requiere Google Maps para el resultado de demostración. Para geocodificación o Places real:
+
+    VITE_GOOGLE_MAPS_API_KEY — clave pública restringida por dominio y APIs.
+    GOOGLE_MAPS_SERVER_API_KEY — clave privada para llamadas server-side, si se necesita separar el consumo backend.
+
+No utilizar una clave con acceso irrestricto en el frontend.
+Lead Scoring MEDDIC
+
+No requiere secretos adicionales. Si el scoring pasa a usar IA, reutiliza GEMINI_API_KEY; no crear una clave separada por vista.
+Chatbot WhatsApp 24/7
+
+Reutiliza:
+
+    GEMINI_API_KEY — respuestas generativas, si se habilitan.
+    WHATSAPP_ACCESS_TOKEN.
+    WHATSAPP_APP_SECRET.
+    WHATSAPP_PHONE_NUMBER_ID.
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN.
+
+Ver la sección WhatsApp CRM para la descripción de cada variable.
+Campañas Masivas
+
+Para WhatsApp, reutiliza las variables de Meta. Para email, elegir un solo proveedor:
+
+    RESEND_API_KEY — recomendado para una API de envío simple.
+    SENDGRID_API_KEY — alternativa.
+    EMAIL_WEBHOOK_SIGNING_SECRET — firma de eventos de entrega.
+    UNSUBSCRIBE_SIGNING_SECRET — firma de enlaces de baja.
+
+Los tokens de campaña deben tener límites de velocidad, consentimiento y auditoría; no guardarlos en el navegador.
+3. Inteligencia artificial
+Agent OS, Asistente Gemini, Estrategias GTM y Agente SDR Outreach
+
+Todos estos módulos reutilizan una sola variable:
+Variable	Estado	Uso
+GEMINI_API_KEY	Requerida para IA real	Se consume en server.ts mediante los endpoints /api/ai/*.
+
+La aplicación tiene respuestas de fallback cuando la clave no está presente, pero eso no equivale a una conexión real con Gemini. No exponer esta variable con VITE_GEMINI_API_KEY.
+4. Operaciones y sistema
+Cobros Mercado Pago
+
+La UI actual genera links simulados. Para pagos reales:
+Variable	Tipo	Propósito
+MERCADOPAGO_ACCESS_TOKEN	Secreto	Crear preferencias, consultar pagos y emitir reembolsos autorizados.
+MERCADOPAGO_WEBHOOK_SECRET	Secreto	Validar notificaciones de Mercado Pago.
+VITE_MERCADOPAGO_PUBLIC_KEY	Pública restringida	Componentes de checkout del navegador, si se usan.
+MERCADOPAGO_ENVIRONMENT	Configuración	sandbox o production.
+MERCADOPAGO_SELLER_ID	Configuración sensible	Identificador de la cuenta receptora, si el flujo lo requiere.
+
+MERCADOPAGO_ACCESS_TOKEN y MERCADOPAGO_WEBHOOK_SECRET deben permanecer en backend. Para este proyecto no están conectados todavía.
+Tienda Digital WhatsApp
+
+Reutiliza las credenciales de WhatsApp y Mercado Pago. Si se conecta Shopify, agregar solo mediante una integración administrada o backend:
+
+    SHOPIFY_SHOP_DOMAIN — configuración.
+    SHOPIFY_STOREFRONT_ACCESS_TOKEN — token de Storefront con alcance mínimo.
+    SHOPIFY_ADMIN_ACCESS_TOKEN — secreto de administración; nunca frontend.
+    SHOPIFY_WEBHOOK_SECRET — secreto para validar eventos.
+
+No agregar credenciales de Shopify si la tienda continúa siendo local/demo.
+Campus Academia LMS
+
+No requiere secretos adicionales en la implementación actual.
+
+Si se habilitan videos o almacenamiento privado, usar el proveedor de storage correspondiente en backend y una clave de firma temporal; no guardar URLs firmadas permanentes en el código.
+Workflows & Flujos
+
+El constructor actual trabaja con datos locales. Para ejecutar acciones externas:
+
+    WEBHOOK_SIGNING_SECRET — firma de webhooks propios.
+    WORKFLOW_ENCRYPTION_KEY — cifrado de credenciales almacenadas en flujos.
+    N8N_API_KEY — solo si se conecta n8n.
+    MAKE_WEBHOOK_SECRET — solo si se conecta Make.
+    ZAPIER_WEBHOOK_SECRET — solo si se conecta Zapier.
+
+No se deben guardar tokens de terceros dentro de la configuración serializada del workflow sin cifrado.
+Custom Objects Studio
+
+No requiere secretos adicionales. Actualmente es un estudio local de objetos, campos y registros.
+CSV Import & Export
+
+No requiere secretos adicionales. Los archivos se procesan en el navegador. Si en el futuro se suben a un bucket, usar URLs firmadas de vida corta y la credencial únicamente en backend.
+Gestor de Dominios
+
+Para Cloudflare DNS/SSL:
+
+    CLOUDFLARE_API_TOKEN — secreto con permisos acotados a la zona.
+    CLOUDFLARE_ACCOUNT_ID — configuración.
+    CLOUDFLARE_ZONE_ID — configuración.
+    CLOUDFLARE_ZONE_NAME — configuración.
+
+No usar un token global de Cloudflare si alcanza un token limitado a una zona.
+Configuración General
+Acceso autenticado y Firebase
+
+Estas variables se usan para inicializar el SDK cliente de Firebase. No son secretos de servidor, pero deben estar configuradas por entorno y protegidas por restricciones de Firebase:
+VITE_FIREBASE_API_KEY=<configuración pública restringida>
+VITE_FIREBASE_AUTH_DOMAIN=<dominio Firebase>
+VITE_FIREBASE_PROJECT_ID=<id del proyecto>
+VITE_FIREBASE_STORAGE_BUCKET=<bucket>
+VITE_FIREBASE_MESSAGING_SENDER_ID=<sender id>
+VITE_FIREBASE_APP_ID=<app id>
+VITE_FIREBASE_MEASUREMENT_ID=<measurement id opcional>
+
+Si se agregan operaciones Firebase Admin desde el servidor, usar una integración o un secreto separado, por ejemplo:
+
+    FIREBASE_SERVICE_ACCOUNT_JSON — secreto server-side.
+    FIREBASE_ADMIN_PROJECT_ID — configuración.
+
+No colocar una cuenta de servicio en VITE_*.
+Sesiones del servidor
+
+    SESSION_SECRET — secreto server-side para firmar sesiones, cookies o CSRF si se incorpora un middleware de sesiones.
+
+Actualmente ClientumCRM usa Firebase y flags de sesión del navegador; no hay middleware Express que consuma SESSION_SECRET.
+Integraciones y API Hub
+
+El panel actual simula/guarda localmente parte de las integraciones. Para producción:
+
+    GOOGLE_CLIENT_ID — configuración OAuth.
+    GOOGLE_CLIENT_SECRET — secreto OAuth server-side.
+    GOOGLE_OAUTH_REDIRECT_URI — configuración.
+    SLACK_BOT_TOKEN — secreto.
+    SLACK_SIGNING_SECRET — secreto.
+    SLACK_WEBHOOK_URL — secreto; no exponerlo en la UI.
+    API_KEY_PEPPER — secreto para hashear claves internas antes de persistirlas.
+
+Cuando exista un conector OAuth de Replit para el proveedor, preferirlo antes que administrar manualmente GOOGLE_CLIENT_SECRET o tokens de refresco.
+Auditoría y seguridad
+
+No requiere una credencial externa actualmente. Para enviar alertas:
+
+    SECURITY_ALERT_WEBHOOK_SECRET — firma de notificaciones.
+    SECURITY_ALERT_WEBHOOK_URL — URL de destino; tratarla como sensible.
+
+5. Menú lateral y asignación rápida
+Ítem del menú	Variables que realmente necesita
+Resumen Ejecutivo	Ninguna
+Centro de funciones	Reutiliza las del módulo elegido
+Pipeline Negocios	Ninguna
+Webmail Cloudflare (D1)	CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_D1_DATABASE_ID, CLOUDFLARE_EMAIL_WORKER_SECRET
+Empresas	Ninguna
+Contactos	Ninguna
+Tareas & Actividades	Ninguna
+Reportes & BI	Ninguna; analítica futura según proveedor
+WhatsApp CRM	WHATSAPP_ACCESS_TOKEN, WHATSAPP_APP_SECRET, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_WEBHOOK_VERIFY_TOKEN
+Facturación AFIP (CAE)	AFIP_CERTIFICATE_P12_BASE64, AFIP_PRIVATE_KEY, AFIP_PRIVATE_KEY_PASSWORD, AFIP_CUIT
+Propuestas & Presupuestos	Ninguna; email futuro: RESEND_API_KEY o SENDGRID_API_KEY
+Prospección Maps B2B	VITE_GOOGLE_MAPS_API_KEY y, si aplica, GOOGLE_MAPS_SERVER_API_KEY
+Lead Scoring MEDDIC	Ninguna; IA opcional: GEMINI_API_KEY
+Chatbot WhatsApp 24/7	Variables de WhatsApp + GEMINI_API_KEY opcional
+Campañas Masivas	WhatsApp o RESEND_API_KEY/SENDGRID_API_KEY
+Agent OS	GEMINI_API_KEY
+Asistente Gemini	GEMINI_API_KEY
+Estrategias GTM	GEMINI_API_KEY
+Agente SDR Outreach	GEMINI_API_KEY + canal de envío elegido
+Cobros Mercado Pago	MERCADOPAGO_ACCESS_TOKEN, MERCADOPAGO_WEBHOOK_SECRET, VITE_MERCADOPAGO_PUBLIC_KEY
+Tienda Digital WhatsApp	WhatsApp + Mercado Pago; Shopify solo si se conecta
+Campus Academia LMS	Ninguna en la versión actual
+Workflows & Flujos	WORKFLOW_ENCRYPTION_KEY + secretos del proveedor conectado
+Custom Objects Studio	Ninguna
+CSV Import & Export	Ninguna
+Gestor de Dominios	CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ZONE_ID
+Configuración General	Firebase VITE_*, SESSION_SECRET si se agregan sesiones
+6. SMS: proveedor a elegir
+
+El Centro de funciones ya prepara la configuración y el mensaje SMS, pero no hay proveedor conectado en el código actual. Elegir un solo proveedor:
+Opción recomendada: Twilio
+
+    TWILIO_ACCOUNT_SID — configuración sensible.
+    TWILIO_AUTH_TOKEN — secreto.
+    TWILIO_MESSAGING_SERVICE_SID — configuración.
+    TWILIO_FROM_NUMBER — configuración.
+    TWILIO_WEBHOOK_SIGNING_SECRET — secreto para callbacks.
+
+Alternativas
+
+    MessageBird: MESSAGEBIRD_ACCESS_KEY, MESSAGEBIRD_ORIGINATOR, MESSAGEBIRD_WEBHOOK_SECRET.
+    Vonage: VONAGE_API_KEY, VONAGE_API_SECRET, VONAGE_BRAND_NAME, VONAGE_SIGNATURE_SECRET.
+
+No solicitar ni guardar las variables de las tres opciones a la vez. La conexión debe gestionarse mediante una integración o Secrets y el envío real debe vivir en backend.
+7. Checklist antes de producción
+
+    Validar que GEMINI_API_KEY tenga un valor real en Replit Secrets para habilitar IA real.
+    Firebase consume VITE_FIREBASE_* y no inicializa con valores vacíos.
+    Verificar que las reglas de Firebase Auth/Firestore no permitan acceso público accidental.
+    Elegir un proveedor de pagos y validar webhooks con firma.
+    Elegir un único proveedor SMS y configurar sus credenciales en backend.
+    Conectar WhatsApp mediante Meta antes de habilitar envíos.
+    Separar homologación/producción para AFIP.
+    Rotar cualquier token que haya sido expuesto en código o logs.
+    No solicitar manualmente DATABASE_URL ni otras variables administradas por Replit.
+    Revisar permisos por rol antes de habilitar cobros, exportaciones, facturación o administración de credenciales.
+
+Pasted-Skip-to-content-Recent-ClientumAPP-main-zip-MI-mifaf324_1788909464371.txt
+Free
+15 minutes ago
+Inspecting attachment
+Inspecting attachment
+
+Voy a revisar el archivo adjunto para identificar qué contiene y cómo se relaciona con el proyecto actual antes de hacer cambios.
+3 actions
+
+El archivo es una transcripción de una sesión anterior sobre agregar inicio de sesión autenticado. Voy a extraer el estado relevante de esa implementación y compararlo con el código actual para continuar desde ahí sin duplicar trabajo.
+12 actions
+
+La sesión anterior quedó interrumpida mientras se corregía el smoke test de aislamiento. El script actual todavía usa Maps B2B aunque la última decisión fue probar Mercado Pago, así que voy a revisar los endpoints y el catálogo permitido, corregir la prueba para que valide realmente actualización parcial y aislamiento, y ejecutarla contra el workflow activo.
+Show less
+Checked git status and 1 other action
+Searched server.ts and 3 other files for "user-credentials|moduleCredentials|allowed|merge|x-clientum-user-id|tenantId"
+Opened server.ts
+Opened server.ts
+Opened moduleCredentials.ts
+Opened replit.md
+Assessing updates and scripts
+Assessing updates and scripts
+Opened server.ts
+Evaluating API behavior
+Evaluating API behavior
+Edited credentials-isolation-smoke.mjs
+Checking workflow processes
+Checking workflow processes
+
+La prueba quedó ajustada para Mercado Pago: guarda dos credenciales, actualiza solo una, comprueba que la otra sobreviva, verifica aislamiento entre dos usuarios y rechaza módulos/campos no permitidos. Ahora voy a ejecutar typecheck, build y el smoke test contra el servidor activo.
+5 actions
+
+Las tres verificaciones pasaron: TypeScript, build y el smoke test de aislamiento. Voy a revisar los logs finales del workflow y decidir si queda algún seguimiento real o si esta entrega puede cerrarse sin agregar tareas extra.
+3 actions
+
+Completé la prueba pendiente de aislamiento de credenciales por workspace.
+
+Cambios realizados:
+
+    El smoke test ahora usa Mercado Pago, que tiene múltiples credenciales.
+    Verifica que una actualización parcial no elimine otros campos configurados.
+    Comprueba que dos usuarios no compartan metadatos de credenciales.
+    Valida el rechazo de módulos y campos no permitidos.
+    Limpia los datos de prueba al finalizar.
+    Se mantiene disponible como npm run smoke:credentials.
+
+Verificaciones ejecutadas correctamente:
+
+    npm run lint
+    npm run build
+    npm run smoke:credentials
+    git diff --check
+
+El workflow sigue activo en el puerto 5000. Los logs no muestran errores de la aplicación; solo aparece un evento transitorio de conexión WebSocket de Vite durante la recarga.
+Worked for 1 minute
+Attached Image
+Attached Image
+
+ese boton solo en los modulos que necesitan configurar api key por usuario
+Free
+13 minutes ago
+Evaluating UI Modification
+Evaluating UI Modification
+
+Voy a ajustar la visibilidad del botón para que aparezca únicamente cuando el módulo tenga credenciales propias configurables por usuario; los módulos con configuración de plataforma, OAuth o sin credenciales no lo mostrarán. Primero ubicaré la condición actual y el flujo que abre el modal.
+11 actions
+
+Encontré la causa: el botón del Navbar considera “configurable” a cualquier módulo registrado, incluso los que tienen fields: []; además, el Sidebar muestra el ícono por defecto en todos. Voy a centralizar la condición en el catálogo (fields.length > 0) y aplicarla también al botón específico de Maps.
+4 actions
+
+La condición ya quedó aplicada en los tres puntos donde aparecía el acceso: Navbar, Sidebar y el botón interno de Maps. Ahora voy a comprobar que compile y que el flujo de navegación existente siga pasando.
+5 actions
+
+El cambio correcto expuso una expectativa vieja en smoke:navigation: la prueba todavía esperaba un botón de configuración para Calendario, aunque Calendario no tiene credenciales propias. Voy a actualizar el smoke test para comprobar lo nuevo: Calendario no muestra el botón y Maps sí.
+6 actions
+
+La prueba ya refleja la nueva regla, pero al editarla quedó pendiente agregar el helper de ausencia y eliminar una navegación duplicada. Lo corrijo ahora y vuelvo a ejecutar el smoke completo.
+5 actions
+
+Listo. El botón “Configurar API” ahora aparece únicamente en módulos que tienen credenciales propias configurables por usuario.
+
+Cambios:
+
+    Navbar: oculto para módulos sin credenciales propias.
+    Sidebar: oculto el ícono de configuración en esos módulos.
+    Maps B2B: mantiene visible el botón porque requiere GOOGLE_MAPS_SERVER_API_KEY.
+    Calendario, Mensajes, Tareas y módulos similares ya no muestran el botón.
+    La condición quedó centralizada en el catálogo de credenciales.
+    Actualicé el smoke test para verificar que:
+        Calendario y Mensajes no muestran configuración.
+        Maps sí muestra configuración.
+        El modal continúa diferenciando credenciales del workspace y configuración de plataforma.
+
+Verificación completada:
+
+    npm run lint
+    npm run build
+    npm run smoke:navigation
+    git diff --check
+
+Todos pasaron correctamente.
+Worked for 1 minute
+
+y oculta todo sobre las api keys de plataforma, solo deja visible en dashboard todo sobre api keys por usuario unicamente
+Free
+11 minutes ago
+
+Voy a ocultar de la interfaz toda la sección de API Keys de plataforma y dejar visible únicamente la administración de API Keys por usuario dentro del dashboard. Revisaré las pestañas, enlaces y estados iniciales para que no quede ningún acceso visible ni navegación rota.
+6 actions
+
+La API de plataforma se expone principalmente en IntegrationsHubTab: tiene una pestaña propia, contador, listado, creación, revocación y modal. Voy a retirar esa superficie completa del dashboard y conservar solamente la pestaña y el contenido de API Keys por usuario; el backend y los datos internos no se tocarán en esta modificación.
+20 actions
+
+La sección de plataforma ya fue retirada junto con su creación, listado, revocación y modal. También limpié los estados e imports que quedaron sin uso. Añadiré una comprobación al smoke test para garantizar que la pestaña de plataforma no vuelva a aparecer y luego ejecutaré las verificaciones finales.
+5 actions
+
+Listo. Oculté completamente del dashboard todo lo relacionado con las API Keys de plataforma.
+
+Cambios:
+
+    Eliminada la pestaña “API Keys REST (Plataforma)”.
+    Eliminado el listado de claves de plataforma.
+    Eliminados los controles para generar, copiar y revocar claves de plataforma.
+    Eliminado el modal de creación de API Keys de plataforma.
+    Se mantiene visible únicamente “API Keys por usuario”.
+    Se conserva la generación de claves con scopes por módulo y usuario.
+
+Verificación completada:
+
+    npm run lint
+    npm run build
+    npm run smoke:navigation
+    git diff --check
+
+El smoke test confirma explícitamente que la sección de plataforma no aparece y que la sección de API Keys por usuario sigue funcionando.
+Worked for 1 minute
+Attached Image
+Attached Image
+
+solo light version, segun marca o logo clientum unicamente, para todas las paginas de cada item de menu dashboard
+Free
+10 minutes ago
+Implementing light mode
+Implementing light mode
+
+Voy a unificar todo el dashboard en una única versión clara, usando la identidad visual de Clientum: fondo blanco/gris muy suave, azul de marca, bordes claros y tipografía consistente. Revisaré primero cómo se aplica actualmente el tema para corregirlo de raíz y no tener que parchear cada pantalla por separado.
+19 actions
+
+La base actual permite conservar un tema oscuro en localStorage y además tiene estilos “dark” hardcodeados en el dashboard. Voy a forzar light como único tema, quitar los controles de cambio de tema y agregar una capa visual clara global para que todas las vistas del menú compartan la misma superficie Clientum.
+4 actions
+
+El primer parche de la pantalla de configuración no aplicó porque el bloque tiene una variante distinta a la esperada. No es un bloqueo: voy a tomar el fragmento exacto y reemplazar solo los controles de tema, sin tocar el resto de la configuración.
+16 actions
+
+La unificación visual ya está aplicada: navegación, barra superior, contenido, paneles ejecutivos, formularios y configuración ahora apuntan a superficies claras, con Clientum azul como acento. También eliminé los selectores Dark/Light para que no exista una ruta visible hacia el modo oscuro. Ahora verificaré compilación y revisaré el dashboard renderizado en el preview.
+9 actions
+
+La página pública ya se ve clara y coherente con la marca. Para validar la parte privada —que requiere iniciar la demo local— tomaré una captura autenticada de la primera pantalla del dashboard y revisaré que no queden superficies oscuras ni texto ilegible.
+6 actions
+
+También retiré el comando de la paleta que ofrecía volver al modo oscuro; así el modo claro es consistente desde la barra, configuración y búsqueda global. Haré una última pasada de compilación, navegación y textos visibles para cerrar cualquier resto de UI oscura.
+5 actions
+
+El dashboard ya quedó validado en modo claro y los checks pasan. Detecté una mejora posterior real, fuera de este alcance: retirar gradualmente los estilos oscuros heredados para que la capa de compatibilidad no sea necesaria a futuro. La dejaré como seguimiento separado, sin bloquear este resultado.
+Seguimiento visual propuesto
+
+Listo: el dashboard quedó en una única versión Light Clientum Clarity.
+
+Cambios aplicados:
+
+    Sidebar claro con logo Clientum y acentos azules.
+    Navbar y controles superiores en superficies claras.
+    Fondos, paneles, tarjetas, formularios y modales unificados.
+    Dashboard ejecutivo adaptado a fondo blanco/gris suave.
+    Eliminados los controles visibles para cambiar a modo oscuro.
+    Eliminada la opción de modo oscuro de la paleta de comandos.
+    Forzado el modo claro aunque existan preferencias oscuras antiguas guardadas.
+    Aplicado el estilo a todas las páginas accesibles desde el menú del dashboard.
+    Se mantiene el azul de marca Clientum como color principal y de estados activos.
+
+Verificado con:
+
+    npm run lint
+    npm run build
+    npm run smoke:navigation
+    git diff --check
+    Captura visual autenticada del dashboard
+
+También dejé propuesto un seguimiento para retirar gradualmente los estilos oscuros heredados y eliminar la capa de compatibilidad cuando corresponda. El proyecto está listo para publicar.
+Worked for 5 minutes
+Publish
+Domain
+Available
+.replit.app
+Who can access your app
+PublicAnyone on the internet with the URL
+Attached Image
+
+solo deja este boton en las pagfinas de modulos que el usuario deba usar sus api keys, y ocultalo en los modulos que usan api key de plataforma
+Free
+4 minutes ago
+Examining code logic
+Examining code logic
+
+Voy a revisar la regla central del catálogo y los tres puntos donde aparece “Configurar API” —navbar, sidebar y Maps— para asegurar que todos usen exactamente la misma condición: solo credenciales propias del usuario, nunca claves de plataforma. Luego ajustaré el smoke test para cubrir ambos casos.
+12 actions
+
+La regla central ya estaba correcta: el botón depende únicamente de fields.length > 0, mientras que platformConfigurations no lo habilita. Añadí una prueba explícita para un módulo que usa Gemini de plataforma (Asistente Gemini 1.5) y ahora comprobaré que ese botón quede oculto, mientras Maps —que sí requiere una clave del usuario— lo conserva.
+5 actions
+
+Listo. El botón “Configurar API” ahora queda visible únicamente en módulos que requieren credenciales propias del usuario.
+
+Visible en módulos como:
+
+    WhatsApp
+    AFIP
+    Google Maps
+    Mercado Pago
+    Tienda Digital
+    Otros módulos con campos de credenciales de workspace
+
+Oculto en módulos que usan configuración o API Keys de plataforma:
+
+    Calendario
+    Mensajes
+    Asistente Gemini
+    Agent OS
+    Estrategias GTM
+    Analíticas
+    Webmail
+    Dominios
+    Configuración general
+    Otros módulos sin credenciales propias
+
+La misma regla se aplica a:
+
+    Botón superior del dashboard.
+    Íconos de configuración del sidebar.
+    Botón específico de Google Maps.
+
+Además, agregué una prueba explícita para verificar que el módulo Asistente Gemini 1.5 no muestre el botón, mientras que Google Maps sí lo conserve.
+
+Verificado con:
+
+    npm run lint
+    npm run smoke:navigation
+    git diff --check
+
+Worked for 1 minute
+Checkpoint made 3 minutes ago
+
+actualiza mejora y corrige
+
+.env.example SECRETS.md docs/secrets-architecture.md docs/secrets-audit.md
+Free
+2 minutes ago
+
+Voy a auditar los cuatro archivos contra la configuración real del proyecto: nombres de variables usados por server.ts, frontend, scripts y workflows. Corregiré inconsistencias, eliminaré afirmaciones desactualizadas y dejaré una guía segura sin exponer valores reales ni convertir secretos de usuario en secretos de plataforma.
+15 actions
+
+Ya encontré varias inconsistencias que conviene corregir, no solo de redacción: el inventario mezcla variables futuras con variables realmente leídas por el runtime, documenta DATABASE_URL como si debiera configurarse manualmente y no distingue bien el fallback local de desarrollo frente a PostgreSQL administrado. Voy a contrastar esas zonas del backend y luego actualizar los cuatro documentos con una matriz “runtime real / opcional / tenant”.
+10 actions
+Worked for 38 seconds
+
+You've reached your daily free quota limit. It will reset at 12:00 AM UTC.
+
+
+Pasted-Skip-to-content-Recent-ClientumAPP-main-zip-MI-mifaf324_1788910622528.txt
+Free
+17 minutes ago
+Inspecting user attachments
+Inspecting user attachments
+
+Voy a revisar el archivo adjunto para entender qué contiene y qué acción concreta solicita.
+3 actions
+
+Voy a retomar la última tarea del archivo: auditar y corregir .env.example, SECRETS.md, docs/secrets-architecture.md y docs/secrets-audit.md contra lo que realmente usa el runtime, sin tocar valores secretos. Primero compararé las referencias del código y los cuatro documentos.
+9 actions
+
+La auditoría ya muestra que los documentos todavía mezclan variables futuras con variables realmente leídas por el runtime. Ahora voy a contrastar los puntos exactos del servidor, migración y Vite para corregir la matriz con estados claros: activo, administrado por Replit, tenant o solo planificado.
+22 actions
+
+La fuente de verdad confirma que hoy el backend solo consume directamente Gemini, SMTP, Firebase, PostgreSQL, cifrado/API Keys internas y la verificación del webhook de WhatsApp. Mercado Pago, AFIP, Cloudflare, Shopify, Slack y SMS están catalogados o almacenados por tenant, pero todavía no tienen un cliente proveedor activo. Voy a reflejar esa diferencia en los cuatro documentos.
+3 actions
+
+Tres archivos ya quedaron actualizados; el parche de docs/secrets-architecture.md no aplicó por una diferencia de contexto, así que lo voy a reemplazar de forma controlada con la versión corregida y luego revisaré el diff completo antes de verificar.
+2 actions
+
+La documentación ya está unificada. Haré ahora una revisión de consistencia del diff y ejecutaré las verificaciones del proyecto para asegurar que los cambios documentales no introdujeron errores ni contradicciones visibles.
+4 actions
+
+El lint y el build pasan. Detecté una aclaración importante antes del cierre: los nombres de WhatsApp aparecen tanto como campos permitidos del workspace como variables del webhook de plataforma, pero hoy el webhook solo lee las variables del proceso. Voy a dejar esa distinción explícita y ejecutar los smoke tests finales.
+9 actions
+
+Las verificaciones finales pasan: lint, build, navegación, aislamiento de credenciales y git diff --check. Quedó fuera de este alcance la activación real de proveedores que hoy solo están documentados o almacenados; lo propondré como seguimiento separado, sin presentarlos como conectados.
+2 actions
+
+La propuesta de seguimiento no llegó a registrarse por un error de formato del mensaje, no del proyecto. La reenvío corregida y cierro con el resumen de cambios y verificaciones.
+Seguimiento de integraciones propuesto
+
+Actualicé y corregí la documentación de secretos y configuración:
+
+    .env.example
+        Ahora contiene únicamente variables realmente consumidas por el runtime.
+        Diferencia plataforma, Firebase público, persistencia PostgreSQL y credenciales por workspace.
+        Aclara qué variables aún no están conectadas.
+        Incluye soporte para DATABASE_URL y variables PG* administradas por Replit.
+
+    SECRETS.md
+        Se separan estados: activa, tenant-scoped y planificada.
+        Se corrigieron las referencias a WhatsApp, Maps, Mercado Pago, AFIP y SMTP.
+        Se aclara que las credenciales del workspace no activan proveedores todavía.
+        Se actualizó la matriz del menú y el checklist de producción.
+
+    docs/secrets-architecture.md
+        Documenta el modelo de tres niveles: plataforma, workspace y público.
+        Describe el cifrado AES-256-GCM, aislamiento por tenant y resolución de membresías.
+        Corrige el uso real de PostgreSQL, Firebase, Gemini, SMTP y WhatsApp.
+
+    docs/secrets-audit.md
+        Se actualizó la matriz de variables consumidas por el runtime.
+        Se distinguieron integraciones activas de capacidades planificadas.
+        Se documentaron los controles de seguridad y riesgos pendientes.
+
+Verificaciones completadas correctamente:
+
+    npm run lint
+    npm run build
+    npm run smoke:navigation
+    npm run smoke:credentials
+    git diff --check
+
+También quedó propuesto un seguimiento para conectar Mercado Pago, AFIP y WhatsApp reales sin exponer credenciales.
+Worked for 2 minutes
+Checkpoint made 14 minutes ago
+
+ok hazlo
+Free
+12 minutes ago
+
+Voy a aplicar las mejoras de mayor impacto en dos frentes: simplificar el hero y la navegación pública, y hacer el dashboard más enfocado con sidebar agrupado y Copilot colapsable. Primero ubicaré los componentes exactos y sus estilos para modificar la experiencia sin romper la navegación actual.
+3 actions
+
+Ya encontré los puntos principales: PublicHome, PublicNavbar, Sidebar, Navbar, PrivateEnvironment y el dashboard ejecutivo. Voy a revisar esos componentes y delegar una pasada de diseño sobre los mismos archivos; después integraré y verificaré los cambios directamente.
+12 actions
+
+Voy a leer la revisión visual y los componentes principales para aplicar el rediseño sobre la estructura existente, sin inventar rutas ni módulos. Después haré los cambios en una sola pasada y verificaré la app completa.
+7 actions
+
+La revisión confirma que el principal problema no es falta de funciones sino exceso de elementos simultáneos. Voy a conservar todos los handlers y rutas, pero cambiaré la jerarquía: demo como CTA principal, resumen ejecutivo antes del pipeline, asistente cerrado por defecto y navegación secundaria colapsable.
+Show less
+Opened PublicNavbar.tsx
+Opened PublicMobileMenu.tsx
+Opened PrivateEnvironment.tsx
+Opened ClientumLogo.tsx
+Considering board structure
+Considering board structure
+Implementing dropdown changes
+Implementing dropdown changes
+Edited PublicNavbar.tsx
+Edited PublicMobileMenu.tsx
+Analyzing patch application
+Analyzing patch application
+
+La limpieza del header público y del menú móvil ya quedó aplicada; el primer parche del hero no encontró un bloque por una diferencia de formato, así que lo ajusto ahora con cambios más pequeños y verificables.
+10 actions
+
+Ahora ajusto la capa visual del dashboard. La estructura ya está reordenada sin tocar callbacks: el CSS hará que el resumen aparezca primero y el asistente sea un drawer sobrepuesto, mientras se eliminan los fondos oscuros heredados del dashboard ejecutivo.
+Edited index.css
+
+La implementación visual principal ya está hecha. Ahora voy a ejecutar lint, build y los smoke tests en paralelo para detectar errores de tipos, imports o regresiones antes de revisar la vista renderizada.
+6 actions
+
+Los chequeos detectaron un error de JSX introducido al agregar el backdrop del drawer; los smoke tests de credenciales y el diff siguen bien, pero navegación no puede completar el ingreso mientras el build está inválido. Lo corrijo y repito la validación.
+8 actions
+
+El build y el typecheck ya pasan. El smoke de navegación reveló una incompatibilidad funcional del acordeón: el test necesita acceder directamente al módulo de IA, así que voy a hacer que las secciones colapsadas se expandan también cuando contienen la pestaña activa, manteniendo la jerarquía visual para el resto.
+Show less
+Opened navigation-smoke.mjs
+Opened Sidebar.tsx
+Refreshed logs
+Evaluating config settings
+Evaluating config settings
+Opened navigation-smoke.mjs
+Considering patch defaults
+Considering patch defaults
+Edited Sidebar.tsx
+Ran the smoke:navigation script
+Checked code style
+Viewed code changes
+Exploring screenshot options
+Exploring screenshot options
+
+Los smoke tests ya pasan completos y el workflow sigue activo. Haré una última verificación visual del sitio público y del shell privado, además de repetir el build tras el ajuste final del sidebar.
+5 actions
+
+La captura pública confirma que el header quedó mucho más claro y que el CTA principal domina correctamente. /app redirige al sitio porque la captura no comparte la sesión del smoke test; voy a abrir una sesión demo con Playwright para verificar también el dashboard autenticado, especialmente el resumen antes del pipeline y el asistente cerrado.
+4 actions
+
+La sesión autenticada se abrió correctamente y ya guardé una captura del dashboard. Voy a revisarla visualmente una última vez y consultar los logs recientes para asegurar que no quede ningún error de runtime antes de cerrar.
+5 actions
+
+La captura autenticada muestra la nueva jerarquía correctamente: primero resumen/KPIs y el asistente cerrado. También detecté un detalle real de densidad en escritorio: la marca duplicada del navbar privado hace que el título se comprima; la ocultaré sólo en desktop, manteniéndola en móvil donde sí orienta al usuario.
+7 actions
+
+La implementación quedó verificada: typecheck, build, smoke tests y revisión visual pasan; el workflow sigue funcionando sin errores nuevos. El proyecto está listo para publicar cuando quieras.
+
+Listo. Implementé el rediseño visual de ClientumCRM manteniendo las rutas, módulos y funcionalidades existentes.
+
+Cambios principales:
+
+    Sitio público:
+        Hero con mensaje más directo.
+        “Probar Demo Interactiva Gratis” como CTA principal.
+        ROI y Auditoría como acciones secundarias.
+        Header simplificado sin utility bar permanente.
+        Menú móvil sin emojis ni badges innecesarios.
+        Preview del producto presentado antes y con menor ruido visual.
+
+    Dashboard:
+        “Resumen ejecutivo” ahora aparece antes del pipeline.
+        KPIs, ingresos y fuentes tienen prioridad visual.
+        Pipeline separado visualmente como segunda capa.
+        Asistente IA cerrado por defecto.
+        Asistente convertido en drawer bajo demanda.
+        Mensaje inicial reducido a una orientación breve.
+        Botones iconográficos con etiquetas accesibles.
+
+    Sidebar:
+        Secciones colapsables para reducir densidad.
+        Módulos existentes conservados.
+        Canales, CRM y configuración siguen accesibles.
+        Mejor alineación con el modo claro.
+
+    Navbar privado:
+        Acciones de baja frecuencia agrupadas en “Más”.
+        Idioma, reset de demo y sitio público dejaron de competir con la acción principal.
+        Marca duplicada ocultada en escritorio para liberar espacio.
+
+Verificaciones realizadas correctamente:
+
+    npm run lint
+    npm run build
+    npm run smoke:navigation
+    npm run smoke:credentials
+    git diff --check
+    Revisión visual del sitio público.
+    Revisión visual del dashboard autenticado.
+    Workflow Start application activo sin errores nuevos.
+
+El proyecto está listo para publicar.
+Worked for 6 minutes
+Publish
+Domain
+Available
+.replit.app
+Who can access your app
+PublicAnyone on the internet with the URL
+Checkpoint made 6 minutes ago
+Attached Image
+Attached Image
+Attached Image
+
+comparalos
+Free
+4 minutes ago
+Visual comparison of designs
+Visual comparison of designs
+
+Sí. Las tres capturas representan niveles y objetivos bastante distintos:
+Aspecto	Captura 1: CRM para agentes	Captura 2: Español	Captura 3: ClientumCRM
+Tipo de pantalla	Landing page de producto	Selector de idioma/estado	Dashboard operativo
+Estilo	Oscuro, editorial, premium	Minimalista y funcional	Claro, empresarial, denso
+Jerarquía	Una idea principal por sección	Una acción puntual	Muchas acciones visibles simultáneamente
+Navegación	Muy reducida	No aplica	Sidebar + navbar + filtros + acciones
+Densidad	Baja, mucho espacio vacío	Muy baja	Alta, orientada a productividad
+Color	Negro, gris, blanco y verde	Blanco con azul	Blanco, azul, verde, violeta y ámbar
+Sensación	Producto moderno para una audiencia técnica	Estado/configuración	Herramienta completa para operar ventas
+Captura 1 frente a Clientum
+
+La primera captura comunica mejor una identidad de producto moderna:
+
+    Header extremadamente simple.
+    Una promesa clara: “The CRM built for Agents”.
+    Mucho espacio negativo.
+    Producto mostrado temprano, sin explicar demasiadas funciones antes.
+    Secciones cortas y fáciles de escanear.
+    Pocos colores y un único acento verde.
+    La interfaz parece un producto especializado, no un sistema empresarial genérico.
+
+Clientum, en cambio, comunica amplitud funcional:
+
+    El sidebar muestra muchos módulos.
+    El dashboard tiene KPIs, pipeline, gráfico, fuentes y asistente.
+    La información es útil, pero compite por atención.
+    La sensación es más cercana a un CRM tradicional completo que a una herramienta enfocada en agentes.
+
+Captura 2
+
+La segunda captura no es comparable a nivel de página. Es un componente aislado:
+
+    Muy buena claridad.
+    Estado “Activo” visible.
+    Bordes suaves y poco ruido.
+    El texto “Español / España / Latinoamérica” es más accesible que usar sólo una bandera.
+
+Su lección aplicable a Clientum es mantener controles pequeños, con estado explícito y sin elementos decorativos innecesarios.
+Captura 3 frente a la versión actual
+
+La tercera captura parece corresponder a la versión anterior del dashboard:
+
+    El pipeline aparece antes que el resumen.
+    El asistente IA ocupa una columna permanente.
+    El sidebar está completamente expandido.
+    Hay más competencia entre marca, filtros, Copilot, idioma, sitio público y creación de negocios.
+
+En la versión que acabamos de implementar:
+
+    El resumen ejecutivo aparece antes del pipeline.
+    El asistente comienza cerrado y se abre como drawer.
+    Las acciones secundarias están dentro de “Más”.
+    Las secciones del sidebar pueden colapsarse.
+    El header público es más simple.
+    La página pública usa una promesa más directa y un CTA principal único.
+
+Qué conviene tomar de la primera captura
+
+Sin cambiar Clientum al modo oscuro, tomaría estas decisiones visuales:
+
+    Más espacio entre bloques del dashboard.
+    Menos colores simultáneos, reservando azul para acciones y verde para estados positivos.
+    Títulos más editoriales y menos descriptivos.
+    Una línea narrativa por pantalla:
+        qué está pasando,
+        qué requiere atención,
+        cuál es el siguiente paso.
+    Mostrar el producto antes en el sitio público, como ya hicimos con el preview interactivo.
+    Reducir aún más la exposición inicial de módulos secundarios.
+    Usar más superficies cálidas y neutras, en lugar de convertir cada bloque en una tarjeta con un tratamiento visual diferente.
+
+Conclusión
+
+La primera captura es mejor como referencia de branding, landing page y jerarquía visual.
+La tercera es mejor como referencia de cobertura funcional de un CRM.
+La segunda aporta una lección puntual de simplicidad y estados claros.
+
+No recomendaría convertir Clientum en una copia oscura de la primera. Mantendría el modo claro y su orientación operativa, pero adoptaría su disciplina visual: menos elementos simultáneos, más narrativa, más espacio y una identidad más enfocada.
+Worked for 22 seconds
+Checkpoint made 4 minutes ago
+
+https://github.com/trycompai/crm comparalo con este replit
+Free
+2 minutes ago
+Evaluating GitHub comparison
+Evaluating GitHub comparison
+
+Voy a comparar el repositorio de GitHub con el estado real de este Replit en tres capas: producto/UI, arquitectura/código y funcionalidades. Primero revisaré la documentación del repositorio y luego contrastaré esos hallazgos con el código actual.
+4 actions
+
+Ya confirmé que el repositorio es mucho más reciente y tiene una arquitectura distinta: es un monorepo Turborepo/Bun con Next.js, NestJS, Prisma, Better Auth y un agente persistente. Voy a completar la comparación con su README y contrastarla con la estructura real de este Replit, para separar diferencias visuales de diferencias de producto y de ingeniería.
+6 actions
+Worked for 24 seconds
+
+You've reached your daily free quota limit. It will reset at 12:00 AM UTC.
