@@ -145,7 +145,6 @@ export const MODULE_CREDENTIALS: ModuleCredentialDefinition[] = [
   { id: 'aiAssistant', label: 'Asistente Gemini 3.6', group: 'Inteligencia artificial', description: 'Copilot, resúmenes y asistencia generativa.', fields: [], note: 'Usa GEMINI_API_KEY de plataforma.' },
   { id: 'gtmStrategy', label: 'Estrategias GTM', group: 'Inteligencia artificial', description: 'Planes go-to-market generados con IA.', fields: [], note: 'Usa GEMINI_API_KEY de plataforma.' },
   { id: 'sdrOutreach', label: 'Agente SDR Outreach', group: 'Inteligencia artificial', description: 'Prospección y outreach asistido por IA.', fields: WHATSAPP, note: 'La IA y el proveedor de email son de plataforma; WhatsApp pertenece a la empresa.' },
-  { id: 'payments', label: 'Cobros MercadoPago', group: 'Operaciones & sistema', description: 'Preferencias, pagos y webhooks de Mercado Pago.', fields: MERCADOPAGO },
   { id: 'tiendaDigital', label: 'Tienda Digital WhatsApp', group: 'Operaciones & sistema', description: 'Catálogo, conversaciones y cobros.', fields: [...WHATSAPP, ...MERCADOPAGO] },
   { id: 'campusLMS', label: 'Campus Academia LMS', group: 'Operaciones & sistema', description: 'Cursos, alumnos y contenidos.', fields: [], note: 'La implementación actual no necesita credenciales externas.' },
   { id: 'workflows', label: 'Workflows & Flujos', group: 'Operaciones & sistema', description: 'Automatizaciones y proveedores conectados.', fields: [], note: 'Las credenciales se configuran dentro de cada conexión para mantener el alcance mínimo.' },
@@ -217,9 +216,6 @@ const PLATFORM_CONFIGURATIONS: Record<string, PlatformConfiguration[]> = {
     platform('GEMINI_API_KEY', 'Gemini API Key', 'server-secret', 'Clave compartida de IA, solo backend.'),
     platform('RESEND_API_KEY', 'Resend API Key', 'server-secret', 'Proveedor de email de plataforma.'),
     platform('SENDGRID_API_KEY', 'SendGrid API Key', 'server-secret', 'Proveedor alternativo de email.'),
-  ],
-  payments: [
-    platform('MERCADOPAGO_ENVIRONMENT', 'Mercado Pago Environment', 'public-config', 'Sandbox o producción, controlado por la plataforma.'),
   ],
   tiendaDigital: [
     platform('MERCADOPAGO_ENVIRONMENT', 'Mercado Pago Environment', 'public-config', 'Sandbox o producción, controlado por la plataforma.'),

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useClerk } from '@clerk/react';
 import { User, Mail, Shield, Key, LogOut, CheckCircle2, X, Camera, Lock, Building } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
 
 export const UserProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { currentUser, updateCurrentUser, logout, showToast } = useCRM();
+  const { signOut } = useClerk();
 
   const [name, setName] = useState(currentUser.name);
   const [email, setEmail] = useState(currentUser.email);
@@ -190,7 +192,8 @@ export const UserProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }
               <span className="text-[11px] text-slate-400">Finaliza tu sesión actual en este dispositivo.</span>
             </div>
             <button
-              onClick={() => {
+              onClick={async () => {
+                await signOut();
                 logout();
                 onClose();
                 showToast('Has cerrado sesión correctamente', 'info');

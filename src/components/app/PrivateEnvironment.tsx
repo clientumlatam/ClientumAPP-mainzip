@@ -47,6 +47,7 @@ import { AICopilotModal } from '../ai/AICopilotModal';
 import { AuthModal } from '../auth/AuthModal';
 import { UserProfileModal } from '../auth/UserProfileModal';
 import { WebmailInboxView } from '../webmail/WebmailInboxView';
+import { PlatformBillingView } from '../billing/PlatformBillingView';
 import { MessagesView } from '../messages/MessagesView';
 import { ComposeEmailModal } from '../webmail/ComposeEmailModal';
 import { FeatureHubView } from '../features/FeatureHubView';
@@ -103,7 +104,7 @@ const MainContent: React.FC = () => {
         {activeTab === 'gtmStrategy' && <PowerSuiteView defaultModule="gtm" />}
         {activeTab === 'sdrOutreach' && <PowerSuiteView defaultModule="sdr" />}
         {activeTab === 'adCopy' && <PowerSuiteView defaultModule="adcopy" />}
-        {activeTab === 'payments' && <PowerSuiteView defaultModule="mercadopago" />}
+        {activeTab === 'payments' && <PlatformBillingView />}
         {activeTab === 'clientPortal' && <PowerSuiteView defaultModule="portal" />}
         {activeTab === 'seoSuite' && <PowerSuiteView defaultModule="seo" />}
         {activeTab === 'webDev' && <PowerSuiteView defaultModule="webdev" />}

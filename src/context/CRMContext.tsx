@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Activity,
@@ -76,13 +76,6 @@ import {
   INITIAL_EXPENSES,
 } from '../data/erpInitialData';
 import { isPrivateAppPath, navigateEnvironment } from '../lib/navigation';
-import {
-  auth,
-  firebaseSignOut,
-  isLiveFirebaseReady,
-  subscribeToAuthState,
-} from '../firebase';
-
 export interface ToastMessage {
   id: string;
   message: string;
@@ -136,7 +129,7 @@ interface CRMContextType {
   setIsPublicSiteVisible: (visible: boolean) => void;
   openPublicSite: () => void;
   exitToPublicSite: () => void;
-  enterApp: () => void;
+  enterApp: (force?: boolean) => void;
   isAuthenticated: boolean;
   setIsAuthenticated: (auth: boolean) => void;
   isAuthReady: boolean;
@@ -150,6 +143,7 @@ interface CRMContextType {
   login: (email: string, pass: string) => void;
   register: (name: string, email: string, pass: string, company: string) => void;
   logout: () => void;
+  syncClerkAuth: (identity: { id: string; email: string; name: string; avatar?: string | null } | null) => void;
   resetPassword: (email: string) => void;
   
   // CRUD
@@ -558,18 +552,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    try {
-      // A browser flag is only acceptable for the local demo fallback.
-      // Configured Firebase must restore a verified session instead.
-      if (isLiveFirebaseReady) return false;
-      return sessionStorage.getItem('clientum_is_authenticated') === 'true' ||
-        localStorage.getItem('clientum_is_authenticated') === 'true';
-    } catch (e) {
-      return false;
-    }
-  });
-  const [isAuthReady, setIsAuthReady] = useState(!isLiveFirebaseReady);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
@@ -612,39 +596,33 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  useEffect(() => {
-    if (!isLiveFirebaseReady) {
+  const syncClerkAuth = useCallback((identity: { id: string; email: string; name: string; avatar?: string | null } | null) => {
+    if (!identity) {
+      setIsAuthenticated(false);
       setIsAuthReady(true);
+      setIsCrmRemoteReady(false);
       return;
     }
 
-    return subscribeToAuthState((firebaseUser) => {
-      if (!firebaseUser) {
-        setIsAuthenticated(false);
-        setIsAuthReady(true);
-        return;
-      }
+    const matchingUser = users.find(
+      (user) => user.email.toLowerCase() === identity.email.toLowerCase(),
+    );
+    const restoredUser: User = {
+      ...(matchingUser || USERS[0]),
+      id: identity.id,
+      email: identity.email || matchingUser?.email || USERS[0].email,
+      name: identity.name || matchingUser?.name || identity.email.split('@')[0] || 'Usuario Clientum',
+      avatar: identity.avatar || matchingUser?.avatar || USERS[0].avatar,
+    };
 
-      const matchingUser = users.find(
-        (user) => user.email.toLowerCase() === (firebaseUser.email || '').toLowerCase(),
-      );
-      const restoredUser: User = {
-        ...(matchingUser || USERS[0]),
-        id: firebaseUser.uid,
-        email: firebaseUser.email || matchingUser?.email || USERS[0].email,
-        name: firebaseUser.displayName || matchingUser?.name || firebaseUser.email?.split('@')[0] || 'Usuario Clientum',
-        avatar: firebaseUser.photoURL || matchingUser?.avatar || USERS[0].avatar,
-      };
-
-      setCurrentUser(restoredUser);
-      try {
-        localStorage.setItem('clientum_crm_current_user', JSON.stringify(restoredUser));
-      } catch {
-        // Storage can be disabled by the browser; the in-memory session remains valid.
-      }
-      setIsAuthenticated(true);
-      setIsAuthReady(true);
-    });
+    setCurrentUser(restoredUser);
+    try {
+      localStorage.setItem('clientum_crm_current_user', JSON.stringify(restoredUser));
+    } catch {
+      // Storage can be disabled by the browser; the in-memory session remains valid.
+    }
+    setIsAuthenticated(true);
+    setIsAuthReady(true);
   }, [users]);
 
   // PostgreSQL is the source of truth for the core CRM entities. The local
@@ -791,8 +769,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setComposeEmailDefaults(null);
   };
 
-  const enterApp = () => {
-    if (!isAuthenticated) {
+  const enterApp = (force = false) => {
+    if (!isAuthenticated && !force) {
       setIsAuthModalOpen(true);
       return;
     }
@@ -823,29 +801,19 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const login = (email: string, _pass?: string) => {
     const found = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    const firebaseUser = isLiveFirebaseReady ? auth.currentUser : null;
     const userToSet = found || {
-      id: firebaseUser?.uid || 'usr-' + Date.now(),
+      id: 'usr-' + Date.now(),
       name: email.split('@')[0].replace('.', ' ').replace(/^./, (c) => c.toUpperCase()),
       email,
       role: 'Administrador',
-      avatar: firebaseUser?.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
     };
-    const authenticatedUser = firebaseUser
-      ? {
-          ...userToSet,
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || userToSet.name,
-          email: firebaseUser.email || userToSet.email,
-          avatar: firebaseUser.photoURL || userToSet.avatar,
-        }
-      : userToSet;
-    setCurrentUser(authenticatedUser);
+    setCurrentUser(userToSet);
     
     try {
-      localStorage.setItem('clientum_crm_current_user', JSON.stringify(authenticatedUser));
+      localStorage.setItem('clientum_crm_current_user', JSON.stringify(userToSet));
       sessionStorage.setItem('clientum_is_authenticated', 'true');
-      if (!isLiveFirebaseReady) localStorage.setItem('clientum_is_authenticated', 'true');
+      localStorage.setItem('clientum_is_authenticated', 'true');
       sessionStorage.setItem('clientum_view_mode', 'app');
     } catch (error) {
       console.warn('Storage access denied', error);
@@ -860,9 +828,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const register = (name: string, email: string, _pass?: string, _company?: string) => {
     const newUser: User = {
-      id: isLiveFirebaseReady && auth.currentUser?.uid
-        ? auth.currentUser.uid
-        : 'usr-' + Date.now(),
+      id: 'usr-' + Date.now(),
       name,
       email,
       role: 'Administrador',
@@ -887,7 +853,6 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
-    void firebaseSignOut();
     setIsAuthenticated(false);
     setGmailAccessToken(null);
     try {

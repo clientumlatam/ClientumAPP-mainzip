@@ -1,138 +1,149 @@
 # Integraciones y configuración del runtime
 
-Este documento refleja el estado del código actual de ClientumCRM. No es un
-catálogo de proveedores ni una promesa de cuotas gratuitas. Los precios,
-límites, requisitos de verificación y nombres de los planes cambian; deben
-confirmarse en la documentación oficial de cada proveedor antes de activar
-una cuenta.
+Este documento describe únicamente integraciones que el código consume o que
+están explícitamente preparadas para conectarse. No es un catálogo de
+proveedores ni una promesa de cuotas, precios o planes gratuitos.
 
 ## Estado actual
 
-| Integración | Estado en el runtime | Configuración principal |
+| Integración | Estado | Configuración |
 | :--- | :--- | :--- |
-| Google Gemini | Activa, como capacidad de plataforma | `GEMINI_API_KEY` |
-| Firebase Authentication | Activa si existe configuración pública válida | `VITE_FIREBASE_*` |
-| Firebase Analytics | Opcional; se inicializa solo cuando Firebase está listo | `VITE_FIREBASE_*` |
-| PostgreSQL | Activa | `DATABASE_URL` o variables `PG*` |
+| Clerk | Autenticación principal de usuarios | `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` |
+| Neon PostgreSQL | Persistencia multi-tenant | `NEON_DATABASE_URL` |
+| Mercado Pago | Facturación de suscripciones de usuarios de Clientum | `PLATFORM_MERCADOPAGO_ACCESS_TOKEN`, `PLATFORM_MERCADOPAGO_WEBHOOK_SECRET`, `APP_URL` |
+| Google Gemini | Capacidad de IA de plataforma | `GEMINI_API_KEY` |
 | SMTP/Nodemailer | Activa cuando el SMTP está configurado | `SMTP_*`, `MAIL_FROM_*` |
-| Google Places | Activa para prospección cuando el workspace tiene una clave | `GOOGLE_MAPS_SERVER_API_KEY` |
-| Mercado Pago | Activa para checkout cuando el workspace tiene credenciales y PostgreSQL | Credenciales por workspace + `APP_URL` |
-| Meta WhatsApp Webhook | Parcial: validación de challenge y firma | `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` |
+| Google Places | Prospección B2B server-side | Credencial del workspace `GOOGLE_MAPS_SERVER_API_KEY` |
+| Meta WhatsApp Webhook | Parcial: challenge y firma entrante | `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` |
+| Firebase | Legacy, en proceso de retiro | `VITE_FIREBASE_*` |
 
-Las siguientes referencias aparecen en el inventario o en la interfaz, pero no
-son conexiones activas del runtime: Apify, Hunter.io, Resend, SendGrid,
-Cloudflare API/D1/R2, Slack, Google Calendar, AFIP, Shopify, n8n, Make,
-Zapier y PostHog. No agregues sus variables suponiendo que eso habilita el
-servicio.
+La aplicación no usa Firebase Firestore como base de datos del CRM. Las
+referencias a Apify, Hunter.io, Resend, SendGrid, Cloudflare API/D1/R2, Slack,
+Google Calendar, AFIP, Shopify, n8n, Make, Zapier y PostHog son catálogo o
+roadmap; agregar una variable no conecta esos servicios.
 
-## 1. Google Gemini
+## 1. Clerk: autenticación de usuarios
 
-El backend usa el SDK oficial `@google/genai`. La clave de plataforma se lee
-únicamente en el servidor mediante `GEMINI_API_KEY`; no se expone al navegador
-ni se guarda como credencial de un workspace.
+Clerk es la identidad única de la plataforma. El backend valida la sesión con
+`@clerk/express` y usa el `userId` de Clerk como propietario de la cuenta y de
+los registros de facturación. El frontend debe usar el estado de sesión de
+Clerk; no se deben crear sesiones paralelas con Firebase, localStorage o
+contraseñas propias.
 
-Se utiliza en endpoints de IA para:
+En producción se monta el proxy de Clerk en:
 
-- Copilot y generación de contenido.
-- Estrategias GTM y textos publicitarios.
-- Sugerencias de objetivos.
-- Categorización de gastos.
-- Transcripción de audio.
-- Funciones de agente y asistente público.
+```text
+/api/__clerk
+```
 
-El servidor prueba modelos compatibles mediante una lista de fallback. Entre
-los modelos configurados actualmente se encuentran `gemini-3.7-flash`,
-`gemini-flash-latest` y, para transcripción, `gemini-2.5-flash`. No se debe
-documentar un modelo como garantía de disponibilidad del proveedor.
+El proxy solo se activa en producción. En desarrollo Clerk utiliza su Frontend
+API de desarrollo directamente.
 
 ### Configuración
+
+Las claves de Clerk administrado por Replit se provisionan desde la
+configuración de autenticación del workspace. No se deben copiar al
+repositorio, pedir por chat ni exponer en una variable `VITE_*` salvo la clave
+pública que el SDK necesita:
+
+```env
+CLERK_SECRET_KEY=
+CLERK_PUBLISHABLE_KEY=
+VITE_CLERK_PUBLISHABLE_KEY=
+```
+
+La clave secreta solo se consume en el backend. Las rutas protegidas rechazan
+peticiones sin una sesión Clerk válida en producción.
+
+Fuente: [Clerk Auth en Replit](https://docs.replit.com/hosting/authentication/clerk-auth).
+
+## 2. Neon PostgreSQL
+
+Neon es la base de datos remota para los tenants, el CRM y la facturación de
+la plataforma. La cadena completa se guarda como un Secret de Replit y nunca
+se escribe en código, documentación o logs:
+
+```env
+NEON_DATABASE_URL=
+```
+
+El servidor prioriza `NEON_DATABASE_URL`. `DATABASE_URL` y las variables
+`PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD` y `PGDATABASE` quedan como
+compatibilidad para entornos administrados por Replit.
+
+Al arrancar, el servidor ejecuta las migraciones SQL versionadas. La
+migración de facturación de la plataforma crea:
+
+```text
+clientum_platform_billing_checkouts
+```
+
+Esa tabla está vinculada al `clerk_user_id`, no a las credenciales de un
+workspace. Las consultas deben seguir siendo parametrizadas y cualquier
+operación multi-tenant debe derivar el usuario desde Clerk.
+
+## 3. Mercado Pago: solo suscripciones de Clientum
+
+Este flujo cobra a los usuarios de la plataforma por sus planes de Clientum.
+No debe reutilizarse para cobrar a los clientes de cada empresa ni aceptar un
+Access Token enviado desde el navegador.
+
+### Endpoints
+
+```text
+GET  /api/billing/plans
+GET  /api/billing/status
+POST /api/billing/mercadopago/checkout
+POST /api/billing/mercadopago/webhook
+```
+
+El cliente envía únicamente el `planId`. El servidor mantiene la lista
+permitida de planes y sus importes, crea la preferencia en Mercado Pago y
+guarda el checkout en Neon. Nunca se acepta un importe arbitrario proveniente
+del navegador.
+
+### Secrets de plataforma
+
+```env
+PLATFORM_MERCADOPAGO_ACCESS_TOKEN=
+PLATFORM_MERCADOPAGO_WEBHOOK_SECRET=
+APP_URL=
+PLATFORM_PLAN_STARTER_ARS=14900
+PLATFORM_PLAN_GROWTH_ARS=29900
+PLATFORM_PLAN_SCALE_ARS=59900
+```
+
+`APP_URL` debe ser una URL pública HTTPS para que Mercado Pago pueda volver a
+la aplicación y entregar notificaciones. Si se configura
+`PLATFORM_MERCADOPAGO_WEBHOOK_SECRET`, el webhook valida la firma HMAC antes de
+consultar el pago en la API oficial.
+
+Los endpoints antiguos `/api/payments/*` y la credencial
+`MERCADOPAGO_ACCESS_TOKEN` pertenecen al módulo legacy de cobros por workspace
+y están deshabilitados con `410 Gone`. La interfaz de suscripciones debe usar
+únicamente `/api/billing/*`.
+
+Fuente: [Mercado Pago Developers](https://www.mercadopago.com/developers/en/docs).
+
+## 4. Google Gemini
+
+La clave de plataforma se lee únicamente en el servidor mediante
+`GEMINI_API_KEY`. No se expone al navegador ni se guarda como credencial de un
+workspace.
 
 ```env
 GEMINI_API_KEY=
 ```
 
-Si la variable falta, está vacía o contiene un placeholder, la aplicación no
-debe reportar la integración como lista. Los endpoints que necesitan IA
-devuelven su respuesta de configuración o fallback explícito.
+Si falta, está vacía o es un placeholder, los endpoints de IA deben responder
+un estado explícito de configuración en lugar de afirmar que Gemini está
+conectado.
 
-Fuente oficial: [Google AI for Developers](https://ai.google.dev/).
+Fuente: [Google AI for Developers](https://ai.google.dev/).
 
-## 2. Firebase Authentication y Analytics
+## 5. SMTP/Nodemailer
 
-Firebase se usa en el cliente para:
-
-- Inicio de sesión con Google, Facebook y LinkedIn cuando los proveedores
-  están habilitados.
-- Registro e inicio de sesión por email y contraseña.
-- Recuperación de contraseña.
-- Escucha del estado de autenticación.
-- Analytics opcional cuando el navegador lo soporta.
-
-El proyecto no usa Firebase Firestore como base de datos de CRM. La
-persistencia del servidor usa PostgreSQL.
-
-La configuración `VITE_FIREBASE_*` es configuración pública del cliente, no una
-clave secreta. El servidor usa la configuración de Firebase para validar
-tokens Bearer en producción. Si la configuración pública está incompleta,
-Firebase no se inicializa y el modo demo solo está permitido durante el
-desarrollo.
-
-### Configuración
-
-```env
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
-VITE_FIREBASE_MEASUREMENT_ID=
-```
-
-Restringe la API key desde Firebase/Google Cloud por dominio y APIs. Nunca
-coloques una clave privada de Firebase en una variable `VITE_*`.
-
-Fuentes oficiales:
-
-- [Firebase Authentication](https://firebase.google.com/docs/auth)
-- [Firebase Analytics](https://firebase.google.com/docs/analytics)
-
-## 3. PostgreSQL
-
-El backend crea un pool con `pg`. Acepta una URL completa o la configuración
-`PG*` que proporciona el entorno administrado:
-
-```env
-DATABASE_URL=
-# Alternativa administrada:
-PGHOST=
-PGPORT=5432
-PGUSER=
-PGPASSWORD=
-PGDATABASE=
-```
-
-Neon PostgreSQL es compatible, pero no es un requisito del código. También se
-acepta cualquier PostgreSQL administrado que exponga una conexión válida.
-Cuando no hay PostgreSQL, algunas funciones persistentes —por ejemplo el
-estado de pagos y el vault de credenciales— no están disponibles. El fallback
-local de credenciales es solo para desarrollo y no debe usarse como
-almacenamiento multi-tenant.
-
-## 4. Email transaccional por SMTP
-
-El envío se implementa con Nodemailer. No existe un cliente nativo de Brevo,
-Resend, SendGrid o Gmail en el runtime: cualquiera de esos proveedores solo
-puede usarse si ofrece un endpoint SMTP compatible con la configuración.
-
-Endpoints:
-
-- `GET /api/email/status`: informa si el transporte está configurado sin
-  devolver la contraseña.
-- `POST /api/email/send`: valida destinatarios, asunto y cuerpo y envía el
-  correo desde el remitente configurado.
-
-### Configuración
+El envío de correo ocurre desde el backend:
 
 ```env
 SMTP_HOST=
@@ -143,70 +154,31 @@ MAIL_FROM_ADDRESS=
 MAIL_FROM_NAME=ClientumCRM
 ```
 
-El servidor considera SMTP no configurado si falta alguno de los valores
-requeridos o si contiene un placeholder. El puerto `465` usa TLS directo;
-los demás puertos usan la configuración normal del transporte.
+La contraseña SMTP es un Secret. No se debe guardar en el navegador ni en la
+configuración de credenciales de un workspace si el correo es una capacidad
+compartida de la plataforma.
 
-## 5. Google Places para prospección B2B
+## 6. Google Places
 
-La ruta de prospección usa `places.googleapis.com/v1/places:searchText` desde
-el backend. La clave server-side pertenece al workspace y no se devuelve al
-navegador:
+La prospección usa la API server-side de Google Places. La clave pertenece al
+workspace y se cifra antes de persistirse:
 
-```env
-GOOGLE_MAPS_SERVER_API_KEY=
+```text
+GOOGLE_MAPS_SERVER_API_KEY
 ```
 
-El catálogo también contempla `VITE_GOOGLE_MAPS_API_KEY` para mapas del
-navegador. Esa clave es opcional, debe estar restringida por dominio y no debe
-reutilizarse para llamadas server-to-server.
+No se debe reutilizar una clave restringida únicamente para navegador en
+llamadas server-to-server. Las variables `VITE_GOOGLE_MAPS_*` no habilitan la
+API del backend.
 
-Fuente oficial: [Google Places API](https://developers.google.com/maps/documentation/places/web-service).
-
-## 6. Mercado Pago
-
-El backend implementa:
-
-- Consulta de estado en `GET /api/payments/status`.
-- Creación de preferencias de checkout en `POST /api/payments/checkout`.
-- Recepción de notificaciones en
-  `POST /api/payments/mercadopago/webhook`.
-
-Las credenciales son por workspace y se guardan cifradas en el backend. La
-integración necesita PostgreSQL para registrar checkouts. Para crear la URL de
-notificación también necesita una `APP_URL` pública válida.
-
-```env
-APP_URL=
-```
-
-Configura estos campos desde **Configuración → Cobros MercadoPago**, no en un
-archivo versionado:
-
-- `MERCADOPAGO_ACCESS_TOKEN`
-- `MERCADOPAGO_WEBHOOK_SECRET`
-- `MERCADOPAGO_PUBLIC_KEY`
-
-El checkout y la consulta del estado usan actualmente
-`MERCADOPAGO_ACCESS_TOKEN`. `MERCADOPAGO_WEBHOOK_SECRET` y
-`MERCADOPAGO_PUBLIC_KEY` forman parte del catálogo de credenciales y quedan
-reservados para validaciones o flujos de cliente que todavía no están
-conectados en el servidor.
-
-El entorno sandbox/producción se debe seleccionar según la configuración
-vigente de la cuenta y del proveedor. No documentes tokens de ejemplo como
-si fueran válidos.
-
-Fuente oficial: [Mercado Pago Developers](https://www.mercadopago.com/developers/en/docs).
+Fuente: [Google Places API](https://developers.google.com/maps/documentation/places/web-service).
 
 ## 7. Meta WhatsApp Webhook
 
-El runtime actual implementa la verificación del webhook y la validación de
-la firma `X-Hub-Signature-256`:
+El runtime actual implementa:
 
-- `GET /api/whatsapp/webhook`: responde al challenge de Meta.
-- `POST /api/whatsapp/webhook`: acepta únicamente payloads firmados de
-  `whatsapp_business_account`.
+- `GET /api/whatsapp/webhook` para el challenge de Meta.
+- `POST /api/whatsapp/webhook` para payloads firmados.
 
 Configuración de plataforma:
 
@@ -215,55 +187,51 @@ WHATSAPP_APP_SECRET=
 WHATSAPP_WEBHOOK_VERIFY_TOKEN=
 ```
 
-El catálogo por workspace también reserva estos campos para una futura
-integración outbound:
+Los campos `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` y
+`WHATSAPP_BUSINESS_ACCOUNT_ID` del catálogo por workspace no significan que el
+envío outbound esté conectado. Esa capacidad requiere un cliente de Meta
+implementado y probado.
 
-- `WHATSAPP_ACCESS_TOKEN`
-- `WHATSAPP_APP_SECRET`
-- `WHATSAPP_PHONE_NUMBER_ID`
-- `WHATSAPP_BUSINESS_ACCOUNT_ID`
-- `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
+Fuente: [WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api/).
 
-La presencia de esos campos no significa que el envío outbound o un gateway
-Baileys/QR estén conectados. El proyecto no debe documentarlos como
-funcionalidades activas hasta que exista un cliente de Meta o Baileys en el
-servidor.
+## 8. Separación de secretos
 
-Fuente oficial: [WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api/).
-
-## 8. Credenciales por workspace y seguridad
-
-La separación actual es:
-
-1. **Secrets de plataforma**: variables administradas por el entorno para
-   Gemini, SMTP, Firebase público, PostgreSQL y validación de webhooks.
-2. **Credenciales del workspace**: se capturan desde la configuración del
-   módulo, se cifran server-side y se resuelven usando la identidad verificada
-   del usuario.
-3. **API keys internas**: se almacenan como hashes en un vault separado y el
-   valor completo solo se muestra al crearlas.
+1. **Secrets de plataforma:** Clerk, Neon, Mercado Pago de Clientum, Gemini,
+   SMTP y webhooks compartidos.
+2. **Credenciales de workspace:** proveedores que pertenecen a una empresa
+   usuaria; se cifran server-side y se resuelven con el tenant autenticado.
+3. **API keys internas:** se almacenan como hashes y el valor completo solo se
+   muestra al crearlas.
 
 Reglas obligatorias:
 
-- No incluir valores reales en `.env.example`, documentación, logs o
-  respuestas de API.
-- No guardar credenciales de proveedores en `localStorage`.
+- No incluir valores reales en `.env.example`, documentación, logs o respuestas.
+- No guardar tokens de proveedores en `localStorage`.
 - No exponer claves server-side mediante `VITE_*`.
-- No considerar una integración lista solo porque existe una variable; hay que
-  validar que no sea un placeholder y que el proveedor responda.
-- En producción, las rutas protegidas requieren una identidad Firebase
-  verificada.
+- No considerar una integración lista solo porque existe una variable.
+- En producción, derivar la identidad exclusivamente de Clerk.
+- Mantener separados `PLATFORM_MERCADOPAGO_*` y cualquier credencial de
+  Mercado Pago perteneciente a un workspace.
 
-## 9. Cuotas y planes gratuitos
+## 9. Qué retirar o dejar para después
 
-Este repositorio no fija cuotas gratuitas de proveedores. Los límites
-dependen del país, cuenta, modelo, método de pago, verificación y cambios
-comerciales del proveedor. Antes de poner una integración en producción:
+Para reducir superficie y mantenimiento, la recomendación es:
 
-1. Confirma el plan y los límites en la documentación oficial.
-2. Configura alertas o límites de gasto cuando el proveedor lo permita.
-3. Prueba errores de cuota, credenciales inválidas y timeouts.
-4. Verifica que la aplicación muestre un estado no configurado en lugar de
-   afirmar que el proveedor está conectado.
+- Retirar Firebase Auth cuando se confirme que todos los usuarios ingresan
+  correctamente con Clerk.
+- Retirar el módulo legacy de cobros por workspace si el producto solo cobrará
+  suscripciones de Clientum.
+- No activar todavía Cloudflare, Slack, AFIP, Shopify, WhatsApp outbound ni
+  proveedores de IA adicionales sin un caso de uso y una ruta funcional.
+- Mantener Neon, Clerk, Mercado Pago, Gemini y SMTP como el núcleo inicial.
 
-&copy; 2026 Clientum Latam. Todos los derechos reservados.
+Antes de publicar cobros:
+
+1. Configura los Secrets de Clerk, Neon y Mercado Pago.
+2. Ejecuta la migración SQL en el entorno correspondiente.
+3. Configura el webhook de Mercado Pago con la URL pública de producción.
+4. Prueba aprobado, pendiente, rechazado y webhook duplicado.
+5. Verifica que un usuario nunca pueda leer el checkout de otro usuario.
+
+Este repositorio no fija cuotas gratuitas ni precios permanentes de terceros.
+Confirma límites y requisitos directamente con cada proveedor.

@@ -1,4 +1,6 @@
 import React from 'react';
+import { ClerkProvider, SignIn, SignUp, useUser } from '@clerk/react';
+import { publishableKeyFromHost } from '@clerk/react/internal';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { CRMProvider, useCRM } from './context/CRMContext';
 import { ToastContainer } from './components/common/ToastContainer';
@@ -10,6 +12,62 @@ import { isPrivateAppPath } from './lib/navigation';
 const PrivateEnvironment = React.lazy(() => import('./components/app/PrivateEnvironment').then((module) => ({
   default: module.PrivateEnvironment,
 })));
+
+const viteEnv = (import.meta as ImportMeta & { env?: Record<string, string> }).env || {};
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  viteEnv.VITE_CLERK_PUBLISHABLE_KEY,
+);
+const clerkProxyUrl = viteEnv.VITE_CLERK_PROXY_URL;
+const clerkAppearance = {
+  variables: {
+    colorPrimary: '#2563eb',
+    colorForeground: '#e2e8f0',
+    colorMutedForeground: '#94a3b8',
+    colorBackground: '#111520',
+    colorInput: '#0a0c12',
+    colorInputForeground: '#f8fafc',
+    colorNeutral: '#334155',
+    borderRadius: '0.75rem',
+  },
+  elements: {
+    cardBox: 'bg-[#111520] rounded-2xl w-[440px] max-w-full overflow-hidden',
+    card: '!shadow-none !border-0 !bg-transparent',
+    footer: '!shadow-none !border-0 !bg-transparent',
+    formButtonPrimary: 'bg-blue-600 hover:bg-blue-500',
+  },
+};
+
+const ClerkAuthBridge: React.FC = () => {
+  const { isLoaded, user } = useUser();
+  const {
+    syncClerkAuth,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+    enterApp,
+  } = useCRM();
+  const lastUserId = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isLoaded) return;
+    const userId = user?.id || null;
+    if (lastUserId.current === userId) return;
+    lastUserId.current = userId;
+    syncClerkAuth(user ? {
+      id: user.id,
+      email: user.primaryEmailAddress?.emailAddress || '',
+      name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Usuario Clientum',
+      avatar: user.imageUrl,
+    } : null);
+
+    if (user && isAuthModalOpen && lastUserId.current !== user.id) {
+      setIsAuthModalOpen(false);
+      enterApp(true);
+    }
+  }, [isAuthModalOpen, isLoaded, setIsAuthModalOpen, syncClerkAuth, user]);
+
+  return null;
+};
 
 const AppContent: React.FC = () => {
   const { resolvedTheme } = useTheme();
@@ -88,10 +146,21 @@ const AppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="light">
-      <CRMProvider>
-        <AppContent />
-      </CRMProvider>
-    </ThemeProvider>
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      proxyUrl={clerkProxyUrl}
+      appearance={clerkAppearance}
+      localization={{
+        signIn: { start: { title: 'Inicia sesión en ClientumCRM' } },
+        signUp: { start: { title: 'Crea tu cuenta de ClientumCRM' } },
+      }}
+    >
+      <ThemeProvider defaultTheme="light">
+        <CRMProvider>
+          <ClerkAuthBridge />
+          <AppContent />
+        </CRMProvider>
+      </ThemeProvider>
+    </ClerkProvider>
   );
 }

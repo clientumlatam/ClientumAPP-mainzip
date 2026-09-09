@@ -1,5 +1,4 @@
 import { User } from '../types';
-import { auth, isLiveFirebaseReady } from '../firebase';
 
 export const getClientumUserHeaders = (user?: Pick<User, 'id' | 'role'>): Record<string, string> => {
   let userId = user?.id;
@@ -25,15 +24,9 @@ export const getClientumJsonHeaders = (user?: Pick<User, 'id' | 'role'>): Record
 });
 
 export const getClientumAuthHeaders = async (user?: Pick<User, 'id' | 'role'>): Promise<Record<string, string>> => {
-  const headers = getClientumUserHeaders(user);
-  if (isLiveFirebaseReady && auth?.currentUser) {
-    try {
-      headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
-    } catch {
-      // The backend will reject the request in production if no valid token exists.
-    }
-  }
-  return headers;
+  // Clerk authenticates browser requests with the same-origin session cookie.
+  // The user header remains only as a development aid for local smoke tests.
+  return getClientumUserHeaders(user);
 };
 
 export const getClientumAuthJsonHeaders = async (user?: Pick<User, 'id' | 'role'>): Promise<Record<string, string>> => ({
@@ -54,17 +47,13 @@ export interface ClientumAccountBootstrap {
  * its display name when the registration form supplied a company name.
  *
  * Authentication should not be lost if PostgreSQL is temporarily unavailable:
- * Firebase remains the source of truth for the session and the CRM bootstrap
- * can retry tenant initialization on the next authenticated request.
+ * Clerk remains the source of truth for the session and the CRM bootstrap can
+ * retry tenant initialization on the next authenticated request.
  */
 export const bootstrapClientumAccount = async (profile: {
   name?: string;
   company?: string;
 }): Promise<ClientumAccountBootstrap> => {
-  if (!isLiveFirebaseReady || !auth?.currentUser) {
-    return { success: true };
-  }
-
   try {
     const response = await fetch('/api/account/bootstrap', {
       method: 'POST',

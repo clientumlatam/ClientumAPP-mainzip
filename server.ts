@@ -8,7 +8,13 @@ import { Pool } from "pg";
 import dotenv from "dotenv";
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import firebaseAppletConfig from "./firebase-applet-config.json";
+import { clerkMiddleware, getAuth } from "@clerk/express";
+import { publishableKeyFromHost } from "@clerk/shared/keys";
+import {
+  CLERK_PROXY_PATH,
+  clerkProxyMiddleware,
+  getClerkProxyHost,
+} from "./server/middlewares/clerkProxyMiddleware";
 import {
   CRM_ENTITY_TYPES,
   claimDueAgentTasks,
@@ -34,12 +40,21 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
+app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(express.json({
   limit: "10mb",
   verify: (request, _response, buffer) => {
     (request as express.Request & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
   },
 }));
+app.use(
+  clerkMiddleware((req) => ({
+    publishableKey: publishableKeyFromHost(
+      getClerkProxyHost(req) ?? "",
+      process.env.CLERK_PUBLISHABLE_KEY,
+    ),
+  })),
+);
 
 type UserCredentialRecord = {
   updatedAt: string;
@@ -58,7 +73,7 @@ type ServerApiKeyRecord = {
 };
 type ServerApiKeyVault = Record<string, ServerApiKeyRecord[]>;
 
-const databaseUrl = process.env.DATABASE_URL?.trim();
+const databaseUrl = (process.env.NEON_DATABASE_URL || process.env.DATABASE_URL)?.trim();
 const hasPostgresEnvironment = Boolean(
   process.env.PGHOST && process.env.PGUSER && process.env.PGDATABASE,
 );
@@ -289,29 +304,10 @@ async function ensureTenantMembership(userId: string): Promise<string> {
 }
 
 async function getRequestUserId(req: express.Request): Promise<string | null> {
-  const authorization = String(req.header("authorization") || "");
-  const bearerToken = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
-  const firebaseApiKey = (process.env.VITE_FIREBASE_API_KEY?.trim() || firebaseAppletConfig.apiKey).trim();
+  const clerkUserId = getAuth(req).userId;
+  if (clerkUserId && /^[a-zA-Z0-9:_-]{1,120}$/.test(clerkUserId)) return clerkUserId;
 
-  if (bearerToken && firebaseApiKey) {
-    try {
-      const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(firebaseApiKey)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: bearerToken }),
-      });
-      if (response.ok) {
-        const payload = await response.json() as { users?: Array<{ localId?: string }> };
-        const verifiedUserId = payload.users?.[0]?.localId;
-        if (verifiedUserId && /^[a-zA-Z0-9:_-]{1,120}$/.test(verifiedUserId)) return verifiedUserId;
-      }
-    } catch (error: any) {
-      console.warn("Firebase ID token validation failed:", error?.message || error);
-    }
-  }
-
-  // The app has a deliberate local/demo auth fallback. It is never accepted
-  // in production, where Firebase verification above is mandatory.
+  // Keep a local-only fallback for preview smoke tests without a Clerk session.
   if (process.env.NODE_ENV !== "production") {
     const userId = String(req.header("x-clientum-user-id") || "").trim();
     return /^[a-zA-Z0-9:_-]{1,120}$/.test(userId) ? userId : null;
@@ -320,7 +316,7 @@ async function getRequestUserId(req: express.Request): Promise<string | null> {
 }
 
 const requireProductionAuthentication: express.RequestHandler = async (req, res, next) => {
-  // Provider webhooks cannot carry the browser's Firebase session cookie.
+  // Provider webhooks cannot carry the browser's Clerk session cookie.
   // They are acknowledged by the dedicated webhook handler and then verified
   // against Mercado Pago using the tenant-scoped credential.
   if (req.path === "/mercadopago/webhook") {
@@ -340,12 +336,21 @@ const requireProductionAuthentication: express.RequestHandler = async (req, res,
   next();
 };
 
-// AI and outbound email can consume paid provider credentials. Keep the local
-// demo usable, but require a Firebase-verified identity in production.
+// Protected application APIs require a Clerk session in production.
 app.use(
-  ["/api/account", "/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit", "/api/payments"],
+  ["/api/account", "/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit", "/api/payments", "/api/billing"],
   requireProductionAuthentication,
 );
+
+// Platform billing is the only active payment surface. The older
+// tenant/customer checkout routes remain in the codebase for migration
+// reference, but cannot be used by the running application.
+app.use("/api/payments", (_req, res) => {
+  res.status(410).json({
+    error: "El cobro por workspace fue retirado. Usa /api/billing para suscripciones de Clientum.",
+    code: "LEGACY_WORKSPACE_PAYMENTS_DISABLED",
+  });
+});
 
 const ADMIN_ROLE_NAMES = new Set([
   "admin",
@@ -716,6 +721,203 @@ app.post("/api/payments/mercadopago/webhook", async (req, res) => {
     );
   } catch (error: any) {
     console.error("Mercado Pago webhook processing error:", error?.message || error);
+  }
+});
+
+const PLATFORM_PLANS = {
+  starter: { name: "Starter", amount: Number(process.env.PLATFORM_PLAN_STARTER_ARS) || 14900 },
+  growth: { name: "Growth", amount: Number(process.env.PLATFORM_PLAN_GROWTH_ARS) || 29900 },
+  scale: { name: "Scale", amount: Number(process.env.PLATFORM_PLAN_SCALE_ARS) || 59900 },
+} as const;
+
+type PlatformPlanId = keyof typeof PLATFORM_PLANS;
+
+app.get("/api/billing/plans", (_req, res) => {
+  res.json({
+    provider: "mercadopago",
+    currency: "ARS",
+    plans: Object.entries(PLATFORM_PLANS).map(([id, plan]) => ({ id, ...plan })),
+  });
+});
+
+function isPlatformPlanId(value: unknown): value is PlatformPlanId {
+  return typeof value === "string" && value in PLATFORM_PLANS;
+}
+
+function getPlatformMercadoPagoToken(): string | undefined {
+  const token = process.env.PLATFORM_MERCADOPAGO_ACCESS_TOKEN?.trim();
+  return token && !isPlaceholderValue(token) ? token : undefined;
+}
+
+function verifyPlatformMercadoPagoWebhook(req: express.Request, paymentId: string): boolean {
+  const secret = process.env.PLATFORM_MERCADOPAGO_WEBHOOK_SECRET?.trim();
+  if (!secret || !paymentId) return !secret;
+  const signature = String(req.header("x-signature") || "");
+  const requestId = String(req.header("x-request-id") || "");
+  const ts = signature.match(/(?:^|,)ts=([^,]+)/)?.[1];
+  const v1 = signature.match(/(?:^|,)v1=([^,]+)/)?.[1];
+  if (!ts || !v1 || !requestId) return false;
+  const manifest = `id:${paymentId};request-id:${requestId};ts:${ts};`;
+  const expected = createHmac("sha256", secret).update(manifest).digest("hex");
+  return expected.length === v1.length && timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+}
+
+app.post("/api/billing/mercadopago/webhook", async (req, res) => {
+  res.sendStatus(200);
+  if (!credentialDatabase) return;
+
+  const paymentId = getPaymentIdFromWebhook(req);
+  if (!paymentId || !verifyPlatformMercadoPagoWebhook(req, paymentId)) return;
+
+  try {
+    const accessToken = getPlatformMercadoPagoToken();
+    if (!accessToken) return;
+    const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!paymentResponse.ok) return;
+    const payment = await paymentResponse.json() as {
+      id?: string;
+      status?: string;
+      external_reference?: string;
+    };
+    if (!payment.external_reference) return;
+    const status = payment.status === "approved"
+      ? "approved"
+      : payment.status === "cancelled"
+        ? "cancelled"
+        : payment.status === "rejected"
+          ? "rejected"
+          : "pending";
+    await credentialDatabase.query(
+      `UPDATE clientum_platform_billing_checkouts
+       SET status = $1, provider_payment_id = $2, updated_at = NOW()
+       WHERE external_reference = $3`,
+      [status, String(payment.id || paymentId), payment.external_reference],
+    );
+  } catch (error: any) {
+    console.error("Platform Mercado Pago webhook error:", error?.message || error);
+  }
+});
+
+app.get("/api/billing/status", async (req, res) => {
+  const userId = await getRequestUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: "A verified user session is required." });
+    return;
+  }
+  if (!credentialDatabase) {
+    res.status(503).json({ error: "Neon PostgreSQL is required for platform billing.", code: "POSTGRES_NOT_CONFIGURED" });
+    return;
+  }
+
+  try {
+    const result = await credentialDatabase.query(
+      `SELECT id AS "checkoutId", plan_id AS "planId", amount, currency, status,
+              init_point AS "checkoutUrl", created_at AS "createdAt"
+       FROM clientum_platform_billing_checkouts
+       WHERE clerk_user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [userId],
+    );
+    res.json({
+      configured: Boolean(getPlatformMercadoPagoToken()),
+      checkouts: result.rows,
+    });
+  } catch (error: any) {
+    console.error("Platform billing status error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo cargar el estado de facturación." });
+  }
+});
+
+app.post("/api/billing/mercadopago/checkout", async (req, res) => {
+  const userId = await getRequestUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: "A verified user session is required." });
+    return;
+  }
+  if (!credentialDatabase) {
+    res.status(503).json({ error: "Neon PostgreSQL is required for platform billing.", code: "POSTGRES_NOT_CONFIGURED" });
+    return;
+  }
+  const planId = req.body?.planId;
+  const payerEmail = typeof req.body?.payerEmail === "string" ? req.body.payerEmail.trim().slice(0, 160) : "";
+  if (!isPlatformPlanId(planId) || (payerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail))) {
+    res.status(400).json({ error: "Selecciona un plan válido y un correo válido." });
+    return;
+  }
+
+  const accessToken = getPlatformMercadoPagoToken();
+  if (!accessToken) {
+    res.status(503).json({
+      error: "Configura PLATFORM_MERCADOPAGO_ACCESS_TOKEN en Replit Secrets.",
+      code: "PLATFORM_PAYMENT_PROVIDER_NOT_CONFIGURED",
+    });
+    return;
+  }
+
+  try {
+    const plan = PLATFORM_PLANS[planId];
+    const externalReference = `clientum_platform_${userId}_${Date.now()}_${randomBytes(5).toString("hex")}`;
+    const appUrl = getPublicAppUrl();
+    const preferencePayload: Record<string, unknown> = {
+      items: [{
+        title: `ClientumCRM ${plan.name}`,
+        quantity: 1,
+        unit_price: plan.amount,
+        currency_id: "ARS",
+      }],
+      external_reference: externalReference,
+    };
+    if (payerEmail) preferencePayload.payer = { email: payerEmail };
+    if (appUrl) {
+      preferencePayload.back_urls = {
+        success: `${appUrl}/app?billing=success`,
+        failure: `${appUrl}/app?billing=failure`,
+        pending: `${appUrl}/app?billing=pending`,
+      };
+      preferencePayload.auto_return = "approved";
+      preferencePayload.notification_url = `${appUrl}/api/billing/mercadopago/webhook`;
+    }
+
+    const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(preferencePayload),
+    });
+    const payload = await response.json().catch(() => ({})) as {
+      id?: string;
+      init_point?: string;
+      sandbox_init_point?: string;
+      message?: string;
+    };
+    if (!response.ok || !payload.init_point) {
+      console.error("Platform Mercado Pago checkout failed:", response.status, payload.message || "unknown provider error");
+      res.status(502).json({ error: "Mercado Pago rechazó la creación del checkout.", code: "PLATFORM_PAYMENT_PROVIDER_ERROR" });
+      return;
+    }
+
+    const checkoutId = `platform-checkout-${Date.now()}-${randomBytes(5).toString("hex")}`;
+    await credentialDatabase.query(
+      `INSERT INTO clientum_platform_billing_checkouts
+        (id, clerk_user_id, plan_id, external_reference, preference_id, amount, currency, payer_email, init_point)
+       VALUES ($1, $2, $3, $4, $5, $6, 'ARS', $7, $8)`,
+      [checkoutId, userId, planId, externalReference, payload.id || null, plan.amount, payerEmail || null, payload.init_point],
+    );
+    res.status(201).json({
+      checkoutId,
+      planId,
+      checkoutUrl: payload.init_point,
+      sandboxCheckoutUrl: payload.sandbox_init_point || null,
+      status: "pending",
+    });
+  } catch (error: any) {
+    console.error("Platform billing checkout error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo crear el checkout de Mercado Pago." });
   }
 });
 
@@ -2431,6 +2633,8 @@ async function main() {
       // only Firebase's public client configuration to the Vite bundle; all
       // server credentials remain backend-only.
       define: {
+        "import.meta.env.VITE_CLERK_PUBLISHABLE_KEY": JSON.stringify(process.env.VITE_CLERK_PUBLISHABLE_KEY || ""),
+        "import.meta.env.VITE_CLERK_PROXY_URL": JSON.stringify(process.env.VITE_CLERK_PROXY_URL || ""),
         "import.meta.env.VITE_FIREBASE_API_KEY": JSON.stringify(process.env.VITE_FIREBASE_API_KEY || ""),
         "import.meta.env.VITE_FIREBASE_AUTH_DOMAIN": JSON.stringify(process.env.VITE_FIREBASE_AUTH_DOMAIN || ""),
         "import.meta.env.VITE_FIREBASE_PROJECT_ID": JSON.stringify(process.env.VITE_FIREBASE_PROJECT_ID || ""),

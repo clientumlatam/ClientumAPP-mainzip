@@ -228,7 +228,7 @@ export const Sidebar: React.FC = () => {
       label: 'Operaciones & Finanzas',
       items: [
         { id: 'erp', label: 'Facturación AFIP & ERP', icon: Receipt, badge: 'CAE', badgeColor: 'bg-blue-100 text-blue-800 font-bold', subItems: [{ id: 'operations', label: 'Operaciones internas', icon: FolderKanban, badge: 'Nuevo', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' }] },
-        { id: 'payments', label: 'Cobros & Pagos', icon: CreditCard },
+        { id: 'payments', label: 'Suscripción Clientum', icon: CreditCard, configurable: false },
         { id: 'tiendaDigital', label: 'Tienda Digital WhatsApp', icon: Store, badge: 'Catálogo', badgeColor: 'bg-emerald-100 text-emerald-800' },
         { id: 'campusLMS', label: 'Campus Academia LMS', icon: GraduationCap, badge: 'LMS', badgeColor: 'bg-purple-100 text-purple-800' },
       ],
