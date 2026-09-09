@@ -14,3 +14,17 @@ mtime_ms = 1788901299545
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:e0bf8051-ea9b-4af5-ad47-3d4305e7a9f7/19b6965f-88e6-4dc7-8464-74dca1e44f44/144630dd-b513-4cc2-b3be-e05c517f6b53"
 storage_version_token = "1788901311470144"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "XD_fr2CqopZ9fVm1KcC39"
+uri = "file://plan_consolidado_proyecto.md"
+type = "text"
+title = "Plan consolidado del proyecto"
+description = "Roadmap integrado de CRM, captación web, integraciones, ERP/e-commerce y portal de clientes."
+logical_id = "144a4823-e190-4d97-a2d7-59ffd928230a"
+content_hash = "sha256:d4ab422b7f726e8510e1f95dac4d65671137a50fff2449aee6bbab3451e5fc95"
+size = 14062
+mtime_ms = 1788931687972
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:5c19525b-ae7c-40b7-87d3-f638dff005b5/144a4823-e190-4d97-a2d7-59ffd928230a/4c2e4137-a06e-4039-8f10-fc90bf032f3e"
+storage_version_token = "1788931700752790"
+content_type = "text/markdown"

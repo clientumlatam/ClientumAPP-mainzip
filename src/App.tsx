@@ -46,12 +46,16 @@ const ClerkAuthBridge: React.FC = () => {
     setIsAuthModalOpen,
     enterApp,
   } = useCRM();
-  const lastUserId = React.useRef<string | null>(null);
+  // `undefined` means Clerk has not reported its first auth state yet.
+  // `null` is a valid, loaded state meaning that the visitor is signed out.
+  const lastUserId = React.useRef<string | null | undefined>(undefined);
 
   React.useEffect(() => {
     if (!isLoaded) return;
     const userId = user?.id || null;
-    if (lastUserId.current === userId) return;
+    const authStateChanged = lastUserId.current !== userId;
+    const previousUserId = lastUserId.current;
+    if (!authStateChanged) return;
     lastUserId.current = userId;
     syncClerkAuth(user ? {
       id: user.id,
@@ -60,7 +64,7 @@ const ClerkAuthBridge: React.FC = () => {
       avatar: user.imageUrl,
     } : null);
 
-    if (user && isAuthModalOpen && lastUserId.current !== user.id) {
+    if (user && isAuthModalOpen && previousUserId !== user.id) {
       setIsAuthModalOpen(false);
       enterApp(true);
     }
