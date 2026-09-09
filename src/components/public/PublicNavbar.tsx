@@ -326,6 +326,38 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                             <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Forecast, tasa de conversión y analítica por vendedor.</p>
                           </div>
                         </button>
+
+                        <button
+                          onClick={() => handleNavClick('/producto/integraciones')}
+                          className="p-2.5 rounded-xl hover:bg-cyan-50/70 border border-transparent hover:border-cyan-200 transition-all text-left flex items-start gap-2.5 group cursor-pointer"
+                        >
+                          <div className="p-2 rounded-lg bg-cyan-50 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white transition-colors shrink-0">
+                            <Map className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-xs text-slate-900 group-hover:text-cyan-700 flex items-center gap-1.5">
+                              Prospección Maps IA
+                              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-cyan-100 text-cyan-700 font-bold">B2B</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Encontrá empresas, enriquecé datos e importá prospectos al CRM.</p>
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={() => handleNavClick('/producto/integraciones')}
+                          className="p-2.5 rounded-xl hover:bg-orange-50/70 border border-transparent hover:border-orange-200 transition-all text-left flex items-start gap-2.5 group cursor-pointer"
+                        >
+                          <div className="p-2 rounded-lg bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-colors shrink-0">
+                            <Store className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-xs text-slate-900 group-hover:text-orange-700 flex items-center gap-1.5">
+                              Portal & Canales Digitales
+                              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-orange-100 text-orange-700 font-bold">B2B</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Portal de clientes, widgets, KDS y pedidos de e-commerce conectados.</p>
+                          </div>
+                        </button>
                       </div>
                     </div>
 

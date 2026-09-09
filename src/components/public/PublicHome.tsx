@@ -31,6 +31,7 @@ import {
 import { CLIENTUM_BROCHURE_METRICS, CLIENTUM_PILLARS, CLIENTUM_SOLUTIONS } from '../../data/clientumCatalog';
 import { useCRM } from '../../context/CRMContext';
 import { PublicRoutePath } from './publicRoutes';
+import { PublicPlatformMap } from './PublicPlatformMap';
 
 interface PublicHomeProps {
   onNavigate: (path: PublicRoutePath) => void;
@@ -568,7 +569,14 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 5. CLIENTUM VS TRADITIONAL CRM COMPARISON */}
+      {/* 5. PLATFORM MAP FROM THE CLIENTUMOS DOCUMENTATION */}
+      <PublicPlatformMap
+        onNavigate={onNavigate}
+        onOpenWizard={onOpenWizard}
+        onOpenSimulator={onOpenSimulator}
+      />
+
+      {/* 6. CLIENTUM VS TRADITIONAL CRM COMPARISON */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="p-8 sm:p-12 rounded-3xl bg-slate-50 border border-slate-200 space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -621,7 +629,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 6. REAL CLIENT CASE STUDIES & TESTIMONIALS */}
+      {/* 7. REAL CLIENT CASE STUDIES & TESTIMONIALS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -689,7 +697,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 7. FREQUENTLY ASKED QUESTIONS */}
+      {/* 8. FREQUENTLY ASKED QUESTIONS */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10 space-y-2">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -730,7 +738,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 8. FINAL HIGH-CONVERSION CTA */}
+      {/* 9. FINAL HIGH-CONVERSION CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="p-8 sm:p-14 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-center space-y-6 shadow-xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold border border-white/20">
