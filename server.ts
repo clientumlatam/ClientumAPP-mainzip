@@ -1561,6 +1561,55 @@ async function callGeminiWithRetry(
   throw lastError;
 }
 
+// Public WhatsApp simulator endpoint. This route intentionally stays outside
+// the authenticated AI middleware: it is used by the public marketing site.
+app.post("/api/public-agent", async (req, res) => {
+  const message = typeof req.body?.message === "string" ? req.body.message.trim().slice(0, 2000) : "";
+  const requestedRole = typeof req.body?.role === "string" ? req.body.role.trim() : "ventas";
+  const role = ["ventas", "soporte", "turnos"].includes(requestedRole) ? requestedRole : "ventas";
+
+  if (!message) {
+    res.status(400).json({ error: "message is required" });
+    return;
+  }
+
+  const fallbackReplies: Record<string, string> = {
+    ventas: "¡Excelente consulta! Nuestros planes comerciales incluyen CRM, WhatsApp y facturación AFIP con CAE. ¿Te gustaría coordinar una demo de 15 minutos?",
+    soporte: "Para ayudarte mejor, contame qué módulo estás usando y qué mensaje o comportamiento observás. Un asesor de Clientum puede acompañarte paso a paso.",
+    turnos: "¡Con gusto! Tenemos cupos disponibles de lunes a viernes a las 10:00 hs y 15:00 hs (hora de Argentina). ¿Qué día te resulta más conveniente?",
+  };
+
+  const platformKey = await getUserGeminiKey(null);
+  if (isApiKeyPresent(platformKey)) {
+    try {
+      const response = await callGeminiWithRetry(
+        {
+          apiKey: platformKey,
+          contents: message,
+          config: {
+            systemInstruction:
+              `Eres el asistente público de ClientumCRM para Latinoamérica. Atiendes el modo ${role}. ` +
+              "Responde siempre en español, con tono cordial, breve y comercialmente útil. " +
+              "No inventes integraciones, precios exactos, disponibilidad ni datos personales. " +
+              "Si la consulta requiere acceso a una cuenta, deriva a un asesor humano. Responde solo con el texto para el chat.",
+            temperature: 0.4,
+          },
+        },
+        ["gemini-2.5-flash", "gemini-flash-latest"],
+      );
+      const reply = typeof response.text === "string" ? response.text.trim().slice(0, 4000) : "";
+      if (reply) {
+        res.json({ reply });
+        return;
+      }
+    } catch (error: any) {
+      console.warn("Public agent API unavailable, using fallback:", error?.message || error);
+    }
+  }
+
+  res.json({ reply: fallbackReplies[role] });
+});
+
 // 1. CRM Copilot Endpoint
 app.post("/api/ai/copilot", async (req, res) => {
   try {

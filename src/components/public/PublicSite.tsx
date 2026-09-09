@@ -175,6 +175,11 @@ export const PublicSite: React.FC = () => {
       return <PublicContactPage onNavigate={handleNavigate} />;
     }
 
+    // Keep the canonical demo alias useful for direct links and bookmarks.
+    if (currentPath === '/demo') {
+      return <PublicContactPage onNavigate={handleNavigate} />;
+    }
+
     // 13. Legal & Privacy & Terms
     if (currentPath === '/legal' || currentPath === '/terminos' || currentPath === '/privacidad') {
       const tab = currentPath === '/privacidad' ? 'privacy' : currentPath === '/terminos' ? 'sla' : 'terms';
