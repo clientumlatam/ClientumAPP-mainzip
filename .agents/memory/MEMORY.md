@@ -1,0 +1,10 @@
+- [Firebase environment propagation](firebase-env.md) — inject only public Firebase config into Vite and guard Auth/Analytics when it is unavailable.
+- [Provider configuration validation](provider-config-validation.md) — secret existence does not prove a usable value; reject documentation placeholders before enabling delivery.
+- [PostgreSQL workflow environment](postgres-runtime-config.md) — workflows may expose PG* variables without DATABASE_URL; prefer the managed PostgreSQL connection over file fallback.
+- [Workspace typecheck setup](workspace-typecheck.md) — build can work while lint is blocked by missing declared dev dependencies; restore packages before diagnosing code errors.
+- [User credential boundaries](user-credential-boundaries.md) — keep provider credentials and internal REST tokens user-scoped and separate from workspace-managed secrets.
+- [Server workflow refresh](workflow-server-restart.md) — restart the app workflow after server.ts changes; client hot reload does not guarantee the backend process has reloaded.
+- [Integration documentation status](integration-documentation-status.md) — distinguish runtime-connected providers from catalog-only modules and avoid hardcoded free-tier promises.
+- [Tenant data quality workflows](tenant-data-quality-workflows.md) — duplicate review, merge decisions, and reversible imports must remain scoped to the authenticated workspace.
+- [Portable npm lockfiles](portable-npm-lockfiles.md) — lockfiles generated inside Replit must not retain the internal package-firewall hostname before external publishing.
+- [Clerk identity bridge](clerk-identity-bridge.md) — make Clerk-to-app session sync idempotent and independent of recreated context callbacks.
