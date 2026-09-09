@@ -15,93 +15,72 @@ Documento de referencia de los menús visibles del **Dashboard privado** y del
 El dashboard se encuentra disponible para usuarios autenticados en `/app`.
 También existen aliases compatibles en `/dashboard`, `/crm` y `/erp`.
 
-### 1.1 Accesos rápidos de Ventas
-
-| Ítem | Destino / función |
-| --- | --- |
-| Notificaciones | Tareas y actividades pendientes |
-| Leads | Contactos con estado `Lead` |
-| Negocios | Pipeline comercial / oportunidades |
-| Contactos | Directorio de personas |
-| Organizaciones | Empresas y cuentas corporativas |
-| Notas | Bandeja de actividad |
-| Registros de llamadas | Bandeja de actividad y seguimiento |
-
-### 1.2 Panel de control & análisis
+### 1.1 Panel de control & análisis
 
 | Ítem | Identificador | Función |
 | --- | --- | --- |
-| Resumen Ejecutivo | `dashboard` | Pipeline de ventas y métricas clave |
-| Centro de Funciones | `featureHub` | Conecta, protege y amplía el espacio de trabajo |
-| Reportes & BI | `analytics` | Rendimiento, conversión y analítica |
+| Resumen Ejecutivo | `dashboard` | Pipeline comercial, KPIs clave y visión general |
+| Reportes & BI | `analytics` | Métricas de conversión, forecasting y analítica avanzada |
+| Centro de Funciones | `featureHub` | Explorar, activar y gestionar módulos del workspace |
 
-### 1.3 CRM & gestión de ventas
+### 1.2 Ventas & Clientes
 
-| Ítem | Identificador | Función |
-| --- | --- | --- |
-| Negocios | `opportunities` | Oportunidades comerciales en vista Kanban o tabla |
-| Empresas | `companies` | Cuentas y organizaciones |
-| Contactos | `people` | Personas, leads y contactos |
-| Tareas & Actividades | `tasks` | Seguimientos y tareas comerciales |
-| Bandeja de actividad | `activityInbox` | Notas, llamadas y eventos |
-| Calendario | `calendar` | Agenda comercial y próximos seguimientos |
-| Propuestas & Presupuestos | `propuestas` | Generación de propuestas PDF |
-| Prospección Mapa B2B | `googleMaps` | Búsqueda geolocalizada de prospectos |
-| Lead Scoring MEDDIC | `meddic` | Evaluación y calificación de oportunidades |
+| Ítem agrupado | Ítem principal | Subítems | Función |
+| --- | --- | --- | --- |
+| Contactos & Empresas | `people` | `companies` — Empresas | Directorio unificado de personas, leads y cuentas |
+| Pipeline de Negocios | `opportunities` | `meddic` — Lead Scoring MEDDIC | Oportunidades en Kanban/Tabla con calificación integrada |
+| Actividades & Agenda | `tasks` | `calendar` — Calendario; `activityInbox` — Notas y llamadas | Tareas, seguimientos, notas y llamadas |
+| Propuestas & Presupuestos | `propuestas` | — | Generación de propuestas PDF |
+| Prospección Mapa B2B | `googleMaps` | — | Búsqueda geolocalizada de prospectos |
 
-### 1.4 Comunicación & marketing
+### 1.3 Centro de Comunicación
 
-| Ítem | Identificador | Función |
-| --- | --- | --- |
-| WhatsApp CRM | `whatsapp` | Bandeja omnicanal y conversaciones en tiempo real |
-| Webmail Cloudflare | `webmail` | Bandeja de correo corporativo |
-| Mensajes | `messages` | Centro unificado de conversaciones |
-| Chatbot WhatsApp 24/7 | `chatbot` | Automatización de atención por WhatsApp |
-| Campañas Masivas | `campaigns` | Campañas y envíos comerciales |
+| Ítem agrupado | Ítem principal | Subítems | Función |
+| --- | --- | --- | --- |
+| Bandeja Omnicanal | `whatsapp` | `messages` — Mensajes; `webmail` — Webmail Cloudflare | WhatsApp, correo corporativo y mensajes en un mismo centro |
+| Bots & Atención Automática | `chatbot` | — | Configuración y supervisión del chatbot de WhatsApp |
+| Campañas Masivas | `campaigns` | — | Creación, envío y métricas de campañas |
 
-### 1.5 Ecosistema IA & automatización
+### 1.4 IA & Automatización
 
-| Ítem | Identificador | Función |
-| --- | --- | --- |
-| Asistente Gemini 1.5 | `aiAssistant` | Asistencia estratégica con IA |
-| Agent OS (14 Agentes) | `agenteOS` | Agentes especializados para ventas, soporte y operaciones |
-| Agente SDR Outreach | `sdrOutreach` | Prospección y seguimiento comercial |
-| Estrategias GTM | `gtmStrategy` | Planificación go-to-market |
-| Automatizaciones | `workflows` | Flujos, triggers y acciones automáticas |
+| Ítem agrupado | Ítem principal | Subítems | Función |
+| --- | --- | --- | --- |
+| Agentes & Copilot | `agenteOS` | `aiAssistant` — Asistente Gemini; `sdrOutreach` — Agente SDR | IA generativa, agentes autónomos y prospección |
+| Automatizaciones & Flujos | `workflows` | — | Triggers, condiciones y acciones automáticas |
+| Estrategias GTM | `gtmStrategy` | — | Planificación asistida go-to-market |
 
-### 1.6 Operaciones, pagos & e-commerce
+### 1.5 Operaciones & Finanzas
 
-| Ítem | Identificador | Función |
-| --- | --- | --- |
-| Operaciones ERP | `operations` | Operaciones internas y gestión ERP |
-| Facturación AFIP (CAE) | `erp` | Comprobantes fiscales A, B y C |
-| Cobros MercadoPago | `payments` | Checkouts y estado de pagos |
-| Tienda Digital WhatsApp | `tiendaDigital` | Catálogo y pedidos digitales |
-| Campus Academia LMS | `campusLMS` | Cursos y capacitación comercial |
+| Ítem agrupado | Ítem principal | Subítems | Función |
+| --- | --- | --- | --- |
+| Facturación AFIP & ERP | `erp` | `operations` — Operaciones internas | Comprobantes fiscales A, B y C con CAE y gestión operativa |
+| Cobros & Pagos | `payments` | — | Checkouts y estado de pagos |
+| Tienda Digital WhatsApp | `tiendaDigital` | — | Catálogo y pedidos digitales |
+| Campus Academia LMS | `campusLMS` | — | Cursos y capacitación comercial |
 
-### 1.7 Sistema, datos & configuración
+### 1.6 Sistema & Configuración
 
-| Ítem | Identificador | Función |
-| --- | --- | --- |
-| Custom Objects Studio | `customObjects` | Objetos y entidades personalizadas |
-| CSV Import & Export | `csvStudio` | Importación y exportación de datos |
-| Gestor de Dominios | `domainManager` | Dominios, DNS y configuración web |
-| Configuración General | `settings` | Integraciones, permisos, auditoría y preferencias |
+| Ítem agrupado | Ítem principal | Subítems | Función |
+| --- | --- | --- | --- |
+| Estructura de Datos | `customObjects` | `csvStudio` — Importar / Exportar CSV | Objetos personalizados y operaciones masivas de datos |
+| Gestor de Dominios | `domainManager` | — | Dominios, DNS y Cloudflare |
+| Ajustes Generales | `settings` | — | Permisos, integraciones, auditoría y preferencias |
 
-### 1.8 Acciones complementarias del dashboard
+### 1.7 Acciones globales
 
 | Acción | Ubicación |
 | --- | --- |
+| Buscar en todo el CRM | Buscador universal del sidebar / paleta `⌘K` |
 | Nuevo Registro | Botón `+` del encabezado lateral |
-| Buscar registros | Buscador / paleta de comandos `⌘K` |
+| Notificaciones | Botón de campana del topbar; abre Actividades & Agenda |
 | Clientum Copilot | Tarjeta lateral y botón superior |
-| Ver Portal Público | Acceso lateral para volver al sitio público |
-| Cuentas Clave | Acceso rápido a las primeras oportunidades |
-| Configuración de API | Disponible en módulos que requieren credenciales |
+| Ver Portal Público | Acceso lateral y menú “Más” |
+| Cuentas Clave | Acceso contextual a las primeras oportunidades |
+| Configuración de API | Botón contextual del topbar o de cada módulo |
 | Cambiar idioma | Menú “Más”: ES, EN y PT |
 | Restablecer demo | Menú “Más” |
-| Alternar Kanban / Tabla | Disponible en Negocios |
-| Exportar CSV | Disponible en Negocios |
+| Alternar Kanban / Tabla | Selector disponible en Pipeline de Negocios |
+| Exportar CSV | Acción disponible en Pipeline de Negocios |
 | Ver perfil | Pie del sidebar |
 | Cerrar sesión | Pie del sidebar |
 

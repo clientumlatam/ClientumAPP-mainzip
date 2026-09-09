@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Search,
   Plus,
+  Bell,
   Sparkles,
   Download,
   RotateCcw,
@@ -25,6 +26,7 @@ export const Navbar: React.FC = () => {
   const {
     toggleMobileSidebar,
     activeTab,
+    setActiveTab,
     viewMode,
     setViewMode,
     filterState,
@@ -67,6 +69,31 @@ export const Navbar: React.FC = () => {
         return { name: 'Calendario', count: tasks.filter((task) => task.status !== 'Completed').length, desc: 'Agenda comercial y próximos seguimientos' };
       case 'analytics':
         return { name: t('analytics') || 'Analíticas & BI', count: undefined, desc: 'Rendimiento y conversión' };
+      case 'activityInbox':
+        return { name: 'Actividades & Agenda', count: undefined, desc: 'Notas, llamadas y seguimiento comercial' };
+      case 'propuestas':
+        return { name: 'Propuestas & Presupuestos', count: undefined, desc: 'Cotizaciones y propuestas PDF' };
+      case 'googleMaps':
+      case 'mapsProspecting':
+        return { name: 'Prospección B2B', count: undefined, desc: 'Búsqueda geolocalizada de prospectos' };
+      case 'meddic':
+        return { name: 'Lead Scoring MEDDIC', count: undefined, desc: 'Evaluación y calificación de oportunidades' };
+      case 'agenteOS':
+        return { name: 'Agentes & Copilot', count: 14, desc: 'Agentes especializados y asistencia inteligente' };
+      case 'aiAssistant':
+        return { name: 'Asistente Gemini', count: undefined, desc: 'Asistencia estratégica con IA' };
+      case 'sdrOutreach':
+        return { name: 'Agente SDR Outreach', count: undefined, desc: 'Prospección y seguimiento comercial' };
+      case 'workflows':
+        return { name: 'Automatizaciones & Flujos', count: undefined, desc: 'Triggers, condiciones y acciones automáticas' };
+      case 'operations':
+        return { name: 'Operaciones internas', count: undefined, desc: 'Gestión operativa del espacio comercial' };
+      case 'payments':
+        return { name: 'Cobros & Pagos', count: undefined, desc: 'Checkouts y estado de pagos' };
+      case 'tiendaDigital':
+        return { name: 'Tienda Digital WhatsApp', count: undefined, desc: 'Catálogo y pedidos digitales' };
+      case 'campusLMS':
+        return { name: 'Campus Academia LMS', count: undefined, desc: 'Cursos y capacitación comercial' };
       case 'whatsapp':
         return { name: 'WhatsApp Omnicanal', count: 12, desc: 'Bandeja centralizada y chats en tiempo real' };
       case 'messages':
@@ -241,6 +268,22 @@ export const Navbar: React.FC = () => {
             </button>
           </div>
         )}
+
+        {/* Notifications moved out of the sidebar shortcuts and into the global topbar. */}
+        <button
+          id="navbar-notifications-btn"
+          onClick={() => setActiveTab('tasks')}
+          className="relative flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-1.5 text-slate-600 shadow-xs transition-colors hover:bg-blue-50 hover:text-blue-700"
+          title="Ver notificaciones y tareas pendientes"
+          aria-label="Ver notificaciones y tareas pendientes"
+        >
+          <Bell className="h-3.5 w-3.5" />
+          {tasks.filter((task) => task.status !== 'Completed').length > 0 && (
+            <span className="absolute -right-1 -top-1 min-w-4 rounded-full border border-white bg-amber-500 px-1 text-center text-[9px] font-bold leading-4 text-white">
+              {tasks.filter((task) => task.status !== 'Completed').length}
+            </span>
+          )}
+        </button>
 
         {/* AI Sales Copilot Button */}
         <button

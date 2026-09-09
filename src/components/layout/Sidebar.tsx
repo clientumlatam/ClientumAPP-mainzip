@@ -6,9 +6,6 @@ import {
   Building2,
   Users2,
   CheckSquare,
-  PhoneCall,
-  FileText,
-  Pin,
   BarChart3,
   Settings,
   Sparkles,
@@ -151,7 +148,6 @@ export const Sidebar: React.FC = () => {
     tasks,
     activities,
     currentUser,
-    setFilterState,
     setIsProfileModalOpen,
     setIsCommandPaletteOpen,
     openNewRecordModal,
@@ -161,7 +157,6 @@ export const Sidebar: React.FC = () => {
     showToast,
     exitToPublicSite,
     webmailEmails,
-    openComposeEmailModal,
   } = useCRM();
 
   const [configModuleId, setConfigModuleId] = useState<ActiveTab | null>(null);
@@ -338,13 +333,15 @@ export const Sidebar: React.FC = () => {
         {/* Navigation list */}
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 custom-scrollbar bg-[var(--sidebar-bg)]">
           {navigationSections.map((section) => {
-            const isCollapsed = collapsedSections[section.label] ?? false;
+            const sectionHasActiveItem = section.items.some((item) => item.id === activeTab || hasActiveDescendant(item, activeTab));
+            const storedCollapsed = collapsedSections[section.label] ?? false;
+            const isCollapsed = storedCollapsed && !sectionHasActiveItem;
             return (
             <div key={section.label} className="border-t border-[var(--sidebar-border)] pt-3 first:border-t-0 first:pt-0">
               <button
                 type="button"
                 className="w-full flex items-center justify-between px-2 pb-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-primary)] cursor-pointer"
-                onClick={() => setCollapsedSections((previous) => ({ ...previous, [section.label]: !isCollapsed }))}
+                onClick={() => setCollapsedSections((previous) => ({ ...previous, [section.label]: !storedCollapsed }))}
                 aria-expanded={!isCollapsed}
               >
                 <span>{section.label}</span>
