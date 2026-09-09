@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import {
   Home,
-  Bell,
-  Clock,
   Calendar,
   Briefcase,
   Building2,
@@ -18,6 +16,7 @@ import {
   Plus,
   Compass,
   ChevronDown,
+  ChevronRight,
   Database,
   MessageSquare,
   Receipt,
@@ -54,49 +53,87 @@ type SidebarNavItem = {
   badge?: string | number;
   badgeColor?: string;
   configurable?: boolean;
+  subItems?: SidebarNavItem[];
+  defaultExpanded?: boolean;
 };
+
+const hasActiveDescendant = (item: SidebarNavItem, activeTab: ActiveTab): boolean =>
+  item.subItems?.some((subItem) => subItem.id === activeTab || hasActiveDescendant(subItem, activeTab)) ?? false;
 
 const SidebarNavRow: React.FC<{
   item: SidebarNavItem;
   activeTab: ActiveTab;
   onNavigate: (tab: ActiveTab) => void;
   onConfig: (event: React.MouseEvent, moduleId: ActiveTab) => void;
-}> = ({ item, activeTab, onNavigate, onConfig }) => {
+  depth?: number;
+}> = ({ item, activeTab, onNavigate, onConfig, depth = 0 }) => {
   const Icon = item.icon;
-  const isActive = activeTab === item.id;
+  const hasSubItems = Boolean(item.subItems?.length);
+  const hasActiveChild = hasActiveDescendant(item, activeTab);
+  const [isExpanded, setIsExpanded] = useState(item.defaultExpanded ?? false);
+  const isActive = activeTab === item.id || hasActiveChild;
   const canConfigureCredentials = item.configurable ?? moduleNeedsUserCredentials(item.id);
+  const isSubmenuExpanded = isExpanded || hasActiveChild;
 
   return (
-    <div className="flex w-full items-center gap-1">
-      <button
-        id={`nav-item-${item.id}`}
-        onClick={() => onNavigate(item.id)}
-        className={`min-w-0 flex-1 flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer group ${
-          isActive
-            ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-950/50 border border-blue-500'
-            : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-        }`}
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
-          <span className="truncate">{item.label}</span>
-        </div>
-        {item.badge !== undefined && (
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isActive ? 'bg-blue-700 text-white border border-blue-400/30' : (item.badgeColor || 'bg-slate-800 text-slate-300 border border-slate-700')}`}>
-            {item.badge}
-          </span>
-        )}
-      </button>
-      {canConfigureCredentials && (
+    <div className={`${depth > 0 ? 'ml-2 border-l border-[var(--sidebar-border)] pl-1.5' : ''}`}>
+      <div className="flex w-full items-center gap-1">
         <button
-          type="button"
-          onClick={(event) => onConfig(event, item.id)}
-          className="shrink-0 rounded-md p-1.5 text-slate-500 opacity-0 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 focus:opacity-100 group-hover:opacity-100"
-          title={`Configurar credenciales de ${item.label}`}
-          aria-label={`Configurar credenciales de ${item.label}`}
+          id={`nav-item-${item.id}`}
+          onClick={() => onNavigate(item.id)}
+          className={`min-w-0 flex-1 flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer group ${
+            isActive
+              ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-950/50 border border-blue-500'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
+          }`}
         >
-          <KeyRound className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
+            <span className="truncate">{item.label}</span>
+          </div>
+          {item.badge !== undefined && (
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isActive ? 'bg-blue-700 text-white border border-blue-400/30' : (item.badgeColor || 'bg-slate-800 text-slate-300 border border-slate-700')}`}>
+              {item.badge}
+            </span>
+          )}
         </button>
+        {hasSubItems && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+            className={`shrink-0 rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-800/70 hover:text-slate-200 ${hasActiveChild ? 'text-blue-400' : ''}`}
+            title={isSubmenuExpanded ? `Ocultar opciones de ${item.label}` : `Mostrar opciones de ${item.label}`}
+            aria-label={isSubmenuExpanded ? `Ocultar opciones de ${item.label}` : `Mostrar opciones de ${item.label}`}
+            aria-expanded={isSubmenuExpanded}
+          >
+            {isSubmenuExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          </button>
+        )}
+        {canConfigureCredentials && (
+          <button
+            type="button"
+            onClick={(event) => onConfig(event, item.id)}
+            className="shrink-0 rounded-md p-1.5 text-slate-500 opacity-0 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 focus:opacity-100 group-hover:opacity-100"
+            title={`Configurar credenciales de ${item.label}`}
+            aria-label={`Configurar credenciales de ${item.label}`}
+          >
+            <KeyRound className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+      {hasSubItems && isSubmenuExpanded && (
+        <div className="mt-0.5 space-y-0.5">
+          {item.subItems?.map((subItem) => (
+            <SidebarNavRow
+              key={subItem.id}
+              item={subItem}
+              activeTab={activeTab}
+              onNavigate={onNavigate}
+              onConfig={onConfig}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
@@ -129,7 +166,8 @@ export const Sidebar: React.FC = () => {
 
   const [configModuleId, setConfigModuleId] = useState<ActiveTab | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
-    'Operaciones, pagos & e-commerce': true,
+    'Operaciones & Finanzas': true,
+    'Sistema & Configuración': true,
   });
 
   const unreadWebmailCount = webmailEmails ? webmailEmails.filter((e) => e.folder === 'inbox' && !e.isRead).length : 0;
@@ -144,61 +182,6 @@ export const Sidebar: React.FC = () => {
     setConfigModuleId(moduleId);
   };
 
-  const salesShortcuts = [
-    {
-      id: 'sidebar-notifications',
-      label: 'Notificaciones',
-      icon: Bell,
-      badge: tasks.filter((task) => task.status !== 'Completed').length,
-      action: () => handleNavClick('tasks'),
-    },
-    {
-      id: 'sidebar-leads',
-      label: 'Leads',
-      icon: Target,
-      badge: people.filter((person) => person.status === 'Lead').length,
-      action: () => handleNavClick('people'),
-    },
-    {
-      id: 'sidebar-deals',
-      label: 'Negocios',
-      icon: Briefcase,
-      badge: opportunities.length,
-      action: () => {
-        setFilterState((previous) => ({ ...previous, owner: 'all', stage: 'all' }));
-        handleNavClick('opportunities');
-      },
-    },
-    {
-      id: 'sidebar-contacts',
-      label: 'Contactos',
-      icon: Users2,
-      badge: people.length,
-      action: () => handleNavClick('people'),
-    },
-    {
-      id: 'sidebar-organizations',
-      label: 'Organizaciones',
-      icon: Building2,
-      badge: companies.length,
-      action: () => handleNavClick('companies'),
-    },
-    {
-      id: 'sidebar-notes',
-      label: 'Notas',
-      icon: FileText,
-      action: () => handleNavClick('activityInbox'),
-    },
-    {
-      id: 'sidebar-call-logs',
-      label: 'Registros de llamadas',
-      icon: PhoneCall,
-      action: () => {
-        handleNavClick('activityInbox');
-      },
-    },
-  ];
-
   type SidebarSection = {
     label: string;
     items: SidebarNavItem[];
@@ -209,61 +192,51 @@ export const Sidebar: React.FC = () => {
       label: 'Panel de control & análisis',
       items: [
         { id: 'dashboard', label: 'Resumen Ejecutivo', icon: Home },
-        { id: 'featureHub', label: 'Centro de Funciones', icon: ScanSearch, badge: 'Activo', badgeColor: 'bg-violet-100 text-violet-800 font-semibold' },
         { id: 'analytics', label: 'Reportes & BI', icon: BarChart3 },
+        { id: 'featureHub', label: 'Centro de Funciones', icon: ScanSearch, badge: 'Activo', badgeColor: 'bg-violet-100 text-violet-800 font-semibold' },
       ],
     },
     {
-      label: 'CRM & gestión de ventas',
+      label: 'Ventas & Clientes',
       items: [
-        { id: 'opportunities', label: 'Negocios', icon: Briefcase, badge: 'Kanban', badgeColor: 'bg-blue-100 text-blue-800' },
-        { id: 'companies', label: 'Empresas', icon: Building2 },
-        { id: 'people', label: 'Contactos', icon: Users2 },
-        { id: 'tasks', label: 'Tareas & Actividades', icon: CheckSquare, badge: tasks.filter((task) => task.status !== 'Completed').length, badgeColor: 'bg-amber-100 text-amber-800' },
-        { id: 'activityInbox', label: 'Bandeja de actividad', icon: Inbox, badge: activities.length, badgeColor: 'bg-violet-100 text-violet-800' },
-        { id: 'calendar', label: 'Calendario', icon: Calendar },
+        { id: 'people', label: 'Contactos & Empresas', icon: Users2, badge: people.length, subItems: [{ id: 'companies', label: 'Empresas', icon: Building2, badge: companies.length }] },
+        { id: 'opportunities', label: 'Pipeline de Negocios', icon: Briefcase, badge: 'Kanban', badgeColor: 'bg-blue-100 text-blue-800', subItems: [{ id: 'meddic', label: 'Lead Scoring MEDDIC', icon: Target }] },
+        { id: 'tasks', label: 'Actividades & Agenda', icon: CheckSquare, badge: tasks.filter((task) => task.status !== 'Completed').length, badgeColor: 'bg-amber-100 text-amber-800', subItems: [{ id: 'calendar', label: 'Calendario', icon: Calendar }, { id: 'activityInbox', label: 'Notas y llamadas', icon: Inbox, badge: activities.length, badgeColor: 'bg-violet-100 text-violet-800' }] },
         { id: 'propuestas', label: 'Propuestas & Presupuestos', icon: FileCheck, badge: 'PDF', badgeColor: 'bg-emerald-100 text-emerald-800' },
         { id: 'googleMaps', label: 'Prospección Mapa B2B', icon: MapPin, badge: 'Maps', badgeColor: 'bg-blue-100 text-blue-800' },
-        { id: 'meddic', label: 'Lead Scoring MEDDIC', icon: Target },
       ],
     },
     {
-      label: 'Comunicación & marketing',
+      label: 'Centro de Comunicación',
       items: [
-        { id: 'whatsapp', label: 'WhatsApp CRM', icon: MessageSquare, badge: 'LIVE', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' },
-        { id: 'webmail', label: 'Webmail Cloudflare', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'GTM', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-semibold' },
-        { id: 'messages', label: 'Mensajes', icon: MessageSquare, badge: 12, badgeColor: 'bg-blue-100 text-blue-800' },
-        { id: 'chatbot', label: 'Chatbot WhatsApp 24/7', icon: Bot },
+        { id: 'whatsapp', label: 'Bandeja Omnicanal', icon: Inbox, badge: 'LIVE', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold', subItems: [{ id: 'messages', label: 'Mensajes', icon: MessageSquare, badge: 12, badgeColor: 'bg-blue-100 text-blue-800' }, { id: 'webmail', label: 'Webmail Cloudflare', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'GTM', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-semibold' }] },
+        { id: 'chatbot', label: 'Bots & Atención Automática', icon: Bot },
         { id: 'campaigns', label: 'Campañas Masivas', icon: Send },
       ],
     },
     {
-      label: 'Ecosistema IA & automatización',
+      label: 'IA & Automatización',
       items: [
-        { id: 'aiAssistant', label: 'Asistente Gemini 1.5', icon: Sparkles },
-        { id: 'agenteOS', label: 'Agent OS (14 Agentes)', icon: Cpu, badge: 'v2', badgeColor: 'bg-blue-100 text-blue-800 font-bold' },
-        { id: 'sdrOutreach', label: 'Agente SDR Outreach', icon: Bot },
+        { id: 'agenteOS', label: 'Agentes & Copilot', icon: Cpu, badge: '14', badgeColor: 'bg-blue-100 text-blue-800 font-bold', subItems: [{ id: 'aiAssistant', label: 'Asistente Gemini', icon: Sparkles }, { id: 'sdrOutreach', label: 'Agente SDR Outreach', icon: Bot }] },
+        { id: 'workflows', label: 'Automatizaciones & Flujos', icon: Workflow },
         { id: 'gtmStrategy', label: 'Estrategias GTM', icon: Compass },
-        { id: 'workflows', label: 'Automatizaciones', icon: Workflow },
       ],
     },
     {
-      label: 'Operaciones, pagos & e-commerce',
+      label: 'Operaciones & Finanzas',
       items: [
-        { id: 'operations', label: 'Operaciones ERP', icon: FolderKanban, badge: 'Nuevo', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' },
-        { id: 'erp', label: 'Facturación AFIP (CAE)', icon: Receipt, badge: 'WS AFIP', badgeColor: 'bg-blue-100 text-blue-800 font-bold' },
-        { id: 'payments', label: 'Cobros MercadoPago', icon: CreditCard },
+        { id: 'erp', label: 'Facturación AFIP & ERP', icon: Receipt, badge: 'CAE', badgeColor: 'bg-blue-100 text-blue-800 font-bold', subItems: [{ id: 'operations', label: 'Operaciones internas', icon: FolderKanban, badge: 'Nuevo', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' }] },
+        { id: 'payments', label: 'Cobros & Pagos', icon: CreditCard },
         { id: 'tiendaDigital', label: 'Tienda Digital WhatsApp', icon: Store, badge: 'Catálogo', badgeColor: 'bg-emerald-100 text-emerald-800' },
-        { id: 'campusLMS', label: 'Campus Academia LMS', icon: GraduationCap, badge: 'LMS UI', badgeColor: 'bg-purple-100 text-purple-800' },
+        { id: 'campusLMS', label: 'Campus Academia LMS', icon: GraduationCap, badge: 'LMS', badgeColor: 'bg-purple-100 text-purple-800' },
       ],
     },
     {
-      label: 'Sistema, datos & configuración',
+      label: 'Sistema & Configuración',
       items: [
-        { id: 'customObjects', label: 'Custom Objects Studio', icon: Database },
-        { id: 'csvStudio', label: 'CSV Import & Export', icon: FileSpreadsheet },
+        { id: 'customObjects', label: 'Estructura de Datos', icon: Database, subItems: [{ id: 'csvStudio', label: 'Importar / Exportar CSV', icon: FileSpreadsheet }] },
         { id: 'domainManager', label: 'Gestor de Dominios', icon: Globe },
-        { id: 'settings', label: 'Configuración General', icon: Settings },
+        { id: 'settings', label: 'Ajustes Generales', icon: Settings },
       ],
     },
   ];
@@ -341,7 +314,7 @@ export const Sidebar: React.FC = () => {
           >
             <span className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 transition-colors" />
-              <span>Buscar registros...</span>
+              <span>Buscar en todo el CRM...</span>
             </span>
             <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-700">
               ⌘K
@@ -364,37 +337,6 @@ export const Sidebar: React.FC = () => {
 
         {/* Navigation list */}
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 custom-scrollbar bg-[var(--sidebar-bg)]">
-          {/* Sales-focused shortcuts mirror the compact navigation used by modern CRM workspaces. */}
-          <div className="border-b border-[var(--sidebar-border)] pb-3">
-            <div className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--sidebar-text-muted)] flex items-center justify-between">
-              <span>Ventas</span>
-              <Pin className="w-3 h-3 text-[var(--sidebar-text-muted)]" />
-            </div>
-            <nav className="space-y-0.5">
-              {salesShortcuts.map((shortcut) => {
-                const ShortcutIcon = shortcut.icon;
-                return (
-                  <button
-                    key={shortcut.id}
-                    id={shortcut.id}
-                    onClick={shortcut.action}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--sidebar-text-secondary)] hover:text-[var(--sidebar-hover-text)] hover:bg-[var(--sidebar-hover-bg)] transition-colors cursor-pointer group"
-                  >
-                    <span className="flex items-center gap-2.5 min-w-0">
-                      <ShortcutIcon className="w-4 h-4 shrink-0 text-[var(--sidebar-text-muted)] group-hover:text-[var(--text-brand)] transition-colors" />
-                      <span className="truncate">{shortcut.label}</span>
-                    </span>
-                    {shortcut.badge !== undefined && (
-                      <span className="text-[10px] px-1.5 py-0.2 rounded-md font-mono bg-[var(--bg-muted)] text-[var(--sidebar-text-muted)] border border-[var(--sidebar-border)]">
-                        {shortcut.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-          
           {navigationSections.map((section) => {
             const isCollapsed = collapsedSections[section.label] ?? false;
             return (
