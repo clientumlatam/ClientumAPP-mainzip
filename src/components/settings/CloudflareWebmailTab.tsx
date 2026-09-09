@@ -131,9 +131,9 @@ export const CloudflareWebmailTab: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Cloudflare Worker & D1 Database
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                Cloudflare Worker & D1 — configuración pendiente
               </span>
               <span className="text-xs text-slate-400 font-mono">info@clientum.com.ar</span>
             </div>
@@ -141,7 +141,7 @@ export const CloudflareWebmailTab: React.FC = () => {
               Centro de Enrutamiento de Email & Webmail Autónomo
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
-              Arquitectura de recepción directa mediante Cloudflare Email Routing hacia el Worker{' '}
+              Arquitectura prevista de recepción mediante Cloudflare Email Routing hacia el Worker{' '}
               <span className="font-mono text-blue-300 bg-[#1e2434] px-1.5 py-0.5 rounded">webmail-clientum</span> con persistencia en base de datos Cloudflare D1. Resuelve el descarte por deduplicación de Gmail y permite operar tu propio webmail en{' '}
               <a
                 href="https://webmail.clientum.com.ar"
@@ -184,39 +184,39 @@ export const CloudflareWebmailTab: React.FC = () => {
         <div className="bg-[#121620] border border-[#1e2434] rounded-xl p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">1. Enrutamiento Cloudflare</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
           <div className="text-sm font-bold text-white">Send to a Worker</div>
           <div className="text-[11px] text-slate-400">
-            Regla activa: <span className="text-emerald-400 font-mono">info@clientum.com.ar</span> &rarr; <span className="text-blue-300 font-mono">webmail-clientum</span>
+            Regla documentada: <span className="text-amber-300 font-mono">info@clientum.com.ar</span> &rarr; <span className="text-blue-300 font-mono">webmail-clientum</span>
           </div>
         </div>
 
         <div className="bg-[#121620] border border-[#1e2434] rounded-xl p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">2. Base de Datos D1</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
               <Database className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-sm font-bold text-white">webmail-db</div>
+          <div className="text-sm font-bold text-white">webmail-db — demo</div>
           <div className="text-[11px] text-slate-400">
-            Tablas <span className="font-mono text-slate-300">emails, attachments, contacts</span> inicializadas con schema.sql
+            La bandeja actual usa datos locales; D1 todavía no está conectado en runtime
           </div>
         </div>
 
         <div className="bg-[#121620] border border-[#1e2434] rounded-xl p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">3. Dominio & Encriptación</span>
-            <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-              <Lock className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-sm font-bold text-white">webmail.clientum.com.ar</div>
+          <div className="text-sm font-bold text-white">webmail.clientum.com.ar — NXDOMAIN</div>
           <div className="text-[11px] text-slate-400">
-            SSL Cloudflare Edge • SPF / DKIM 100% Validado
+            Falta publicar el hostname antes de poder validar SSL
           </div>
         </div>
       </div>
@@ -235,7 +235,7 @@ export const CloudflareWebmailTab: React.FC = () => {
           </div>
 
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            Envía un correo de prueba simulado desde una dirección externa para verificar el procesamiento del Worker y su registro en la base de datos D1:
+            Simula un correo localmente para revisar la interfaz. No envía mensajes ni escribe en Cloudflare/D1:
           </p>
 
           <form onSubmit={handleSimulateTestEmail} className="space-y-3 text-xs">
@@ -472,7 +472,7 @@ export const CloudflareWebmailTab: React.FC = () => {
         <div className="divide-y divide-[#181f2f] bg-[#0e121a] border border-[#1e2434] rounded-lg overflow-hidden text-xs">
           <div className="p-3 flex items-center justify-between gap-2">
             <div>
-              <span className="font-mono font-bold text-white">MX (Prioridad 13, 44, 88)</span>
+                <span className="font-mono font-bold text-white">MX (Prioridad 37, 70, 72)</span>
               <span className="text-slate-400 block text-[11px] font-mono">
                 route1.mx.cloudflare.net, route2.mx.cloudflare.net, route3.mx.cloudflare.net
               </span>
@@ -503,6 +503,18 @@ export const CloudflareWebmailTab: React.FC = () => {
             </div>
             <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-medium shrink-0">
               Activo
+            </span>
+          </div>
+
+          <div className="p-3 flex items-center justify-between gap-2">
+            <div>
+              <span className="font-mono font-bold text-white">DMARC (monitorización)</span>
+              <span className="text-slate-400 block text-[11px] font-mono">
+                _dmarc.clientum.com.ar — p=none
+              </span>
+            </div>
+            <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[10px] font-medium shrink-0">
+              Sin enforcement
             </span>
           </div>
         </div>

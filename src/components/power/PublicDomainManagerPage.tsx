@@ -33,45 +33,155 @@ interface DnsRecord {
 export const PublicDomainManagerPage: React.FC = () => {
   const { showToast } = useCRM();
 
-  const [domainName, setDomainName] = useState('miempresa.com.ar');
+  const [domainName, setDomainName] = useState('clientum.com.ar');
   const [activeTab, setActiveTab] = useState<'dns' | 'ssl' | 'seo' | 'sitemap'>('dns');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // DNS records table
+  // Snapshot audited against the public authoritative zone on 2026-09-09.
+  // This is intentionally labeled as an audit snapshot until a Cloudflare
+  // connection is available for live reads.
   const [records, setRecords] = useState<DnsRecord[]>([
     {
       id: 'dns-1',
-      type: 'A',
+      type: 'CNAME',
       host: '@',
-      value: '190.228.29.112',
-      ttl: 'Auto',
+      value: '3385e1289e038f19.vercel-dns-017.com.',
+      ttl: '300s',
       status: 'Propagado',
-      proxied: true
+      proxied: false
     },
     {
       id: 'dns-2',
       type: 'CNAME',
       host: 'www',
-      value: 'domains.clientum.com.ar',
-      ttl: 'Auto',
-      status: 'Propagado',
-      proxied: true
-    },
-    {
-      id: 'dns-3',
-      type: 'TXT',
-      host: '@',
-      value: 'v=spf1 include:_spf.clientum.com.ar ~all',
-      ttl: 'Auto',
+      value: '3385e1289e038f19.vercel-dns-017.com.',
+      ttl: '300s',
       status: 'Propagado',
       proxied: false
     },
     {
+      id: 'dns-3',
+      type: 'CNAME',
+      host: 'app',
+      value: 'clientumcrm.ai.studio.',
+      ttl: '300s',
+      status: 'Error',
+      proxied: false
+    },
+    {
       id: 'dns-4',
+      type: 'CNAME',
+      host: 'aiclient',
+      value: 'remix.replit.app.',
+      ttl: '300s',
+      status: 'Error',
+      proxied: true
+    },
+    {
+      id: 'dns-5',
+      type: 'CNAME',
+      host: 'api',
+      value: '66225d57-bd5b-46f5-a312-753865fff6f4.cfargotunnel.com.',
+      ttl: '300s',
+      status: 'Error',
+      proxied: true
+    },
+    {
+      id: 'dns-6',
+      type: 'CNAME',
+      host: 'evo',
+      value: '66225d57-bd5b-46f5-a312-753865fff6f4.cfargotunnel.com.',
+      ttl: '300s',
+      status: 'Error',
+      proxied: true
+    },
+    {
+      id: 'dns-7',
+      type: 'CNAME',
+      host: 'webmail',
+      value: 'NXDOMAIN — falta registro público',
+      ttl: '—',
+      status: 'Error',
+      proxied: false
+    },
+    {
+      id: 'dns-8',
+      type: 'CNAME',
+      host: 'accounts',
+      value: 'accounts.clerk.services.',
+      ttl: '3600s',
+      status: 'Propagado',
+      proxied: false
+    },
+    {
+      id: 'dns-9',
+      type: 'CNAME',
+      host: 'clerk',
+      value: 'frontend-api.clerk.services.',
+      ttl: '3600s',
+      status: 'Propagado',
+      proxied: false
+    },
+    {
+      id: 'dns-10',
+      type: 'CNAME',
+      host: 'clerk.crm',
+      value: 'frontend-api.clerk.services.',
+      ttl: '3600s',
+      status: 'Error',
+      proxied: false
+    },
+    {
+      id: 'dns-11',
       type: 'MX',
       host: '@',
-      value: 'mail.clientum.com.ar (Prioridad 10)',
-      ttl: 'Auto',
+      value: 'route1.mx.cloudflare.net. (Prioridad 37)',
+      ttl: '300s',
+      status: 'Propagado',
+      proxied: false
+    },
+    {
+      id: 'dns-12',
+      type: 'MX',
+      host: '@',
+      value: 'route3.mx.cloudflare.net. (Prioridad 70)',
+      ttl: '300s',
+      status: 'Propagado',
+      proxied: false
+    },
+    {
+      id: 'dns-13',
+      type: 'MX',
+      host: '@',
+      value: 'route2.mx.cloudflare.net. (Prioridad 72)',
+      ttl: '300s',
+      status: 'Propagado',
+      proxied: false
+    },
+    {
+      id: 'dns-14',
+      type: 'TXT',
+      host: '@',
+      value: 'v=spf1 include:_spf.mx.cloudflare.net ~all',
+      ttl: '300s',
+      status: 'Propagado',
+      proxied: false
+    },
+    {
+      id: 'dns-15',
+      type: 'TXT',
+      host: '_dmarc',
+      value: 'v=DMARC1; p=none; rua=mailto:...@dmarc-reports.cloudflare.net',
+      ttl: '300s',
+      status: 'Pendiente',
+      proxied: false
+    },
+    {
+      id: 'dns-16',
+      type: 'MX',
+      host: 'send',
+      value: 'feedback-smtp.sa-east-1.amazonses.com. (Prioridad 10)',
+      ttl: '3600s',
       status: 'Propagado',
       proxied: false
     }
@@ -121,11 +231,8 @@ export const PublicDomainManagerPage: React.FC = () => {
   const handleVerifyDns = () => {
     setIsVerifying(true);
     setTimeout(() => {
-      setRecords(prev =>
-        prev.map(r => ({ ...r, status: 'Propagado' }))
-      );
       setIsVerifying(false);
-      showToast('DNS verificados en tiempo real: Todos los registros propagados', 'success');
+      showToast('Auditoría actualizada: los estados reflejan la última comprobación pública y no modifican DNS', 'info');
     }, 1200);
   };
 
@@ -154,14 +261,14 @@ export const PublicDomainManagerPage: React.FC = () => {
             </h1>
           </div>
           <p className="text-xs text-slate-600 mt-1">
-            Configuración de DNS con Cloudflare Proxy, certificados SSL automáticos, auditoría de indexabilidad On-Page y generación de sitemap.xml.
+            Auditoría pública de DNS, certificados SSL, indexabilidad On-Page y generación de sitemap.xml para clientum.com.ar.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 shadow-xs">
             <Lock className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="text-[11px] text-emerald-800 font-bold">SSL Activo (Let's Encrypt / Cloudflare)</span>
+            <span className="text-[11px] text-amber-800 font-bold">SSL: estado mixto — revisar hosts con error</span>
           </div>
         </div>
       </div>
@@ -239,7 +346,7 @@ export const PublicDomainManagerPage: React.FC = () => {
                 className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isVerifying ? 'animate-spin' : ''}`} />
-                <span>Verificar Propagación</span>
+                <span>Actualizar auditoría</span>
               </button>
             </div>
           </div>
@@ -248,7 +355,7 @@ export const PublicDomainManagerPage: React.FC = () => {
           <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 shadow-xs">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-slate-900 text-xs">Registros DNS Activos</h3>
-              <span className="text-[11px] text-slate-500">Zona administrada en Clientum Edge DNS</span>
+              <span className="text-[11px] text-slate-500">Última comprobación pública: 09/09/2026</span>
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -284,7 +391,9 @@ export const PublicDomainManagerPage: React.FC = () => {
                           className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                             r.status === 'Propagado'
                               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                              : 'bg-amber-50 text-amber-800 border-amber-200'
+                              : r.status === 'Error'
+                                ? 'bg-red-50 text-red-800 border-red-200'
+                                : 'bg-amber-50 text-amber-800 border-amber-200'
                           }`}
                         >
                           {r.status}
@@ -307,16 +416,16 @@ export const PublicDomainManagerPage: React.FC = () => {
               Asistente de Configuración Cloudflare
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Para habilitar protección contra ataques DDoS y aceleración global CDN mediante Cloudflare, asigna los siguientes servidores de nombres en tu registrador (NIC.ar o GoDaddy):
+              La zona ya está delegada en Cloudflare. Estos son los servidores autoritativos observados públicamente; no reemplaces estos valores por nombres de ejemplo.
             </p>
             <div className="p-4 rounded-xl bg-white border border-slate-200 font-mono text-xs space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between text-slate-800">
-                <span>ns1.clientum-cloudflare.com</span>
-                <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Activo</span>
+                <span>braelyn.ns.cloudflare.com</span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Autoritativo</span>
               </div>
               <div className="flex items-center justify-between text-slate-800">
-                <span>ns2.clientum-cloudflare.com</span>
-                <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Activo</span>
+                <span>bryce.ns.cloudflare.com</span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Autoritativo</span>
               </div>
             </div>
           </div>
