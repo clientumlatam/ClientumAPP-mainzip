@@ -37,6 +37,7 @@ import {
   Globe,
   Mail,
   Inbox,
+  FolderKanban,
   ScanSearch,
   KeyRound,
 } from 'lucide-react';
@@ -249,6 +250,7 @@ export const Sidebar: React.FC = () => {
     {
       label: 'Operaciones, pagos & e-commerce',
       items: [
+        { id: 'operations', label: 'Operaciones ERP', icon: FolderKanban, badge: 'Nuevo', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' },
         { id: 'erp', label: 'Facturación AFIP (CAE)', icon: Receipt, badge: 'WS AFIP', badgeColor: 'bg-blue-100 text-blue-800 font-bold' },
         { id: 'payments', label: 'Cobros MercadoPago', icon: CreditCard },
         { id: 'tiendaDigital', label: 'Tienda Digital WhatsApp', icon: Store, badge: 'Catálogo', badgeColor: 'bg-emerald-100 text-emerald-800' },

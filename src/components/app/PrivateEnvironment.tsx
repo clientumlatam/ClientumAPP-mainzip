@@ -9,6 +9,7 @@ import { CompaniesView } from '../companies/CompaniesView';
 import { PeopleView } from '../people/PeopleView';
 import { TasksView } from '../tasks/TasksView';
 import { ActivityInboxView } from '../activities/ActivityInboxView';
+import { OperationsView } from '../operations/OperationsView';
 import { CalendarView } from '../calendar/CalendarView';
 import { AnalyticsView } from '../analytics/AnalyticsView';
 import { SettingsView } from '../settings/SettingsView';
@@ -78,6 +79,7 @@ const MainContent: React.FC = () => {
         {activeTab === 'people' && <PeopleView />}
         {activeTab === 'tasks' && <TasksView />}
         {activeTab === 'activityInbox' && <ActivityInboxView />}
+        {activeTab === 'operations' && <OperationsView />}
         {activeTab === 'calendar' && <CalendarView />}
         {activeTab === 'analytics' && <AnalyticsView />}
         {activeTab === 'powerSuite' && <PowerSuiteView />}

@@ -12,6 +12,7 @@ import {
   X,
   Clock,
   Mail,
+  ShoppingCart,
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
 import { WebhookConfig } from '../../types';
@@ -34,7 +35,7 @@ export const IntegrationsHubTab: React.FC = () => {
     showToast,
   } = useCRM();
 
-  const [activeSection, setActiveSection] = useState<'calendar' | 'slack' | 'emailRouting' | 'userApiKeys' | 'webhooks'>('emailRouting');
+  const [activeSection, setActiveSection] = useState<'calendar' | 'slack' | 'emailRouting' | 'userApiKeys' | 'webhooks' | 'commercial'>('emailRouting');
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
   const [isSendingSlack, setIsSendingSlack] = useState(false);
 
@@ -155,7 +156,80 @@ export const IntegrationsHubTab: React.FC = () => {
           <Webhook className="w-3.5 h-3.5" />
           <span>Webhooks Outbound ({webhooks.length})</span>
         </button>
+
+        <button
+          onClick={() => setActiveSection('commercial')}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all shrink-0 ${
+            activeSection === 'commercial'
+              ? 'bg-blue-600 text-white shadow-2xs font-semibold'
+              : 'bg-[#121620] text-slate-300 hover:text-white hover:bg-[#1a202c]'
+          }`}
+        >
+          <ShoppingCart className="w-3.5 h-3.5 text-emerald-300" />
+          <span>Conectores comerciales</span>
+        </button>
       </div>
+
+      {/* SECTION 0: COMMERCIAL CONNECTORS DESCRIBED IN THE INTEGRATIONS BRIEF */}
+      {activeSection === 'commercial' && (
+        <div id="section-commercial-connectors" className="space-y-4">
+          <div className="rounded-xl border border-[#1e2434] bg-[#121620] p-5">
+            <div className="mb-4 flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                <ShoppingCart className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">Conectores comerciales</h3>
+                <p className="mt-1 max-w-3xl text-xs text-slate-400">
+                  Prepará las conexiones que aparecen en la propuesta de Clientum. Estas tarjetas muestran el estado real de configuración y no simulan una cuenta conectada.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                {
+                  title: 'Facebook & Instagram Ads',
+                  description: 'Recibir Lead Ads directamente en el embudo comercial.',
+                  scope: 'Leads en tiempo real',
+                },
+                {
+                  title: 'WooCommerce & Shopify',
+                  description: 'Sincronizar productos, precios, stock y carritos abandonados.',
+                  scope: 'Catálogo bidireccional',
+                },
+                {
+                  title: 'Tango / Bejerman',
+                  description: 'Conectar stock, listas de precios y compras con el ERP.',
+                  scope: 'ERP corporativo',
+                },
+              ].map((connector) => (
+                <div key={connector.title} className="rounded-xl border border-[#2a3449] bg-[#0e121a] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h4 className="text-xs font-semibold text-white">{connector.title}</h4>
+                    <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-300">No conectado</span>
+                  </div>
+                  <p className="mt-2 min-h-10 text-[11px] leading-relaxed text-slate-400">{connector.description}</p>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{connector.scope}</span>
+                    <button
+                      onClick={() => showToast(`${connector.title}: configurá las credenciales del proveedor para habilitar la conexión.`, 'info')}
+                      className="rounded-lg border border-blue-400/30 px-2.5 py-1.5 text-[10px] font-semibold text-blue-300 transition-colors hover:bg-blue-400/10 hover:text-blue-200"
+                    >
+                      Preparar conexión
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-400/20 bg-blue-400/5 p-3 text-[11px] leading-relaxed text-slate-400">
+              <Webhook className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-300" />
+              <span>Las conexiones sin API nativa pueden operar mediante los webhooks outbound que ya están disponibles en esta misma sección.</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 0: CLOUDFLARE EMAIL ROUTING & WEBMAIL WORKER */}
       {activeSection === 'emailRouting' && <CloudflareWebmailTab />}
