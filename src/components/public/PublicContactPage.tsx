@@ -14,6 +14,7 @@ import {
 import { CLIENTUM_BROCHURE_METRICS } from '../../data/clientumCatalog';
 import { useCRM } from '../../context/CRMContext';
 import { PublicRoutePath } from './publicRoutes';
+import { trackAnalyticsEvent } from '../../lib/analytics';
 
 interface PublicContactPageProps {
   onNavigate: (path: PublicRoutePath) => void;
@@ -33,14 +34,35 @@ export const PublicContactPage: React.FC<PublicContactPageProps> = ({ onNavigate
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email) return;
 
-    setSubmitted(true);
-    triggerConfetti();
-    showToast('¡Solicitud enviada con éxito! Un consultor se comunicará en menos de 4 horas hábiles.', 'success');
+    setIsSubmitting(true);
+    setSubmitError('');
+    try {
+      const response = await fetch('/api/public/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const payload = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(payload.error || 'No se pudo enviar la solicitud.');
+
+      setSubmitted(true);
+      trackAnalyticsEvent('generate_lead', { lead_type: 'demo_request' });
+      triggerConfetti();
+      showToast('¡Solicitud enviada con éxito! Un consultor se comunicará en menos de 4 horas hábiles.', 'success');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo enviar la solicitud.';
+      setSubmitError(message);
+      showToast(message, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -145,6 +167,7 @@ export const PublicContactPage: React.FC<PublicContactPageProps> = ({ onNavigate
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+                <fieldset disabled={isSubmitting} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-slate-700 font-bold block">Nombre Completo *</label>
@@ -241,13 +264,19 @@ export const PublicContactPage: React.FC<PublicContactPageProps> = ({ onNavigate
                   />
                 </div>
 
+                {submitError && (
+                  <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-xs text-red-700">
+                    {submitError}
+                  </p>
+                )}
                 <button
                   type="submit"
                   className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs tracking-wide shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
-                  <span>Enviar y Agendar Demostración</span>
+                  <span>{isSubmitting ? 'Enviando solicitud...' : 'Enviar y Agendar Demostración'}</span>
                 </button>
+                </fieldset>
               </form>
             )}
           </div>

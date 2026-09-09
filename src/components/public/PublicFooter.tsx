@@ -10,6 +10,7 @@ import { ClientumLogo } from '../common/ClientumLogo';
 import { CLIENTUM_BROCHURE_METRICS } from '../../data/clientumCatalog';
 import { useCRM } from '../../context/CRMContext';
 import { PublicRoutePath } from './publicRoutes';
+import { trackAnalyticsEvent } from '../../lib/analytics';
 
 interface PublicFooterProps {
   onNavigate: (path: PublicRoutePath) => void;
@@ -19,13 +20,30 @@ export const PublicFooter: React.FC<PublicFooterProps> = ({ onNavigate }) => {
   const { enterApp, showToast, triggerConfetti } = useCRM();
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail.trim()) return;
-    setSubscribed(true);
-    triggerConfetti();
-    showToast('¡Gracias por suscribirte al boletín de Clientum!', 'success');
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/public/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newsletterEmail }),
+      });
+      const payload = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(payload.error || 'No se pudo registrar la suscripción.');
+
+      setSubscribed(true);
+      trackAnalyticsEvent('newsletter_signup');
+      triggerConfetti();
+      showToast('¡Gracias por suscribirte al boletín de Clientum!', 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'No se pudo registrar la suscripción.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const nav = (path: PublicRoutePath) => {
@@ -70,7 +88,7 @@ export const PublicFooter: React.FC<PublicFooterProps> = ({ onNavigate }) => {
                 disabled={subscribed}
                 className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs tracking-wide transition-all cursor-pointer whitespace-nowrap shadow-xs"
               >
-                {subscribed ? '¡Suscrito!' : 'Suscribirme'}
+                  {subscribed ? '¡Suscrito!' : isSubmitting ? 'Enviando...' : 'Suscribirme'}
               </button>
             </form>
           </div>

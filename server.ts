@@ -6,7 +6,7 @@ import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import { Pool } from "pg";
 import dotenv from "dotenv";
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { clerkMiddleware, getAuth } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
@@ -335,6 +335,129 @@ const requireProductionAuthentication: express.RequestHandler = async (req, res,
   }
   next();
 };
+
+app.get("/health", (_req, res) => {
+  res.json({
+    status: "OK",
+    service: "clientum-crm",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get("/ready", async (_req, res) => {
+  try {
+    await credentialSchemaReady;
+    if (!credentialDatabase) {
+      res.status(503).json({
+        status: "not_ready",
+        code: "POSTGRES_NOT_CONFIGURED",
+        error: "PostgreSQL is required for persistent application data.",
+      });
+      return;
+    }
+
+    await credentialDatabase.query("SELECT 1");
+    res.json({
+      status: "ready",
+      database: "ok",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error("Readiness check failed:", error?.message || error);
+    res.status(503).json({
+      status: "not_ready",
+      code: "DATABASE_UNAVAILABLE",
+      error: "The application database is not ready.",
+    });
+  }
+});
+
+function readPublicText(value: unknown, maxLength: number): string {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+app.post("/api/public/contacts", async (req, res) => {
+  try {
+    if (!credentialDatabase) {
+      res.status(503).json({
+        error: "El almacenamiento de leads no está configurado.",
+        code: "POSTGRES_NOT_CONFIGURED",
+      });
+      return;
+    }
+
+    const body = req.body && typeof req.body === "object"
+      ? req.body as Record<string, unknown>
+      : {};
+    const name = readPublicText(body.name, 120);
+    const email = readPublicText(body.email, 254).toLowerCase();
+    const phone = readPublicText(body.phone, 60);
+    const company = readPublicText(body.company, 160);
+    const industry = readPublicText(body.industry, 100);
+    const teamSize = readPublicText(body.teamSize, 60);
+    const message = readPublicText(body.message, 5000);
+
+    if (!name || !email || !phone || !company || !isValidEmailAddress(email)) {
+      res.status(400).json({
+        error: "Completá nombre, email, teléfono y empresa con datos válidos.",
+        code: "INVALID_CONTACT_DATA",
+      });
+      return;
+    }
+
+    await credentialSchemaReady;
+    const leadId = randomUUID();
+    await credentialDatabase.query(
+      `INSERT INTO clientum_public_contacts
+        (id, name, email, phone, company, industry, team_size, message, source)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'public-contact')`,
+      [leadId, name, email, phone, company, industry || null, teamSize || null, message || null],
+    );
+
+    res.status(201).json({ success: true, id: leadId });
+  } catch (error: any) {
+    console.error("Public contact submission error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo guardar la solicitud. Intentá nuevamente." });
+  }
+});
+
+app.post("/api/public/newsletter", async (req, res) => {
+  try {
+    if (!credentialDatabase) {
+      res.status(503).json({
+        error: "El registro del boletín no está configurado.",
+        code: "POSTGRES_NOT_CONFIGURED",
+      });
+      return;
+    }
+
+    const body = req.body && typeof req.body === "object"
+      ? req.body as Record<string, unknown>
+      : {};
+    const email = readPublicText(body.email, 254).toLowerCase();
+    if (!isValidEmailAddress(email)) {
+      res.status(400).json({
+        error: "Ingresá un email válido.",
+        code: "INVALID_NEWSLETTER_EMAIL",
+      });
+      return;
+    }
+
+    await credentialSchemaReady;
+    await credentialDatabase.query(
+      `INSERT INTO clientum_public_newsletter_subscribers (email, source)
+       VALUES ($1, 'public-footer')
+       ON CONFLICT (email)
+       DO UPDATE SET updated_at = NOW()`,
+      [email],
+    );
+
+    res.status(201).json({ success: true });
+  } catch (error: any) {
+    console.error("Public newsletter submission error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo registrar la suscripción. Intentá nuevamente." });
+  }
+});
 
 // Protected application APIs require a Clerk session in production.
 app.use(
@@ -2669,6 +2792,7 @@ async function main() {
       define: {
         "import.meta.env.VITE_CLERK_PUBLISHABLE_KEY": JSON.stringify(process.env.VITE_CLERK_PUBLISHABLE_KEY || ""),
         "import.meta.env.VITE_CLERK_PROXY_URL": JSON.stringify(process.env.VITE_CLERK_PROXY_URL || ""),
+         "import.meta.env.VITE_GOOGLE_ANALYTICS_ID": JSON.stringify(process.env.VITE_GOOGLE_ANALYTICS_ID || ""),
         "import.meta.env.VITE_FIREBASE_API_KEY": JSON.stringify(process.env.VITE_FIREBASE_API_KEY || ""),
         "import.meta.env.VITE_FIREBASE_AUTH_DOMAIN": JSON.stringify(process.env.VITE_FIREBASE_AUTH_DOMAIN || ""),
         "import.meta.env.VITE_FIREBASE_PROJECT_ID": JSON.stringify(process.env.VITE_FIREBASE_PROJECT_ID || ""),
