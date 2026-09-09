@@ -36,6 +36,7 @@ import {
   ExternalLink,
   Globe,
   Mail,
+  Inbox,
   ScanSearch,
   KeyRound,
 } from 'lucide-react';
@@ -110,6 +111,7 @@ export const Sidebar: React.FC = () => {
     companies,
     people,
     tasks,
+    activities,
     currentUser,
     setFilterState,
     setIsProfileModalOpen,
@@ -184,19 +186,14 @@ export const Sidebar: React.FC = () => {
       id: 'sidebar-notes',
       label: 'Notas',
       icon: FileText,
-      action: () => {
-        setActiveTab('customObjects');
-        showToast('Las notas están disponibles desde el registro seleccionado.', 'info');
-        setIsMobileSidebarOpen(false);
-      },
+      action: () => handleNavClick('activityInbox'),
     },
     {
       id: 'sidebar-call-logs',
       label: 'Registros de llamadas',
       icon: PhoneCall,
       action: () => {
-        handleNavClick('tasks');
-        showToast('Revisa las actividades y seguimientos de llamadas en Tareas.', 'info');
+        handleNavClick('activityInbox');
       },
     },
   ];
@@ -222,6 +219,7 @@ export const Sidebar: React.FC = () => {
         { id: 'companies', label: 'Empresas', icon: Building2 },
         { id: 'people', label: 'Contactos', icon: Users2 },
         { id: 'tasks', label: 'Tareas & Actividades', icon: CheckSquare, badge: tasks.filter((task) => task.status !== 'Completed').length, badgeColor: 'bg-amber-100 text-amber-800' },
+        { id: 'activityInbox', label: 'Bandeja de actividad', icon: Inbox, badge: activities.length, badgeColor: 'bg-violet-100 text-violet-800' },
         { id: 'calendar', label: 'Calendario', icon: Calendar },
         { id: 'propuestas', label: 'Propuestas & Presupuestos', icon: FileCheck, badge: 'PDF', badgeColor: 'bg-emerald-100 text-emerald-800' },
         { id: 'googleMaps', label: 'Prospección Mapa B2B', icon: MapPin, badge: 'Maps', badgeColor: 'bg-blue-100 text-blue-800' },

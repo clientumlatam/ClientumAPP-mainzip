@@ -127,6 +127,7 @@ export type ActiveTab =
   | 'companies' 
   | 'people' 
   | 'tasks' 
+  | 'activityInbox'
   | 'calendar'
   | 'analytics' 
   | 'settings' 

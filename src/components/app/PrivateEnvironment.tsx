@@ -8,6 +8,7 @@ import { ExecutiveDashboardView } from '../dashboard/ExecutiveDashboardView';
 import { CompaniesView } from '../companies/CompaniesView';
 import { PeopleView } from '../people/PeopleView';
 import { TasksView } from '../tasks/TasksView';
+import { ActivityInboxView } from '../activities/ActivityInboxView';
 import { CalendarView } from '../calendar/CalendarView';
 import { AnalyticsView } from '../analytics/AnalyticsView';
 import { SettingsView } from '../settings/SettingsView';
@@ -76,6 +77,7 @@ const MainContent: React.FC = () => {
         {activeTab === 'companies' && <CompaniesView />}
         {activeTab === 'people' && <PeopleView />}
         {activeTab === 'tasks' && <TasksView />}
+        {activeTab === 'activityInbox' && <ActivityInboxView />}
         {activeTab === 'calendar' && <CalendarView />}
         {activeTab === 'analytics' && <AnalyticsView />}
         {activeTab === 'powerSuite' && <PowerSuiteView />}
