@@ -161,6 +161,8 @@ export default function App() {
     <ClerkProvider
       publishableKey={clerkPubKey}
       proxyUrl={clerkProxyUrl}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
       appearance={clerkAppearance}
       localization={{
         signIn: { start: { title: 'Inicia sesión en ClientumCRM' } },

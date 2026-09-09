@@ -780,6 +780,10 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const enterApp = (force = false) => {
     if (!isAuthenticated && !force) {
       setIsAuthModalOpen(true);
+      if (typeof window !== 'undefined' && window.location.pathname !== '/sign-in') {
+        window.history.pushState({}, '', '/sign-in');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
       return;
     }
     setIsPublicSiteVisible(false);

@@ -9,12 +9,20 @@ export const AuthModal: React.FC = () => {
 
   if (!isAuthModalOpen) return null;
 
+  const closeModal = () => {
+    setIsAuthModalOpen(false);
+    if (window.location.pathname === "/sign-in" || window.location.pathname === "/sign-up") {
+      window.history.replaceState({}, "", "/");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
       <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-2xl border border-[#222a3d] bg-[#111520] shadow-2xl">
         <button
           type="button"
-          onClick={() => setIsAuthModalOpen(false)}
+          onClick={closeModal}
           className="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
           aria-label="Cerrar autenticación"
         >
@@ -23,12 +31,16 @@ export const AuthModal: React.FC = () => {
         <div className="p-3 pt-7">
           {mode === "login" ? (
             <SignIn
-              routing="hash"
+              routing="path"
+              path="/sign-in"
+              signUpUrl="/sign-up"
               appearance={{ elements: { card: "!bg-transparent !shadow-none !border-0" } }}
             />
           ) : (
             <SignUp
-              routing="hash"
+              routing="path"
+              path="/sign-up"
+              signInUrl="/sign-in"
               appearance={{ elements: { card: "!bg-transparent !shadow-none !border-0" } }}
             />
           )}

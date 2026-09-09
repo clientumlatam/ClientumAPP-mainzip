@@ -1,4 +1,4 @@
-const CACHE_NAME = 'clientum-crm-cache-v1';
+const CACHE_NAME = 'clientum-crm-cache-v2';
 
 const urlsToCache = [
   '/',
@@ -33,6 +33,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (event.request.url.includes('/api/')) return;
+
+  // Never intercept third-party assets such as Clerk's browser bundle.
+  // Returning undefined from respondWith() causes the browser to reject the
+  // request instead of letting the network handle it.
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) return;
   
   event.respondWith(
     fetch(event.request)
@@ -56,6 +62,7 @@ self.addEventListener('fetch', (event) => {
           if (event.request.mode === 'navigate') {
              return caches.match('/index.html');
           }
+          return Response.error();
         });
       })
   );

@@ -47,14 +47,35 @@ app.use(express.json({
     (request as express.Request & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
   },
 }));
-app.use(
-  clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
-    ),
-  })),
-);
+const clerkAuthMiddleware = clerkMiddleware((req) => ({
+  publishableKey: publishableKeyFromHost(
+    getClerkProxyHost(req) ?? "",
+    process.env.CLERK_PUBLISHABLE_KEY,
+  ),
+}));
+
+// Invalid or instance-mismatched Clerk cookies should not take down the
+// public landing page. Continue as signed out so protected routes can still
+// reject unauthenticated requests and visitors can recover by signing in.
+app.use((req, res, next) => {
+  const guardedNext = (error?: unknown) => {
+    if (error) {
+      console.warn(
+        "Clerk session could not be verified; continuing as signed out:",
+        error instanceof Error ? error.message : error,
+      );
+      next();
+      return;
+    }
+    next();
+  };
+
+  try {
+    Promise.resolve(clerkAuthMiddleware(req, res, guardedNext)).catch(guardedNext);
+  } catch (error) {
+    guardedNext(error);
+  }
+});
 
 type UserCredentialRecord = {
   updatedAt: string;
