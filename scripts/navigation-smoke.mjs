@@ -122,6 +122,44 @@ async function clickAriaLabel(label) {
   if (!clicked) fail(`Could not find aria-labeled button "${label}"`);
 }
 
+async function clickElementById(id, description) {
+  const clicked = await evaluate(`(() => {
+    const element = document.getElementById(${JSON.stringify(id)});
+    if (!element) return false;
+    element.click();
+    return true;
+  })()`);
+  if (!clicked) fail(`Could not find ${description} (${id})`);
+}
+
+async function waitForElementById(id, description) {
+  const deadline = Date.now() + 10000;
+  while (Date.now() < deadline) {
+    if (await evaluate(`!!document.getElementById(${JSON.stringify(id)})`)) return;
+    await delay(100);
+  }
+  fail(`Timed out waiting for ${description} (${id})`);
+}
+
+async function clickNavigationItem(id, { parentId, sectionId } = {}) {
+  const itemId = `nav-item-${id}`;
+  const isVisible = await evaluate(`!!document.getElementById(${JSON.stringify(itemId)})`);
+  if (!isVisible && sectionId) {
+    await clickElementById(`nav-section-${sectionId}`, 'the navigation section control');
+  }
+  if (!isVisible && parentId) {
+    await clickElementById(`nav-expand-${parentId}`, 'the navigation submenu expansion control');
+  }
+  await waitForElementById(itemId, `the "${id}" navigation item`);
+  const clicked = await evaluate(`(() => {
+    const item = document.getElementById(${JSON.stringify(itemId)});
+    if (!item) return false;
+    item.click();
+    return true;
+  })()`);
+  if (!clicked) fail(`Could not find navigation item "${id}"`);
+}
+
 async function assertAriaLabelMissing(label) {
   const exists = await evaluate(
     `!!document.querySelector(${JSON.stringify(`button[aria-label="${label}"]`)})`,
@@ -203,24 +241,24 @@ async function run() {
   await assertPrivateWorkspace('the demo/login action to enter the dashboard');
   console.log('✓ unauthenticated access opens login and local demo authentication enters the dashboard');
 
-  await clickButton('Calendario');
-  await waitFor('the calendar view', () => document.body?.innerText?.includes('Calendario'));
+  await clickNavigationItem('calendar', { parentId: 'tasks' });
+  await waitFor('the calendar view', () => document.body?.innerText?.includes('Calendario comercial'));
   await assertConfigButton(false, 'calendar does not need user credentials');
   await assertAriaLabelMissing('Configurar credenciales de Calendario');
 
-  await clickButton('Mensajes');
+  await clickNavigationItem('messages', { parentId: 'whatsapp' });
   await waitFor('the messages view', () => document.body?.innerText?.includes('Mensajes'));
   await assertConfigButton(false, 'messages does not need user credentials');
   await assertAriaLabelMissing('Configurar credenciales de Mensajes');
 
-  await clickButton('Asistente Gemini 1.5');
+  await clickNavigationItem('aiAssistant', { parentId: 'agenteOS' });
   await waitFor('the platform-powered Gemini module', () =>
     document.body?.innerText?.includes('Consulta Estratégica al Asistente IA CMO'),
   );
   await assertConfigButton(false, 'platform-powered Gemini does not need user credentials');
-  await assertAriaLabelMissing('Configurar credenciales de Asistente Gemini 1.5');
+  await assertAriaLabelMissing('Configurar credenciales de Asistente Gemini');
 
-  await clickButton('Prospección Mapa B2B');
+  await clickNavigationItem('googleMaps');
   await waitFor('the Maps prospecting view', () => document.body?.innerText?.includes('Prospección Geolocalizada con Google Maps'));
   await assertConfigButton(true, 'Maps needs user credentials');
   await clickAriaLabel('Configurar credenciales de Prospección Mapa B2B');
@@ -231,7 +269,7 @@ async function run() {
   await clickAriaLabel('Cerrar configuración');
   console.log('✓ all-module credential modal distinguishes workspace and platform configuration');
 
-  await clickButton('Configuración General');
+  await clickNavigationItem('settings', { sectionId: 'system' });
   await waitFor('the settings view', () => document.body?.innerText?.includes('Integraciones & API Hub'));
   await clickButton('Auditoría & Logs');
   await waitFor('the audit logs view', () => document.body?.innerText?.includes('Eventos Registrados'));

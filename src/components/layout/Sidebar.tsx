@@ -97,6 +97,7 @@ const SidebarNavRow: React.FC<{
         {hasSubItems && (
           <button
             type="button"
+            id={`nav-expand-${item.id}`}
             onClick={() => setIsExpanded((expanded) => !expanded)}
             className={`shrink-0 rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-800/70 hover:text-slate-200 ${hasActiveChild ? 'text-blue-400' : ''}`}
             title={isSubmenuExpanded ? `Ocultar opciones de ${item.label}` : `Mostrar opciones de ${item.label}`}
@@ -178,12 +179,14 @@ export const Sidebar: React.FC = () => {
   };
 
   type SidebarSection = {
+    id: string;
     label: string;
     items: SidebarNavItem[];
   };
 
   const navigationSections: SidebarSection[] = [
     {
+      id: 'dashboard',
       label: 'Panel de control & análisis',
       items: [
         { id: 'dashboard', label: 'Resumen Ejecutivo', icon: Home },
@@ -192,6 +195,7 @@ export const Sidebar: React.FC = () => {
       ],
     },
     {
+      id: 'sales',
       label: 'Ventas & Clientes',
       items: [
         { id: 'people', label: 'Contactos & Empresas', icon: Users2, badge: people.length, subItems: [{ id: 'companies', label: 'Empresas', icon: Building2, badge: companies.length }] },
@@ -202,6 +206,7 @@ export const Sidebar: React.FC = () => {
       ],
     },
     {
+      id: 'communication',
       label: 'Centro de Comunicación',
       items: [
         { id: 'whatsapp', label: 'Bandeja Omnicanal', icon: Inbox, badge: 'LIVE', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold', subItems: [{ id: 'messages', label: 'Mensajes', icon: MessageSquare, badge: 12, badgeColor: 'bg-blue-100 text-blue-800' }, { id: 'webmail', label: 'Webmail Cloudflare', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'GTM', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-semibold' }] },
@@ -210,6 +215,7 @@ export const Sidebar: React.FC = () => {
       ],
     },
     {
+      id: 'ai',
       label: 'IA & Automatización',
       items: [
         { id: 'agenteOS', label: 'Agentes & Copilot', icon: Cpu, badge: '14', badgeColor: 'bg-blue-100 text-blue-800 font-bold', subItems: [{ id: 'aiAssistant', label: 'Asistente Gemini', icon: Sparkles }, { id: 'sdrOutreach', label: 'Agente SDR Outreach', icon: Bot }] },
@@ -218,6 +224,7 @@ export const Sidebar: React.FC = () => {
       ],
     },
     {
+      id: 'operations',
       label: 'Operaciones & Finanzas',
       items: [
         { id: 'erp', label: 'Facturación AFIP & ERP', icon: Receipt, badge: 'CAE', badgeColor: 'bg-blue-100 text-blue-800 font-bold', subItems: [{ id: 'operations', label: 'Operaciones internas', icon: FolderKanban, badge: 'Nuevo', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' }] },
@@ -227,6 +234,7 @@ export const Sidebar: React.FC = () => {
       ],
     },
     {
+      id: 'system',
       label: 'Sistema & Configuración',
       items: [
         { id: 'customObjects', label: 'Estructura de Datos', icon: Database, subItems: [{ id: 'csvStudio', label: 'Importar / Exportar CSV', icon: FileSpreadsheet }] },
@@ -340,6 +348,7 @@ export const Sidebar: React.FC = () => {
             <div key={section.label} className="border-t border-[var(--sidebar-border)] pt-3 first:border-t-0 first:pt-0">
               <button
                 type="button"
+                id={`nav-section-${section.id}`}
                 className="w-full flex items-center justify-between px-2 pb-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-primary)] cursor-pointer"
                 onClick={() => setCollapsedSections((previous) => ({ ...previous, [section.label]: !storedCollapsed }))}
                 aria-expanded={!isCollapsed}
