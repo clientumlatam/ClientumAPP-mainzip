@@ -426,8 +426,13 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Users State
   const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('clientum_crm_users_list');
-    return saved ? JSON.parse(saved) : USERS;
+    try {
+      const saved = localStorage.getItem('clientum_crm_users_list');
+      const parsed = saved ? JSON.parse(saved) : USERS;
+      return Array.isArray(parsed) ? parsed : USERS;
+    } catch {
+      return USERS;
+    }
   });
 
   useEffect(() => {
@@ -604,8 +609,11 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    const identityEmail = typeof identity.email === 'string' ? identity.email : '';
     const matchingUser = users.find(
-      (user) => user.email.toLowerCase() === identity.email.toLowerCase(),
+      (user) =>
+        typeof user?.email === 'string' &&
+        user.email.toLowerCase() === identityEmail.toLowerCase(),
     );
     const restoredUser: User = {
       ...(matchingUser || USERS[0]),
@@ -2576,6 +2584,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         register,
         logout,
         resetPassword,
+        syncClerkAuth,
         addOpportunity,
         updateOpportunity,
         deleteOpportunity,

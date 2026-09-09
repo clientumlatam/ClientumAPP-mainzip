@@ -57,16 +57,24 @@ const ClerkAuthBridge: React.FC = () => {
     const previousUserId = lastUserId.current;
     if (!authStateChanged) return;
     lastUserId.current = userId;
-    syncClerkAuth(user ? {
-      id: user.id,
-      email: user.primaryEmailAddress?.emailAddress || '',
-      name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Usuario Clientum',
-      avatar: user.imageUrl,
-    } : null);
+    try {
+      syncClerkAuth(user ? {
+        id: user.id,
+        email: user.primaryEmailAddress?.emailAddress || '',
+        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Usuario Clientum',
+        avatar: user.imageUrl,
+      } : null);
 
-    if (user && isAuthModalOpen && previousUserId !== user.id) {
-      setIsAuthModalOpen(false);
-      enterApp(true);
+      if (user && isAuthModalOpen && previousUserId !== user.id) {
+        setIsAuthModalOpen(false);
+        enterApp(true);
+      }
+    } catch (error) {
+      // A stale local CRM profile must not blank the whole app after Clerk
+      // has already loaded. Treat the browser session as signed out and let
+      // AppContent return the visitor to the public site.
+      console.error('Clerk auth synchronization failed:', error);
+      syncClerkAuth(null);
     }
   }, [isAuthModalOpen, isLoaded, setIsAuthModalOpen, syncClerkAuth, user]);
 
