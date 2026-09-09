@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import {
   Home,
+  Bell,
   Clock,
   Calendar,
   Briefcase,
   Building2,
   Users2,
   CheckSquare,
+  PhoneCall,
+  FileText,
+  Pin,
   BarChart3,
   Settings,
   Sparkles,
@@ -103,8 +107,11 @@ export const Sidebar: React.FC = () => {
     isMobileSidebarOpen,
     setIsMobileSidebarOpen,
     opportunities,
+    companies,
+    people,
     tasks,
     currentUser,
+    setFilterState,
     setIsProfileModalOpen,
     setIsCommandPaletteOpen,
     openNewRecordModal,
@@ -133,6 +140,66 @@ export const Sidebar: React.FC = () => {
     event.stopPropagation();
     setConfigModuleId(moduleId);
   };
+
+  const salesShortcuts = [
+    {
+      id: 'sidebar-notifications',
+      label: 'Notificaciones',
+      icon: Bell,
+      badge: tasks.filter((task) => task.status !== 'Completed').length,
+      action: () => handleNavClick('tasks'),
+    },
+    {
+      id: 'sidebar-leads',
+      label: 'Leads',
+      icon: Target,
+      badge: people.filter((person) => person.status === 'Lead').length,
+      action: () => handleNavClick('people'),
+    },
+    {
+      id: 'sidebar-deals',
+      label: 'Negocios',
+      icon: Briefcase,
+      badge: opportunities.length,
+      action: () => {
+        setFilterState((previous) => ({ ...previous, owner: 'all', stage: 'all' }));
+        handleNavClick('opportunities');
+      },
+    },
+    {
+      id: 'sidebar-contacts',
+      label: 'Contactos',
+      icon: Users2,
+      badge: people.length,
+      action: () => handleNavClick('people'),
+    },
+    {
+      id: 'sidebar-organizations',
+      label: 'Organizaciones',
+      icon: Building2,
+      badge: companies.length,
+      action: () => handleNavClick('companies'),
+    },
+    {
+      id: 'sidebar-notes',
+      label: 'Notas',
+      icon: FileText,
+      action: () => {
+        setActiveTab('customObjects');
+        showToast('Las notas están disponibles desde el registro seleccionado.', 'info');
+        setIsMobileSidebarOpen(false);
+      },
+    },
+    {
+      id: 'sidebar-call-logs',
+      label: 'Registros de llamadas',
+      icon: PhoneCall,
+      action: () => {
+        handleNavClick('tasks');
+        showToast('Revisa las actividades y seguimientos de llamadas en Tareas.', 'info');
+      },
+    },
+  ];
 
   type SidebarSection = {
     label: string;
@@ -297,6 +364,36 @@ export const Sidebar: React.FC = () => {
 
         {/* Navigation list */}
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 custom-scrollbar bg-[var(--sidebar-bg)]">
+          {/* Sales-focused shortcuts mirror the compact navigation used by modern CRM workspaces. */}
+          <div className="border-b border-[var(--sidebar-border)] pb-3">
+            <div className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--sidebar-text-muted)] flex items-center justify-between">
+              <span>Ventas</span>
+              <Pin className="w-3 h-3 text-[var(--sidebar-text-muted)]" />
+            </div>
+            <nav className="space-y-0.5">
+              {salesShortcuts.map((shortcut) => {
+                const ShortcutIcon = shortcut.icon;
+                return (
+                  <button
+                    key={shortcut.id}
+                    id={shortcut.id}
+                    onClick={shortcut.action}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--sidebar-text-secondary)] hover:text-[var(--sidebar-hover-text)] hover:bg-[var(--sidebar-hover-bg)] transition-colors cursor-pointer group"
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <ShortcutIcon className="w-4 h-4 shrink-0 text-[var(--sidebar-text-muted)] group-hover:text-[var(--text-brand)] transition-colors" />
+                      <span className="truncate">{shortcut.label}</span>
+                    </span>
+                    {shortcut.badge !== undefined && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-md font-mono bg-[var(--bg-muted)] text-[var(--sidebar-text-muted)] border border-[var(--sidebar-border)]">
+                        {shortcut.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
           
           {navigationSections.map((section) => {
             const isCollapsed = collapsedSections[section.label] ?? false;

@@ -492,11 +492,67 @@ app.get("/api/payments/status", async (req, res) => {
   try {
     const values = await getTenantCredentialValues(context.userId, "payments");
     const tokenConfigured = Boolean(values.MERCADOPAGO_ACCESS_TOKEN?.trim());
+    const requestedCheckoutId = String(req.query.checkoutId || "").trim();
+    let checkoutQuery = `
+      SELECT
+        id,
+        preference_id,
+        external_reference,
+        amount::text AS amount,
+        currency,
+        title,
+        status,
+        init_point,
+        provider_payment_id,
+        created_at,
+        updated_at
+      FROM clientum_payment_checkouts
+      WHERE tenant_id = $1
+    `;
+    const checkoutParams: string[] = [context.tenantId];
+    if (requestedCheckoutId) {
+      checkoutQuery += " AND id = $2";
+      checkoutParams.push(requestedCheckoutId);
+    }
+    checkoutQuery += " ORDER BY created_at DESC LIMIT 25";
+
+    const checkoutResult = credentialDatabase
+      ? await credentialDatabase.query<{
+          id: string;
+          preference_id: string | null;
+          external_reference: string;
+          amount: string;
+          currency: string;
+          title: string;
+          status: "pending" | "approved" | "rejected" | "cancelled";
+          init_point: string | null;
+          provider_payment_id: string | null;
+          created_at: string;
+          updated_at: string;
+        }>(checkoutQuery, checkoutParams)
+      : { rows: [] };
+
+    const checkouts = checkoutResult.rows.map((checkout) => ({
+      checkoutId: checkout.id,
+      preferenceId: checkout.preference_id,
+      externalReference: checkout.external_reference,
+      amount: Number(checkout.amount),
+      currency: checkout.currency,
+      title: checkout.title,
+      status: checkout.status,
+      checkoutUrl: checkout.init_point,
+      providerPaymentId: checkout.provider_payment_id,
+      createdAt: checkout.created_at,
+      updatedAt: checkout.updated_at,
+    }));
+
     res.json({
       provider: "mercadopago",
       configured: tokenConfigured,
       database: Boolean(credentialDatabase),
       appUrlConfigured: Boolean(getPublicAppUrl()),
+      checkouts,
+      checkout: requestedCheckoutId ? checkouts[0] || null : null,
     });
   } catch (error: any) {
     console.error("Payment status error:", error?.message || error);

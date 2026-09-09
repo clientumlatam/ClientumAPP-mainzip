@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getClientumAuthJsonHeaders } from '../../lib/api';
 import {
   LayoutGrid,
@@ -32,7 +32,10 @@ import {
   Download,
   Terminal,
   AlertCircle,
-  Inbox
+  Inbox,
+  CheckCircle2,
+  XCircle,
+  CircleDot,
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
 import { STAGES } from '../../data/initialData';
@@ -46,6 +49,54 @@ interface FeatureCard {
   column: number;
   featured?: boolean;
 }
+
+type MercadoPagoCheckoutStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+interface MercadoPagoCheckout {
+  checkoutId: string;
+  preferenceId: string | null;
+  externalReference: string;
+  amount: number;
+  currency: string;
+  title: string;
+  status: MercadoPagoCheckoutStatus;
+  checkoutUrl: string | null;
+  providerPaymentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const MERCADO_PAGO_STATUS_META: Record<MercadoPagoCheckoutStatus, {
+  label: string;
+  detail: string;
+  className: string;
+  icon: React.ElementType;
+}> = {
+  approved: {
+    label: 'Aprobado',
+    detail: 'Mercado Pago confirmó el pago.',
+    className: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
+    icon: CheckCircle2,
+  },
+  pending: {
+    label: 'Pendiente',
+    detail: 'Aún no hay confirmación final del proveedor.',
+    className: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
+    icon: CircleDot,
+  },
+  rejected: {
+    label: 'Rechazado',
+    detail: 'Mercado Pago rechazó el intento de pago.',
+    className: 'text-rose-300 bg-rose-500/10 border-rose-500/30',
+    icon: XCircle,
+  },
+  cancelled: {
+    label: 'Cancelado',
+    detail: 'El checkout fue cancelado.',
+    className: 'text-slate-300 bg-slate-500/10 border-slate-500/30',
+    icon: AlertCircle,
+  },
+};
 
 export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultModule }) => {
   const { opportunities, addOpportunity, addPerson, addCompany, addTask, updateOpportunity, showToast, triggerConfetti, setActiveTab, t, gmailAccessToken } = useCRM();
@@ -141,11 +192,60 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
   const [mpAmount, setMpAmount] = useState(15000);
   const [mpLoading, setMpLoading] = useState(false);
   const [mpLink, setMpLink] = useState('');
+  const [mpCheckoutId, setMpCheckoutId] = useState('');
+  const [mpStatus, setMpStatus] = useState<MercadoPagoCheckoutStatus | null>(null);
+  const [mpCheckouts, setMpCheckouts] = useState<MercadoPagoCheckout[]>([]);
+  const [mpStatusLoading, setMpStatusLoading] = useState(false);
+  const [mpStatusError, setMpStatusError] = useState('');
+  const [mpProviderConfigured, setMpProviderConfigured] = useState<boolean | null>(null);
 
   // 16. Desarrollo Web - Embebido
   const [formWidgetTitle, setFormWidgetTitle] = useState('¡Escríbenos para recibir tu Demo!');
   const [webFormName, setWebFormName] = useState('');
   const [webFormEmail, setWebFormEmail] = useState('');
+
+  const loadMercadoPagoStatus = async (checkoutId?: string) => {
+    setMpStatusLoading(true);
+    setMpStatusError('');
+    try {
+      const query = checkoutId ? `?checkoutId=${encodeURIComponent(checkoutId)}` : '';
+      const response = await fetch(`/api/payments/status${query}`, {
+        headers: await getClientumAuthJsonHeaders(),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || 'No se pudo cargar el estado de los pagos.');
+      }
+
+      const checkouts = Array.isArray(payload.checkouts)
+        ? payload.checkouts as MercadoPagoCheckout[]
+        : [];
+      const selectedCheckout = payload.checkout as MercadoPagoCheckout | null | undefined;
+      setMpProviderConfigured(Boolean(payload.configured));
+      setMpCheckouts(checkouts);
+
+      if (selectedCheckout) {
+        setMpCheckoutId(selectedCheckout.checkoutId);
+        setMpStatus(selectedCheckout.status);
+        setMpLink(selectedCheckout.checkoutUrl || '');
+      } else if (checkoutId) {
+        setMpStatus(null);
+      } else if (mpCheckoutId) {
+        const currentCheckout = checkouts.find((checkout) => checkout.checkoutId === mpCheckoutId);
+        if (currentCheckout) setMpStatus(currentCheckout.status);
+      }
+    } catch (error: any) {
+      setMpStatusError(error?.message || 'No se pudo cargar el estado de los pagos.');
+    } finally {
+      setMpStatusLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedModule === 'mercadopago') {
+      void loadMercadoPagoStatus();
+    }
+  }, [selectedModule]);
 
   // --- FEATURES LIST EXACTLY CORRESPONDING TO THE 16 TILES ---
   const features: FeatureCard[] = [
@@ -485,6 +585,11 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
         throw new Error(payload.error || 'No se pudo crear el checkout.');
       }
       setMpLink(payload.checkoutUrl);
+      setMpCheckoutId(String(payload.checkoutId || ''));
+      setMpStatus((payload.status || 'pending') as MercadoPagoCheckoutStatus);
+      if (payload.checkoutId) {
+        void loadMercadoPagoStatus(String(payload.checkoutId));
+      }
       showToast('Checkout real de Mercado Pago generado', 'success');
     } catch (error: any) {
       showToast(error?.message || 'Configura Mercado Pago para crear un link real.', 'error');
@@ -1456,7 +1561,21 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
           {selectedModule === 'mercadopago' && (
             <div className="space-y-6">
               <div className="bg-[#141824] p-5 rounded-2xl border border-[#232a3d] space-y-4">
-                <h3 className="font-bold text-base text-white">Generador de Pasarela de Pago MercadoPago</h3>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-base text-white">Cobros Mercado Pago</h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Genera checkouts reales y confirma su estado desde el webhook del proveedor.
+                    </p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${
+                    mpProviderConfigured === false
+                      ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
+                      : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
+                  }`}>
+                    {mpProviderConfigured === false ? 'Proveedor sin configurar' : 'Mercado Pago'}
+                  </span>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">Monto ($ ARS / USD)</label>
@@ -1482,6 +1601,96 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
                   {mpLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
                   <span>Generar Link de Cobro y Código QR</span>
                 </button>
+
+                <div className="bg-[#10131d] rounded-2xl border border-[#252c3f] p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Estado confirmado</h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Se actualiza con la información persistida del webhook de Mercado Pago.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void loadMercadoPagoStatus(mpCheckoutId || undefined)}
+                      disabled={mpStatusLoading}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#2c3751] text-[11px] font-semibold text-slate-200 hover:bg-[#1c2233] disabled:opacity-50 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${mpStatusLoading ? 'animate-spin' : ''}`} />
+                      Actualizar
+                    </button>
+                  </div>
+
+                  {mpStatusError && (
+                    <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-200">
+                      <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                      <span>{mpStatusError}</span>
+                    </div>
+                  )}
+
+                  {mpStatus && mpCheckoutId && (() => {
+                    const statusMeta = MERCADO_PAGO_STATUS_META[mpStatus];
+                    const StatusIcon = statusMeta.icon;
+                    return (
+                      <div className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 ${statusMeta.className}`}>
+                        <div className="flex items-center gap-2">
+                          <StatusIcon className="w-5 h-5 shrink-0" />
+                          <div>
+                            <div className="text-xs font-bold">{statusMeta.label}</div>
+                            <div className="text-[11px] opacity-80">{statusMeta.detail}</div>
+                          </div>
+                        </div>
+                        <span className="font-mono text-[10px] opacity-80">{mpCheckoutId}</span>
+                      </div>
+                    );
+                  })()}
+
+                  {!mpStatus && !mpStatusLoading && mpCheckouts.length === 0 && (
+                    <div className="rounded-lg border border-dashed border-[#2c3751] px-3 py-3 text-[11px] text-slate-400">
+                      Todavía no hay checkouts registrados para este workspace.
+                    </div>
+                  )}
+
+                  {mpCheckouts.length > 0 && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
+                        Checkouts recientes
+                      </div>
+                      {mpCheckouts.map((checkout) => {
+                        const statusMeta = MERCADO_PAGO_STATUS_META[checkout.status];
+                        const StatusIcon = statusMeta.icon;
+                        return (
+                          <button
+                            key={checkout.checkoutId}
+                            type="button"
+                            onClick={() => {
+                              setMpCheckoutId(checkout.checkoutId);
+                              setMpStatus(checkout.status);
+                              setMpLink(checkout.checkoutUrl || '');
+                              void loadMercadoPagoStatus(checkout.checkoutId);
+                            }}
+                            className={`w-full flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition-colors cursor-pointer ${
+                              checkout.checkoutId === mpCheckoutId
+                                ? 'border-blue-500/50 bg-blue-500/10'
+                                : 'border-[#252c3f] hover:bg-[#1c2233]'
+                            }`}
+                          >
+                            <span className="min-w-0">
+                              <span className="block text-xs font-semibold text-slate-200 truncate">{checkout.title}</span>
+                              <span className="block text-[10px] text-slate-500">
+                                {checkout.currency} {checkout.amount.toLocaleString()} · {new Date(checkout.createdAt).toLocaleString()}
+                              </span>
+                            </span>
+                            <span className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-bold ${statusMeta.className.split(' ')[0]}`}>
+                              <StatusIcon className="w-3.5 h-3.5" />
+                              {statusMeta.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
                 {mpLink && (
                   <div className="bg-[#121622] p-5 rounded-2xl border border-blue-500/30 space-y-4">
