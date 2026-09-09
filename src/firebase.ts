@@ -17,19 +17,20 @@ import {
   User as FirebaseUser,
   Auth,
 } from 'firebase/auth';
+import appletConfig from '../firebase-applet-config.json';
 
 // Firebase client configuration comes only from the platform environment.
 // VITE_* values are public client configuration, not server secrets.
 const metaEnv = (import.meta as any)?.env || {};
 
 export const firebaseConfig = {
-  apiKey: metaEnv.VITE_FIREBASE_API_KEY || "",
-  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || "",
-  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || "",
-  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: metaEnv.VITE_FIREBASE_APP_ID || "",
-  measurementId: metaEnv.VITE_FIREBASE_MEASUREMENT_ID || "",
+  apiKey: metaEnv.VITE_FIREBASE_API_KEY || appletConfig.apiKey || "",
+  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || appletConfig.authDomain || "",
+  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || appletConfig.projectId || "",
+  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || appletConfig.storageBucket || "",
+  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || appletConfig.messagingSenderId || "",
+  appId: metaEnv.VITE_FIREBASE_APP_ID || appletConfig.appId || "",
+  measurementId: metaEnv.VITE_FIREBASE_MEASUREMENT_ID || appletConfig.measurementId || "",
 };
 
 export const isLiveFirebaseConfigured = Boolean(

@@ -7,7 +7,8 @@ import type { Transporter } from "nodemailer";
 import { Pool } from "pg";
 import dotenv from "dotenv";
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import firebaseAppletConfig from "./firebase-applet-config.json";
 import {
   CRM_ENTITY_TYPES,
   claimDueAgentTasks,
@@ -122,6 +123,17 @@ async function ensureCredentialSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS clientum_tenant_memberships_user_idx
       ON clientum_tenant_memberships (user_id);
   `);
+
+  // Keep a fresh environment self-starting. The credential tables above are
+  // legacy-compatible, while the numbered migrations contain the durable CRM
+  // and Agent OS tables used by the current API.
+  const migrationDir = path.join(process.cwd(), "migrations");
+  const migrationFiles = readdirSync(migrationDir)
+    .filter((file) => /^\d+_.*\.sql$/.test(file))
+    .sort();
+  for (const file of migrationFiles) {
+    await credentialDatabase.query(readFileSync(path.join(migrationDir, file), "utf8"));
+  }
 
   // Existing releases stored credentials under user_id. Migrate those rows
   // into each user's initial personal tenant without decrypting or exposing
@@ -275,7 +287,7 @@ async function ensureTenantMembership(userId: string): Promise<string> {
 async function getRequestUserId(req: express.Request): Promise<string | null> {
   const authorization = String(req.header("authorization") || "");
   const bearerToken = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
-  const firebaseApiKey = process.env.VITE_FIREBASE_API_KEY?.trim();
+  const firebaseApiKey = (process.env.VITE_FIREBASE_API_KEY?.trim() || firebaseAppletConfig.apiKey).trim();
 
   if (bearerToken && firebaseApiKey) {
     try {
@@ -304,6 +316,13 @@ async function getRequestUserId(req: express.Request): Promise<string | null> {
 }
 
 const requireProductionAuthentication: express.RequestHandler = async (req, res, next) => {
+  // Provider webhooks cannot carry the browser's Firebase session cookie.
+  // They are acknowledged by the dedicated webhook handler and then verified
+  // against Mercado Pago using the tenant-scoped credential.
+  if (req.path === "/mercadopago/webhook") {
+    next();
+    return;
+  }
   if (process.env.NODE_ENV !== "production") {
     next();
     return;
@@ -320,7 +339,7 @@ const requireProductionAuthentication: express.RequestHandler = async (req, res,
 // AI and outbound email can consume paid provider credentials. Keep the local
 // demo usable, but require a Firebase-verified identity in production.
 app.use(
-  ["/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit"],
+  ["/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit", "/api/payments"],
   requireProductionAuthentication,
 );
 
@@ -447,6 +466,198 @@ async function getTenantCredentialValues(userId: string, moduleId: string): Prom
       .filter(([fieldId]) => allowedFields.has(fieldId)),
   );
 }
+
+function getPublicAppUrl(): string | null {
+  const configured = String(process.env.APP_URL || "").trim().replace(/\/+$/, "");
+  if (!configured || isPlaceholderValue(configured) || !/^https?:\/\/[^/]+/i.test(configured)) return null;
+  return configured;
+}
+
+function getPaymentIdFromWebhook(req: express.Request): string {
+  const queryData = req.query.data;
+  const bodyData = req.body?.data;
+  const queryId = typeof queryData === "object" && queryData !== null
+    ? (queryData as { id?: unknown }).id
+    : undefined;
+  const bodyId = typeof bodyData === "object" && bodyData !== null
+    ? (bodyData as { id?: unknown }).id
+    : undefined;
+  return String(queryId || bodyId || req.query.id || req.body?.id || "").trim();
+}
+
+app.get("/api/payments/status", async (req, res) => {
+  const context = await getAuthenticatedTenant(req, res);
+  if (!context) return;
+
+  try {
+    const values = await getTenantCredentialValues(context.userId, "payments");
+    const tokenConfigured = Boolean(values.MERCADOPAGO_ACCESS_TOKEN?.trim());
+    res.json({
+      provider: "mercadopago",
+      configured: tokenConfigured,
+      database: Boolean(credentialDatabase),
+      appUrlConfigured: Boolean(getPublicAppUrl()),
+    });
+  } catch (error: any) {
+    console.error("Payment status error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo comprobar la configuración de pagos." });
+  }
+});
+
+app.post("/api/payments/checkout", async (req, res) => {
+  const context = await getAuthenticatedTenant(req, res);
+  if (!context) return;
+  if (!credentialDatabase) {
+    res.status(503).json({ error: "PostgreSQL es necesario para registrar checkouts.", code: "POSTGRES_NOT_CONFIGURED" });
+    return;
+  }
+
+  const title = typeof req.body?.title === "string" ? req.body.title.trim().slice(0, 120) : "";
+  const amount = Number(req.body?.amount);
+  const currency = typeof req.body?.currency === "string" ? req.body.currency.trim().toUpperCase() : "ARS";
+  const payerEmail = typeof req.body?.payerEmail === "string" ? req.body.payerEmail.trim().slice(0, 160) : "";
+  if (!title || !Number.isFinite(amount) || amount <= 0 || amount > 100000000 || !/^[A-Z]{3}$/.test(currency)) {
+    res.status(400).json({ error: "Título, importe y moneda válida son obligatorios." });
+    return;
+  }
+  if (payerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)) {
+    res.status(400).json({ error: "El correo del comprador no es válido." });
+    return;
+  }
+
+  try {
+    const values = await getTenantCredentialValues(context.userId, "payments");
+    const accessToken = values.MERCADOPAGO_ACCESS_TOKEN?.trim();
+    if (!accessToken) {
+      res.status(409).json({
+        error: "Configura MERCADOPAGO_ACCESS_TOKEN en Configuración → Cobros MercadoPago antes de crear un checkout.",
+        code: "PAYMENT_PROVIDER_NOT_CONFIGURED",
+      });
+      return;
+    }
+
+    const externalReference = `clientum_${context.tenantId}_${Date.now()}_${randomBytes(5).toString("hex")}`;
+    const appUrl = getPublicAppUrl();
+    const preferencePayload: Record<string, unknown> = {
+      items: [{
+        title,
+        quantity: 1,
+        unit_price: Math.round(amount * 100) / 100,
+        currency_id: currency,
+      }],
+      external_reference: externalReference,
+    };
+    if (payerEmail) preferencePayload.payer = { email: payerEmail };
+    if (appUrl) {
+      preferencePayload.back_urls = {
+        success: `${appUrl}/app?payment=success`,
+        failure: `${appUrl}/app?payment=failure`,
+        pending: `${appUrl}/app?payment=pending`,
+      };
+      preferencePayload.auto_return = "approved";
+      preferencePayload.notification_url = `${appUrl}/api/payments/mercadopago/webhook?ref=${encodeURIComponent(externalReference)}`;
+    }
+
+    const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(preferencePayload),
+    });
+    const payload = await response.json().catch(() => ({})) as {
+      id?: string;
+      init_point?: string;
+      sandbox_init_point?: string;
+      message?: string;
+    };
+    if (!response.ok || !payload.init_point) {
+      console.error("Mercado Pago checkout creation failed:", response.status, payload.message || "unknown provider error");
+      res.status(response.status === 401 || response.status === 403 ? 502 : 502).json({
+        error: "Mercado Pago rechazó la creación del checkout. Revisa el Access Token y sus permisos.",
+        code: "PAYMENT_PROVIDER_ERROR",
+      });
+      return;
+    }
+
+    const checkoutId = `checkout-${Date.now()}-${randomBytes(5).toString("hex")}`;
+    await credentialDatabase.query(
+      `INSERT INTO clientum_payment_checkouts
+        (id, tenant_id, user_id, provider, preference_id, external_reference, amount, currency, title, init_point)
+       VALUES ($1, $2, $3, 'mercadopago', $4, $5, $6, $7, $8, $9)`,
+      [checkoutId, context.tenantId, context.userId, payload.id || null, externalReference, amount, currency, title, payload.init_point],
+    );
+    res.status(201).json({
+      checkoutId,
+      provider: "mercadopago",
+      externalReference,
+      checkoutUrl: payload.init_point,
+      sandboxCheckoutUrl: payload.sandbox_init_point || null,
+      status: "pending",
+    });
+  } catch (error: any) {
+    console.error("Payment checkout error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo crear el checkout de Mercado Pago." });
+  }
+});
+
+app.post("/api/payments/mercadopago/webhook", async (req, res) => {
+  // Acknowledge quickly; Mercado Pago retries notifications when it does not
+  // receive a 2xx response.
+  res.sendStatus(200);
+  if (!credentialDatabase) return;
+
+  const paymentId = getPaymentIdFromWebhook(req);
+  if (!paymentId) return;
+
+  try {
+    const reference = String(
+      req.query.ref ||
+      req.body?.external_reference ||
+      req.query.external_reference ||
+      req.body?.data?.external_reference ||
+      "",
+    ).trim();
+    const checkoutResult = await credentialDatabase.query<{
+      id: string;
+      user_id: string;
+      external_reference: string;
+    }>(
+      `SELECT id, user_id, external_reference
+       FROM clientum_payment_checkouts
+       WHERE provider = 'mercadopago' AND external_reference = $1
+       LIMIT 1`,
+      [reference],
+    );
+    let checkout = checkoutResult.rows[0];
+    if (!checkout) return;
+
+    const values = await getTenantCredentialValues(checkout.user_id, "payments");
+    const accessToken = values.MERCADOPAGO_ACCESS_TOKEN?.trim();
+    if (!accessToken) return;
+    const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!paymentResponse.ok) return;
+    const payment = await paymentResponse.json() as { status?: string; id?: string };
+    const status = payment.status === "approved"
+      ? "approved"
+      : payment.status === "cancelled"
+        ? "cancelled"
+        : payment.status === "rejected"
+          ? "rejected"
+          : "pending";
+    await credentialDatabase.query(
+      `UPDATE clientum_payment_checkouts
+       SET status = $1, provider_payment_id = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [status, String(payment.id || paymentId), checkout.id],
+    );
+  } catch (error: any) {
+    console.error("Mercado Pago webhook processing error:", error?.message || error);
+  }
+});
 
 async function getUserGeminiKey(_userId: string | null): Promise<string | undefined> {
   // Gemini is a platform capability. Tenant credential records must not

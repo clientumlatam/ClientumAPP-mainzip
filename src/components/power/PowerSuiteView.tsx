@@ -140,7 +140,6 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
   // 15. Cobros MercadoPago
   const [mpAmount, setMpAmount] = useState(15000);
   const [mpLoading, setMpLoading] = useState(false);
-  const [mpPayed, setMpPayed] = useState(false);
   const [mpLink, setMpLink] = useState('');
 
   // 16. Desarrollo Web - Embebido
@@ -469,28 +468,29 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
   };
 
   // 15. Cobros MercadoPago
-  const generateMPLink = () => {
+  const generateMPLink = async () => {
     setMpLoading(true);
-    setTimeout(() => {
-      setMpLink(`https://link.mercadopago.com.ar/clientumcrm/pago-${Math.round(mpAmount)}`);
+    try {
+      const response = await fetch('/api/payments/checkout', {
+        method: 'POST',
+        headers: await getClientumAuthJsonHeaders(),
+        body: JSON.stringify({
+          title: 'Cobro ClientumCRM',
+          amount: mpAmount,
+          currency: 'ARS',
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.checkoutUrl) {
+        throw new Error(payload.error || 'No se pudo crear el checkout.');
+      }
+      setMpLink(payload.checkoutUrl);
+      showToast('Checkout real de Mercado Pago generado', 'success');
+    } catch (error: any) {
+      showToast(error?.message || 'Configura Mercado Pago para crear un link real.', 'error');
+    } finally {
       setMpLoading(false);
-      showToast('Link de pago generado con éxito', 'success');
-    }, 1000);
-  };
-
-  const simulateSuccessPayment = () => {
-    setMpPayed(true);
-    // Add real task to follow up
-    addTask({
-      title: `Confirmar entrega y setear onboarding - Cobro MP exitoso`,
-      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      priority: 'Urgent',
-      status: 'Todo',
-      assignedTo: 'Sasha Kowalski',
-      description: 'Pago recibido automáticamente vía MercadoPago por un monto de $' + mpAmount.toLocaleString()
-    });
-    showToast('¡Pago de MercadoPago Aprobado! Trato avanzado en CRM', 'success');
-    triggerConfetti();
+    }
   };
 
   // 16. Webform submit demo
@@ -1496,19 +1496,13 @@ export const PowerSuiteView: React.FC<{ defaultModule?: string }> = ({ defaultMo
                       <QrCode className="w-full h-full text-black" />
                     </div>
 
-                    {!mpPayed ? (
-                      <button
-                        onClick={simulateSuccessPayment}
-                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
-                      >
-                        <Check className="w-4 h-4" />
-                        <span>Simular Pago Exitoso del Cliente</span>
-                      </button>
-                    ) : (
-                      <div className="bg-emerald-500/15 border border-emerald-500/30 p-3.5 rounded-xl text-emerald-300 font-bold text-center text-xs">
-                        ✓ ¡Pago de ${mpAmount.toLocaleString()} Aprobado! Trato avanzado a Ganado en CRM.
-                      </div>
-                    )}
+                    <button
+                      onClick={() => window.open(mpLink, '_blank', 'noopener,noreferrer')}
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span>Abrir Checkout Real de Mercado Pago</span>
+                    </button>
                   </div>
                 )}
               </div>
