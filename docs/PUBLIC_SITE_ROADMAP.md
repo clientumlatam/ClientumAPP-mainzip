@@ -9,6 +9,40 @@ medible y orientada a generar oportunidades comerciales.
 > construir confianza y convertir cada interacción relevante en una oportunidad
 > trazable dentro del CRM.
 
+## Auditoría técnica del estado
+
+**Fecha:** 2026-09-08
+**Alcance:** código fuente, rutas públicas, servidor local, preview de la home,
+endpoint del simulador y smoke test de navegación. No se consideraron verificadas
+las afirmaciones comerciales, legales, de disponibilidad ni las integraciones
+que dependen de proveedores o de datos de producción.
+
+### Hallazgos principales
+
+- La superficie pública está implementada como experiencia navegable: home,
+  productos, industrias, precios, recursos, casos, servicios, contacto, legales,
+  simulador, auditoría express y cotizador.
+- La navegación pública todavía se resuelve con `window.location.hash`; las
+  rutas pathname reales caen en la home pública porque el router público no lee
+  `window.location.pathname`.
+- El formulario de contacto no realiza ninguna petición: solo cambia a un estado
+  local de éxito y muestra un toast.
+- El cotizador calcula una estimación local y deriva a WhatsApp; no guarda,
+  envía, genera PDF ni crea un lead u oportunidad.
+- El simulador sí llama a `/api/public-agent` y tiene fallback explícito, pero
+  continúa siendo una simulación de marketing, no una conexión productiva de
+  WhatsApp.
+- El HTML base conserva `lang="en"` y el título genérico; no se encontraron
+  canonical, sitemap, robots, schemas ni eventos de analítica comercial.
+- El preview de la home renderiza correctamente en desktop y el typecheck pasa.
+  El smoke test de navegación falla al buscar el botón interno `Calendario`;
+  por eso la verificación integral del sitio sigue abierta.
+
+Los estados de este documento se actualizaron con esa evidencia. `[x]` significa
+presencia verificable en el código o preview, `[-]` significa implementación
+parcial, `[!]` significa que hace falta una decisión o validación externa y `[ ]`
+significa que no se encontró implementación.
+
 ---
 
 ## Cómo usar este roadmap
@@ -72,31 +106,34 @@ Una mejora del sitio público se considera terminada cuando:
 
 ### Parcial o pendiente de consolidación
 
-- [-] Los formularios y modales existen; verificar que creen leads reales,
-  envíen notificaciones y guarden atribución.
-- [-] La demo de WhatsApp es interactiva; diferenciar claramente simulación,
-  demo y conexión productiva.
+- [-] Los formularios y modales existen; el formulario de contacto aún es local,
+  el cotizador deriva a WhatsApp y no se crean leads, notificaciones ni
+  atribución persistente.
+- [-] La demo de WhatsApp es interactiva y usa `/api/public-agent` con fallback;
+  todavía debe rotularse de forma inequívoca como simulación/demo.
 - [-] El sitio muestra muchos módulos; agregar estados visibles de disponible,
   demo, configuración requerida o próximamente.
-- [-] Las páginas usan navegación hash; migrar a URLs reales para mejorar SEO,
-  compartir enlaces y analítica.
+- [-] Las páginas usan navegación hash; el servidor tiene fallback SPA, pero las
+  vistas públicas todavía no resuelven pathname reales.
 - [-] El contenido legal y de seguridad existe; validar que cada afirmación esté
   respaldada por la operación real.
-- [-] Existen casos, recursos y servicios; ampliar evidencia con métricas,
-  autores, fechas y resultados verificables.
-- [-] La página de precios existe; completar el flujo comercial posterior a la
-  selección de un plan.
+- [-] Existen casos, recursos y servicios; los casos incluyen métricas y
+  testimonios no auditados, y las descargas de recursos son solo mensajes
+  locales.
+- [-] La página de precios existe con toggles ARS/USD y mensual/anual; completar
+  el flujo comercial posterior a la selección de un plan.
 
 ### Regla de comunicación pública
 
-- [ ] No presentar como cliente, partner o certificación una relación que no esté
+- [!] No presentar como cliente, partner o certificación una relación que no esté
   confirmada.
-- [ ] No presentar una simulación como una conexión productiva.
-- [ ] No prometer SLA, backups, infraestructura, cifrado o tiempos de soporte
+- [!] No presentar una simulación como una conexión productiva.
+- [!] No prometer SLA, backups, infraestructura, cifrado o tiempos de soporte
   que no estén definidos y operativamente medidos.
-- [ ] No presentar un módulo de catálogo como funcionalidad productiva sin
+- [!] No presentar un módulo de catálogo como funcionalidad productiva sin
   indicar sus requisitos y estado.
-- [ ] Mostrar siempre el siguiente paso después de cada CTA.
+- [-] Mostrar siempre el siguiente paso después de cada CTA; los CTAs públicos
+  tienen destino visual, pero no todos generan una conversión trazable.
 
 ---
 
@@ -108,7 +145,7 @@ correcto desde el punto de vista técnico.
 
 ## 0.1 URLs y navegación
 
-- [ ] Reemplazar progresivamente las rutas hash:
+- [-] Reemplazar progresivamente las rutas hash:
   - `/#/producto/crm`
   - `/#/precios`
   - `/#/contacto`
@@ -118,12 +155,15 @@ correcto desde el punto de vista técnico.
   - `/contacto`
   - `/casos`
   - `/recursos`
-- [ ] Configurar fallback del servidor hacia `index.html`.
+- [x] Configurar fallback del servidor hacia `index.html`.
 - [ ] Mantener redirecciones para enlaces antiguos con hash.
 - [ ] Crear una página 404 pública con navegación y CTA.
-- [ ] Conservar scroll restoration por página.
-- [ ] Permitir copiar y compartir URLs específicas.
-- [ ] Verificar que Back y Forward del navegador funcionen correctamente.
+- [-] Conservar scroll restoration por página; existe scroll al navegar dentro
+  del hash-router, pero no hay restauración para pathname ni navegación directa.
+- [-] Permitir copiar y compartir URLs específicas; el hash permite compartir,
+  pero no cumple el objetivo de URLs reales.
+- [-] Verificar que Back y Forward del navegador funcionen correctamente; el
+  hashchange está conectado, pero el flujo pathname no está cubierto.
 
 ## 0.2 SEO técnico
 
@@ -131,9 +171,8 @@ correcto desde el punto de vista técnico.
 - [ ] Reemplazar el título genérico “Remix ClientumCRM”.
 - [ ] Crear title y description únicos para cada página pública.
 - [ ] Agregar canonical URL por página.
-- [ ] Agregar Open Graph:
-  - [ ] `og:title`.
-  - [ ] `og:description`.
+- [-] Agregar Open Graph:
+  - [x] `og:title` y `og:description` base existen en `index.html`.
   - [ ] `og:url`.
   - [ ] `og:image`.
   - [ ] `og:type`.
@@ -156,13 +195,13 @@ correcto desde el punto de vista técnico.
 
 ## 0.4 Revisión de claims públicos
 
-- [ ] Auditar todas las métricas mostradas en home.
-- [ ] Auditar cifras de pipeline, tasa de cierre y ciclos promedio.
-- [ ] Auditar el claim de “14 agentes especialistas”.
-- [ ] Auditar disponibilidad de 99.9%.
-- [ ] Auditar referencias a Google Cloud, backups y arquitectura multizona.
-- [ ] Auditar referencias a Gemini y tratamiento de datos.
-- [ ] Auditar integraciones con AFIP, WhatsApp, Mercado Pago, Shopify y otras.
+- [!] Auditar todas las métricas mostradas en home.
+- [!] Auditar cifras de pipeline, tasa de cierre y ciclos promedio.
+- [!] Auditar el claim de “14 agentes especialistas”.
+- [!] Auditar disponibilidad de 99.9%.
+- [!] Auditar referencias a Google Cloud, backups y arquitectura multizona.
+- [!] Auditar referencias a Gemini y tratamiento de datos.
+- [!] Auditar integraciones con AFIP, WhatsApp, Mercado Pago, Shopify y otras.
 - [ ] Añadir fuente, fecha o contexto a las métricas públicas relevantes.
 - [ ] Marcar como demo cualquier dato que no provenga de producción.
 
@@ -173,7 +212,9 @@ correcto desde el punto de vista técnico.
 - [ ] Explicar autenticación y permisos.
 - [ ] Explicar cifrado en tránsito y en reposo con lenguaje verificable.
 - [ ] Explicar backups y retención.
-- [ ] Explicar exportación y eliminación de datos.
+- [-] Explicar exportación y eliminación de datos; la página legal menciona
+  exportación, pero no existe una página de seguridad ni un flujo público de
+  eliminación.
 - [ ] Publicar subprocesadores cuando corresponda.
 - [ ] Publicar canal de reporte de vulnerabilidades.
 - [ ] Agregar página o enlace a estado operativo.
@@ -191,32 +232,29 @@ reales.
 
 - [ ] Conectar el formulario de contacto al backend real.
 - [ ] Crear un lead automáticamente en el CRM.
-- [ ] Guardar:
-  - [ ] Nombre.
-  - [ ] Empresa.
-  - [ ] Email.
-  - [ ] Teléfono.
-  - [ ] Industria.
-  - [ ] Tamaño de empresa.
-  - [ ] Necesidad principal.
-  - [ ] Página de origen.
-  - [ ] UTMs.
-- [ ] Validar email, teléfono y campos obligatorios.
+- [-] Guardar nombre, empresa, email, teléfono, industria, tamaño de empresa y
+  necesidad principal; el formulario mantiene estos valores solo en estado local.
+- [ ] Guardar página de origen y UTMs.
+- [-] Validar email, teléfono y campos obligatorios; hay `required` y tipo email,
+  pero no hay validación de teléfono ni validación server-side.
 - [ ] Implementar protección contra spam y abuso.
 - [ ] Enviar email de confirmación al visitante.
 - [ ] Notificar al equipo comercial.
 - [ ] Evitar leads duplicados por email o teléfono.
-- [ ] Mostrar estados de envío, error, reintento y éxito.
+- [-] Mostrar estados de envío, error, reintento y éxito; solo existe el estado
+  local de éxito, sin loading, error ni reintento.
 - [ ] Crear una página de agradecimiento específica.
 
 ## 1.2 Tipos de conversión
 
-- [ ] Solicitar una demo.
-- [ ] Solicitar una cotización.
-- [ ] Solicitar auditoría.
-- [ ] Contactar ventas.
-- [ ] Consultar soporte.
-- [ ] Descargar un recurso.
+- [-] Solicitar una demo; existe formulario y CTA, pero no agenda ni persistencia.
+- [-] Solicitar una cotización; existe el wizard local, sin seguimiento CRM.
+- [-] Solicitar auditoría; existe la auditoría express, sin captura del lead.
+- [-] Contactar ventas; existe WhatsApp/email directo, sin trazabilidad.
+- [-] Consultar soporte; existe un modo soporte en el simulador, no un canal
+  operativo de tickets.
+- [-] Descargar un recurso; los botones muestran un toast pero no entregan un
+  archivo ni capturan consentimiento.
 - [ ] Solicitar una implementación por industria.
 - [ ] Diferenciar el origen y la intención de cada formulario.
 
@@ -235,17 +273,18 @@ reales.
 
 ## 1.4 Cotizador de implementación
 
-- [ ] Definir preguntas del wizard.
-- [ ] Definir reglas de cálculo.
-- [ ] Mostrar módulos recomendados.
-- [ ] Mostrar rango de inversión.
-- [ ] Mostrar plazo estimado.
+- [x] Definir preguntas del wizard.
+- [x] Definir reglas de cálculo.
+- [x] Mostrar módulos recomendados.
+- [x] Mostrar rango de inversión.
+- [x] Mostrar plazo estimado.
 - [ ] Mostrar nivel de complejidad.
 - [ ] Permitir guardar el resultado.
 - [ ] Enviar el resultado por email.
 - [ ] Generar PDF opcional.
 - [ ] Crear lead y oportunidad en el CRM.
-- [ ] Permitir agendar una llamada desde el resultado.
+- [-] Permitir agendar una llamada desde el resultado; el resultado abre
+  WhatsApp, no un calendario.
 - [ ] Medir abandono por paso.
 
 ## 1.5 Atribución
@@ -269,29 +308,37 @@ contacto comercial.
 
 ## 2.1 Home
 
-- [ ] Explicar claramente para quién es Clientum.
-- [ ] Reducir mensajes genéricos y priorizar un beneficio principal.
-- [ ] Presentar un CTA principal y uno secundario.
-- [ ] Mostrar resultados concretos, no solo cantidad de módulos.
-- [ ] Agregar una sección “Cómo funciona”.
-- [ ] Agregar una sección “Qué incluye”.
-- [ ] Agregar una sección “Por qué Clientum”.
-- [ ] Agregar FAQ comercial.
-- [ ] Agregar prueba social cerca de los CTA.
+- [x] Explicar claramente para quién es Clientum; la home se posiciona para PyMEs
+  latinoamericanas y equipos comerciales.
+- [-] Reducir mensajes genéricos y priorizar un beneficio principal; el hero
+  prioriza convertir conversaciones en ventas, pero conserva claims y muchos
+  módulos.
+- [x] Presentar un CTA principal y uno secundario.
+- [x] Mostrar resultados concretos, no solo cantidad de módulos.
+- [x] Agregar una sección “Cómo funciona”.
+- [-] Agregar una sección “Qué incluye”; existe una explicación por pilares,
+  pero no un inventario claro de alcance y requisitos.
+- [x] Agregar una sección “Por qué Clientum”.
+- [x] Agregar FAQ comercial.
+- [-] Agregar prueba social cerca de los CTA; hay métricas y casos enlazados,
+  pero no evidencia autorizada junto al hero.
 - [ ] Revisar el orden de la página en móvil.
 
 ## 2.2 Casos de éxito
 
-- [ ] Publicar cliente o industria identificable cuando exista autorización.
-- [ ] Mostrar problema inicial.
-- [ ] Mostrar implementación.
-- [ ] Mostrar resultado medible.
-- [ ] Mostrar tiempo hasta el resultado.
-- [ ] Agregar testimonio textual.
+- [!] Publicar cliente o industria identificable cuando exista autorización; el
+  código contiene nombres y resultados, pero no evidencia de autorización.
+- [x] Mostrar problema inicial.
+- [x] Mostrar implementación.
+- [-] Mostrar resultado medible; hay métricas concretas, todavía no auditadas.
+- [-] Mostrar tiempo hasta el resultado; aparece en copy, no como dato
+  estructurado por caso.
+- [x] Agregar testimonio textual.
 - [ ] Agregar imagen, logo o video cuando sea posible.
-- [ ] Agregar filtros por industria.
-- [ ] Agregar CTA desde cada caso.
-- [ ] Verificar que todas las métricas sean reales y auditables.
+- [ ] Agregar filtros por industria; existe estado de filtro, pero no controles
+  funcionales visibles.
+- [x] Agregar CTA desde cada caso.
+- [!] Verificar que todas las métricas sean reales y auditables.
 
 ## 2.3 Página de comparación
 
@@ -305,25 +352,29 @@ contacto comercial.
 
 ## 2.4 Páginas por industria
 
-- [ ] Definir problema específico por industria.
-- [ ] Mostrar flujo de trabajo de esa industria.
-- [ ] Mostrar módulos relevantes.
-- [ ] Mostrar integración necesaria.
-- [ ] Mostrar caso de éxito relacionado.
-- [ ] Definir CTA específico.
+- [x] Definir problema específico por industria.
+- [x] Mostrar flujo de trabajo de esa industria.
+- [x] Mostrar módulos relevantes.
+- [-] Mostrar integración necesaria; se describe en contenido, pero no se
+  distingue siempre entre disponible y configuración requerida.
+- [-] Mostrar caso de éxito relacionado; existe contenido general de casos, sin
+  asociación verificable por vertical.
+- [x] Definir CTA específico.
 - [ ] Agregar preguntas frecuentes por vertical.
 - [ ] Crear title, description y schema propios.
 
 ## 2.5 Recursos y blog
 
-- [ ] Crear categorías editoriales.
-- [ ] Mostrar autor y fecha.
+- [x] Crear categorías editoriales.
+- [-] Mostrar autor y fecha; hay fecha, pero no autor por artículo.
 - [ ] Mostrar fecha de última actualización.
-- [ ] Agregar búsqueda.
-- [ ] Agregar filtros.
-- [ ] Agregar recursos descargables.
+- [x] Agregar búsqueda.
+- [x] Agregar filtros.
+- [-] Agregar recursos descargables; las plantillas están representadas, pero el
+  botón solo muestra un toast.
 - [ ] Crear plantillas y checklists.
-- [ ] Añadir CTAs contextuales.
+- [-] Añadir CTAs contextuales; existe CTA al Campus y navegación general, no
+  CTAs asociados a cada artículo.
 - [ ] Conectar descargas con captura de lead.
 - [ ] Agregar newsletter con consentimiento.
 
@@ -350,6 +401,9 @@ ventas.
 - [ ] Permitir reiniciar la demo.
 - [ ] Evitar exponer datos reales.
 - [ ] Medir módulos visitados.
+
+> El simulador de WhatsApp es interactivo, pero no satisface esta checklist de
+> demo del CRM y debe mantenerse separado de una conexión productiva.
 
 ## 3.2 Videos
 
@@ -401,24 +455,29 @@ personas y dispositivos.
 ## 4.1 Accesibilidad
 
 - [ ] Agregar enlace “Saltar al contenido”.
-- [ ] Verificar jerarquía H1/H2/H3.
-- [ ] Agregar labels reales a formularios.
-- [ ] Revisar `aria-expanded` en menús.
+- [-] Verificar jerarquía H1/H2/H3; las páginas principales tienen H1 y
+  encabezados visibles, pero falta una auditoría completa.
+- [-] Agregar labels reales a formularios; hay labels visuales, aunque no están
+  asociados sistemáticamente mediante `htmlFor`/`id`.
+- [-] Revisar `aria-expanded` en menús; el menú público tiene estados de teclado,
+  pero no se verificó toda la navegación.
 - [ ] Revisar `aria-current` en navegación.
 - [ ] Implementar focus trap en modales.
 - [ ] Devolver foco al elemento que abrió cada modal.
 - [ ] Permitir cerrar modales con Escape.
 - [ ] Verificar navegación completa con teclado.
 - [ ] Mejorar contraste de textos secundarios.
-- [ ] Agregar alt text descriptivo.
+- [-] Agregar alt text descriptivo; no hay imágenes de contenido en la superficie
+  auditada, pero falta una política para los assets que se incorporen.
 - [ ] Evitar texto importante dentro de imágenes.
 - [ ] Respetar `prefers-reduced-motion`.
 - [ ] Ejecutar auditoría Lighthouse y axe.
 
 ## 4.2 Responsive
 
-- [ ] Probar navbar en pantallas pequeñas.
-- [ ] Probar menú móvil completo.
+- [-] Probar navbar en pantallas pequeñas; existe menú móvil dedicado, pero no
+  se ejecutó una prueba en viewport pequeño.
+- [-] Probar menú móvil completo; existe implementación, falta verificación.
 - [ ] Probar hero en 320 px de ancho.
 - [ ] Probar tablas y comparativas.
 - [ ] Probar modales largos.
@@ -468,6 +527,9 @@ personas y dispositivos.
 - [ ] Descarga de recurso.
 - [ ] Inicio de prueba.
 - [ ] Click en acceso al CRM.
+
+> No se encontraron eventos de analítica comercial ni una capa de tracking
+> conectada a estos puntos de interacción. La lista permanece pendiente.
 
 ## 5.2 Métricas
 
@@ -544,7 +606,8 @@ estabilizar el embudo principal.
 
 ## 6.4 Internacionalización
 
-- [ ] Definir español argentino como idioma principal.
+- [-] Definir español argentino como idioma principal; el copy está en español
+  rioplatense, pero el documento HTML aún declara `lang="en"`.
 - [ ] Preparar español neutro.
 - [ ] Evaluar portugués para Brasil.
 - [ ] Evaluar inglés solo si existe demanda real.
