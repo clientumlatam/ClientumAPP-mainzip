@@ -18,6 +18,7 @@ export const PublicPricingPage: React.FC<PublicPricingPageProps> = ({
   currency,
   onToggleCurrency,
   onNavigate,
+  onOpenWizard,
 }) => {
   const { enterApp } = useCRM();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
@@ -25,77 +26,54 @@ export const PublicPricingPage: React.FC<PublicPricingPageProps> = ({
 
   const displayPlans = [
     {
-      id: 'inicial',
-      name: 'Plan Inicial',
-      tagline: 'Para profesionales y pequeños equipos comerciales de hasta 3 personas.',
-      priceUSD: isAnnual ? 17 : 20,
-      priceARS: isAnnual ? 20000 : 24000,
+      id: 'starter',
+      name: 'Starter',
+      tagline: 'Para PyMEs en crecimiento que necesitan ordenar su operación comercial.',
+      priceUSD: isAnnual ? 25 : 29,
+      priceARS: isAnnual ? 25000 : 29000,
       badge: null,
       popular: false,
       features: [
-        'Hasta 3 usuarios comerciales',
-        'Pipeline Kanban personalizable',
-        'Gestión de hasta 500 contactos y empresas',
-        'Conexión WhatsApp Web básica',
-        'Reportes de ventas mensuales',
-        'Soporte por email y documentación',
+        'CRM básico',
+        'WhatsApp CRM para 2 usuarios',
+        'Pipeline Kanban y contactos',
+        'Soporte estándar',
       ],
-      ctaText: 'Comenzar Gratis',
+      ctaText: 'Calcular mi plan',
     },
     {
-      id: 'pyme',
-      name: 'Plan PyME Pro',
-      tagline: 'El más elegido por distribuidores, agro y comercios en expansión.',
-      priceUSD: isAnnual ? 38 : 45,
-      priceARS: isAnnual ? 45000 : 54000,
-      badge: 'Más Elegido en Latam',
+      id: 'professional',
+      name: 'Professional',
+      tagline: 'Para empresas que están escalando ventas y automatización.',
+      priceUSD: isAnnual ? 67 : 79,
+      priceARS: isAnnual ? 67000 : 79000,
+      badge: 'Más Elegido',
       popular: true,
       features: [
-        'Hasta 10 usuarios comerciales',
-        'Pipelines ilimitados & Scoring MEDDIC',
-        'Agente IA WhatsApp 24/7 (Gemini 3.6)',
-        'Facturación electrónica AFIP (Facturas A, B, C con CAE)',
-        'Gestión de cobros e inventario básico',
-        'Automatizaciones de correo y WhatsApp sin código',
-        'Soporte prioritario por WhatsApp directo',
+        '5 usuarios comerciales',
+        'Chatbot IA 24/7 ilimitado',
+        'Facturación AFIP con CAE',
+        'Workflows automáticos',
+        'Pipeline, reportes y soporte prioritario',
       ],
       ctaText: 'Probar Demo en Vivo',
     },
     {
-      id: 'pro',
-      name: 'Plan Pro / Corporativo',
-      tagline: 'Para compañías con múltiples sucursales y alto volumen de leads.',
-      priceUSD: isAnnual ? 68 : 80,
-      priceARS: isAnnual ? 80000 : 96000,
+      id: 'enterprise',
+      name: 'Enterprise',
+      tagline: 'Para grandes operaciones con procesos y equipos a medida.',
+      priceUSD: isAnnual ? 169 : 199,
+      priceARS: isAnnual ? 169000 : 199000,
       badge: 'Escala Total',
       popular: false,
       features: [
-        'Usuarios comerciales ilimitados',
-        'Entrenamiento de IA a medida con catálogo propio',
-        'Multi-empresa y multi-sucursal',
-        'Integración con ERPs externos y APIs REST',
-        'Atribución avanzada de ingresos y BI a medida',
-        'Servidores dedicados y SLA 99.9% garantizado',
-        'Gerente de cuenta exclusivo y onboarding asistido',
+        'Usuarios ilimitados',
+        'Custom Objects Studio',
+        'Workflows y APIs a medida',
+        'Soporte dedicado 24/7',
+        'SLA garantizado',
       ],
       ctaText: 'Hablar con Consultor',
-    },
-    {
-      id: 'especializado',
-      name: 'Plan Especializado',
-      tagline: 'Infraestructura dedicada, desarrollos a medida y modelos LLM privados.',
-      priceUSD: isAnnual ? 210 : 250,
-      priceARS: isAnnual ? 250000 : 300000,
-      badge: 'Custom Enterprise',
-      popular: false,
-      features: [
-        'Desarrollo de módulos e interfaces a medida',
-        'Integraciones directas con SAP, Tango, Bejerman',
-        'Cluster privado de datos y hosting soberano',
-        'Soporte 24/7 con teléfono de guardia',
-        'Capacitación presencial o virtual a todo el equipo',
-      ],
-      ctaText: 'Consultar Proyecto',
     }
   ];
 
@@ -171,7 +149,7 @@ export const PublicPricingPage: React.FC<PublicPricingPageProps> = ({
       </section>
 
       {/* Pricing Cards Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
         {displayPlans.map((plan) => (
           <div
             key={plan.id}
@@ -229,6 +207,8 @@ export const PublicPricingPage: React.FC<PublicPricingPageProps> = ({
                 onClick={() => {
                   if (plan.popular) {
                     enterApp();
+                  } else if (plan.id === 'starter') {
+                    onOpenWizard();
                   } else {
                     onNavigate('/contacto');
                   }

@@ -32,6 +32,7 @@ import { CLIENTUM_BROCHURE_METRICS, CLIENTUM_PILLARS, CLIENTUM_SOLUTIONS } from 
 import { useCRM } from '../../context/CRMContext';
 import { PublicRoutePath } from './publicRoutes';
 import { PublicPlatformMap } from './PublicPlatformMap';
+import { PublicSiteHighlights } from './PublicSiteHighlights';
 
 interface PublicHomeProps {
   onNavigate: (path: PublicRoutePath) => void;
@@ -185,7 +186,14 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 2. INTERACTIVE PRODUCT PREVIEW SHOWCASE */}
+      {/* 2. PUBLIC SITE DOCUMENTATION HIGHLIGHTS */}
+      <PublicSiteHighlights
+        onNavigate={onNavigate}
+        onOpenWizard={onOpenWizard}
+        onOpenSimulator={onOpenSimulator}
+      />
+
+      {/* 3. INTERACTIVE PRODUCT PREVIEW SHOWCASE */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
@@ -479,7 +487,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 3. FOUR CORE PILLARS */}
+      {/* 4. FOUR CORE PILLARS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -503,7 +511,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 4. INTEGRATED SOLUTIONS MATRIX */}
+      {/* 5. INTEGRATED SOLUTIONS MATRIX */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
@@ -569,14 +577,14 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 5. PLATFORM MAP FROM THE CLIENTUMOS DOCUMENTATION */}
+      {/* 6. PLATFORM MAP FROM THE CLIENTUMOS DOCUMENTATION */}
       <PublicPlatformMap
         onNavigate={onNavigate}
         onOpenWizard={onOpenWizard}
         onOpenSimulator={onOpenSimulator}
       />
 
-      {/* 6. CLIENTUM VS TRADITIONAL CRM COMPARISON */}
+      {/* 7. CLIENTUM VS TRADITIONAL CRM COMPARISON */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="p-8 sm:p-12 rounded-3xl bg-slate-50 border border-slate-200 space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -629,7 +637,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 7. REAL CLIENT CASE STUDIES & TESTIMONIALS */}
+      {/* 8. REAL CLIENT CASE STUDIES & TESTIMONIALS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -697,7 +705,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 8. FREQUENTLY ASKED QUESTIONS */}
+      {/* 9. FREQUENTLY ASKED QUESTIONS */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10 space-y-2">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -738,7 +746,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
         </div>
       </section>
 
-      {/* 9. FINAL HIGH-CONVERSION CTA */}
+      {/* 10. FINAL HIGH-CONVERSION CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="p-8 sm:p-14 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-center space-y-6 shadow-xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold border border-white/20">
