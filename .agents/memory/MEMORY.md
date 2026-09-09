@@ -4,3 +4,4 @@
 - [Workspace typecheck setup](workspace-typecheck.md) — build can work while lint is blocked by missing declared dev dependencies; restore packages before diagnosing code errors.
 - [User credential boundaries](user-credential-boundaries.md) — keep provider credentials and internal REST tokens user-scoped and separate from workspace-managed secrets.
 - [Server workflow refresh](workflow-server-restart.md) — restart the app workflow after server.ts changes; client hot reload does not guarantee the backend process has reloaded.
+- [Integration documentation status](integration-documentation-status.md) — distinguish runtime-connected providers from catalog-only modules and avoid hardcoded free-tier promises.

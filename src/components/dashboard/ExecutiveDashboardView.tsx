@@ -302,7 +302,7 @@ export const ExecutiveDashboardView: React.FC = () => {
                   style={{ '--stage-color': stage.color } as React.CSSProperties}
                 >
                   <div className="crm-stage__header">
-                    <div className="crm-stage__title"><span className="crm-stage__dot" />{stage.label}<span className="crm-stage__count">{columnDeals.length}</span></div>
+                    <div className="crm-stage__title"><span className="crm-stage__dot" />{stage.name}<span className="crm-stage__count">{columnDeals.length}</span></div>
                     <span className="crm-stage__total">{money(total)}</span>
                   </div>
                   <div className="crm-stage__cards custom-scrollbar">

@@ -1,28 +1,51 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Activity,
+  BarChart3,
+  BellRing,
+  Briefcase,
+  Building2,
+  CalendarDays,
   ArrowRight,
   Bot,
+  CheckSquare,
   Check,
   CheckCircle2,
-  ChevronRight,
   CircleAlert,
   CreditCard,
   Database,
+  FileCheck,
+  FileSpreadsheet,
+  Globe,
+  GraduationCap,
   Gauge,
+  Home,
+  Inbox,
   KeyRound,
   LockKeyhole,
+  Mail,
+  MapPin,
+  MessageSquare,
   MessageSquareText,
+  Receipt,
   Play,
   RefreshCw,
   ScanSearch,
   Send,
   ShieldCheck,
   Sparkles,
+  Store,
+  Target,
   UserRoundCheck,
+  Users2,
+  Workflow,
   X,
   Zap,
 } from 'lucide-react';
 import { useCRM } from '../../context/CRMContext';
+import { ActiveTab } from '../../types';
+import { getModuleCredentialDefinition } from '../../data/moduleCredentials';
+import { ModuleCredentialsModal } from '../settings/ModuleCredentialsModal';
 
 type FeatureId = 'bugs' | 'payments' | 'ai' | 'sms' | 'database' | 'auth';
 type ScanStatus = 'pending' | 'running' | 'passed' | 'warning';
@@ -44,6 +67,78 @@ interface FeatureCard {
   status: string;
   action: string;
 }
+
+type ModuleGroup =
+  | 'Gestión comercial'
+  | 'Comunicación'
+  | 'IA & automatización'
+  | 'Operaciones & finanzas'
+  | 'Power Suite'
+  | 'Datos & configuración';
+
+interface HubModule {
+  id: ActiveTab;
+  title: string;
+  description: string;
+  group: ModuleGroup;
+  icon: React.ElementType;
+  tone: string;
+  badge?: string;
+}
+
+const HUB_MODULES: HubModule[] = [
+  { id: 'dashboard', title: 'Resumen ejecutivo', description: 'Métricas, alertas, pipeline y prioridades del equipo.', group: 'Gestión comercial', icon: Home, tone: 'blue', badge: 'Core' },
+  { id: 'opportunities', title: 'Pipeline de negocios', description: 'Gestiona oportunidades en Kanban o tabla y actualiza sus etapas.', group: 'Gestión comercial', icon: Briefcase, tone: 'blue', badge: 'Core' },
+  { id: 'companies', title: 'Empresas', description: 'Cuentas, segmentos, salud comercial y actividad relacionada.', group: 'Gestión comercial', icon: Building2, tone: 'cyan' },
+  { id: 'people', title: 'Contactos', description: 'Directorio de personas, responsables y relaciones de negocio.', group: 'Gestión comercial', icon: Users2, tone: 'indigo' },
+  { id: 'tasks', title: 'Actividades y agenda', description: 'Tareas, vencimientos, responsables y próximos seguimientos.', group: 'Gestión comercial', icon: CheckSquare, tone: 'amber' },
+  { id: 'activityInbox', title: 'Notas y llamadas', description: 'Registra actividad comercial, reuniones, llamadas e insights.', group: 'Gestión comercial', icon: Activity, tone: 'violet' },
+  { id: 'calendar', title: 'Calendario', description: 'Visualiza reuniones, tareas y fechas de cierre en una agenda.', group: 'Gestión comercial', icon: CalendarDays, tone: 'blue' },
+  { id: 'analytics', title: 'Reportes y BI', description: 'Analiza conversión, ingresos, fuentes y rendimiento del espacio.', group: 'Gestión comercial', icon: BarChart3, tone: 'emerald' },
+  { id: 'propuestas', title: 'Propuestas y presupuestos', description: 'Crea, personaliza y comparte propuestas comerciales.', group: 'Gestión comercial', icon: FileCheck, tone: 'emerald', badge: 'PDF' },
+  { id: 'meddic', title: 'Lead Scoring MEDDIC', description: 'Prioriza oportunidades con una evaluación B2B estructurada.', group: 'Gestión comercial', icon: Target, tone: 'violet', badge: 'IA' },
+  { id: 'googleMaps', title: 'Prospección Mapa B2B', description: 'Busca empresas y prospectos por ciudad, zona y categoría.', group: 'Gestión comercial', icon: MapPin, tone: 'cyan', badge: 'Maps' },
+
+  { id: 'whatsapp', title: 'Bandeja omnicanal', description: 'Centraliza conversaciones, estados y atención comercial.', group: 'Comunicación', icon: Inbox, tone: 'emerald', badge: 'LIVE' },
+  { id: 'messages', title: 'Mensajes', description: 'Gestiona conversaciones y respuestas del equipo.', group: 'Comunicación', icon: MessageSquare, tone: 'blue' },
+  { id: 'webmail', title: 'Webmail y routing', description: 'Consulta correo corporativo y actividad de email del workspace.', group: 'Comunicación', icon: Mail, tone: 'cyan' },
+  { id: 'chatbot', title: 'Chatbot WhatsApp 24/7', description: 'Diseña respuestas automáticas y deriva conversaciones.', group: 'Comunicación', icon: Bot, tone: 'emerald', badge: 'IA' },
+  { id: 'campaigns', title: 'Campañas masivas', description: 'Prepara campañas de WhatsApp, email y seguimiento comercial.', group: 'Comunicación', icon: Send, tone: 'amber' },
+  { id: 'automation', title: 'Automatizaciones', description: 'Configura acciones que responden a eventos del CRM.', group: 'Comunicación', icon: BellRing, tone: 'violet' },
+
+  { id: 'agenteOS', title: 'Agentes y Copilot', description: 'Orquesta asistentes especializados para el equipo comercial.', group: 'IA & automatización', icon: Sparkles, tone: 'violet', badge: '14 agentes' },
+  { id: 'aiAssistant', title: 'Asistente Gemini', description: 'Genera análisis, resúmenes, ideas y próximos pasos.', group: 'IA & automatización', icon: Bot, tone: 'blue', badge: 'IA' },
+  { id: 'gtmStrategy', title: 'Estrategias GTM', description: 'Construye planes go-to-market para productos y audiencias.', group: 'IA & automatización', icon: Target, tone: 'indigo', badge: 'IA' },
+  { id: 'sdrOutreach', title: 'Agente SDR Outreach', description: 'Planifica prospección y seguimiento asistido por IA.', group: 'IA & automatización', icon: Send, tone: 'emerald', badge: 'IA' },
+  { id: 'adCopy', title: 'AI Ad Copy Studio', description: 'Crea copys para LinkedIn, anuncios, email y campañas.', group: 'IA & automatización', icon: Sparkles, tone: 'amber', badge: 'IA' },
+  { id: 'knowledge', title: 'Base de conocimiento', description: 'Centraliza documentación, respuestas y contexto del negocio.', group: 'IA & automatización', icon: Database, tone: 'cyan' },
+  { id: 'workflows', title: 'Workflows y flujos', description: 'Diseña procesos repetibles con triggers y acciones.', group: 'IA & automatización', icon: Workflow, tone: 'violet' },
+
+  { id: 'operations', title: 'Operaciones internas', description: 'Coordina procesos, responsables y controles operativos.', group: 'Operaciones & finanzas', icon: Activity, tone: 'blue' },
+  { id: 'erp', title: 'Facturación AFIP y ERP', description: 'Organiza comprobantes, inventario, gastos y operaciones.', group: 'Operaciones & finanzas', icon: Receipt, tone: 'emerald', badge: 'CAE' },
+  { id: 'payments', title: 'Cobros y pagos', description: 'Crea checkouts, consulta estados y registra transacciones.', group: 'Operaciones & finanzas', icon: CreditCard, tone: 'emerald', badge: 'Mercado Pago' },
+  { id: 'tiendaDigital', title: 'Tienda digital WhatsApp', description: 'Gestiona catálogo, pedidos y conversaciones de venta.', group: 'Operaciones & finanzas', icon: Store, tone: 'amber', badge: 'Catálogo' },
+  { id: 'campusLMS', title: 'Campus Academia LMS', description: 'Administra cursos, alumnos y contenidos de capacitación.', group: 'Operaciones & finanzas', icon: GraduationCap, tone: 'violet', badge: 'LMS' },
+  { id: 'restaurant', title: 'Gestión de restaurantes', description: 'Opera menú, pedidos, mesas y atención gastronómica.', group: 'Operaciones & finanzas', icon: Store, tone: 'amber' },
+  { id: 'ecommerce', title: 'E-commerce', description: 'Organiza productos, pedidos y operaciones de tienda.', group: 'Operaciones & finanzas', icon: Store, tone: 'cyan' },
+  { id: 'subscriptions', title: 'Suscripciones', description: 'Controla planes, renovaciones y clientes recurrentes.', group: 'Operaciones & finanzas', icon: CreditCard, tone: 'indigo' },
+
+  { id: 'powerSuite', title: 'Power Suite', description: 'Abre el centro de herramientas avanzadas de crecimiento.', group: 'Power Suite', icon: Sparkles, tone: 'violet', badge: 'Suite' },
+  { id: 'mapsProspecting', title: 'Maps Prospección IA', description: 'Descubre prospectos y crea empresas desde resultados geográficos.', group: 'Power Suite', icon: MapPin, tone: 'cyan', badge: 'IA' },
+  { id: 'clientPortal', title: 'Portal del cliente', description: 'Gestiona tickets, autoatención y seguimiento externo.', group: 'Power Suite', icon: Users2, tone: 'blue' },
+  { id: 'seoSuite', title: 'Suite SEO', description: 'Investiga keywords, auditorías y oportunidades de posicionamiento.', group: 'Power Suite', icon: ScanSearch, tone: 'emerald' },
+  { id: 'webDev', title: 'Desarrollo web', description: 'Conecta sitios, formularios y experiencias al CRM.', group: 'Power Suite', icon: Globe, tone: 'blue' },
+  { id: 'saasCluster', title: 'SaaS Cluster', description: 'Explora módulos SaaS y operaciones multi-producto.', group: 'Power Suite', icon: Database, tone: 'indigo' },
+  { id: 'sites', title: 'Sites y landing pages', description: 'Gestiona páginas públicas y activos digitales.', group: 'Power Suite', icon: Globe, tone: 'cyan' },
+  { id: 'saasTheme', title: 'Temas SaaS', description: 'Personaliza la identidad visual de experiencias SaaS.', group: 'Power Suite', icon: Sparkles, tone: 'violet' },
+  { id: 'segments', title: 'Segmentos de clientes', description: 'Crea audiencias y grupos accionables para ventas.', group: 'Power Suite', icon: Users2, tone: 'amber' },
+  { id: 'brochure', title: 'Brochures', description: 'Prepara materiales comerciales para compartir con prospectos.', group: 'Power Suite', icon: FileSpreadsheet, tone: 'blue' },
+
+  { id: 'customObjects', title: 'Estructura de datos', description: 'Crea objetos, campos y registros personalizados.', group: 'Datos & configuración', icon: Database, tone: 'cyan' },
+  { id: 'csvStudio', title: 'Importar y exportar CSV', description: 'Mueve datos del CRM con plantillas y validaciones.', group: 'Datos & configuración', icon: FileSpreadsheet, tone: 'emerald' },
+  { id: 'domainManager', title: 'Gestor de dominios', description: 'Administra dominios, zonas y configuración web.', group: 'Datos & configuración', icon: Globe, tone: 'blue' },
+  { id: 'settings', title: 'Ajustes generales', description: 'Configura espacio, usuarios, permisos, integraciones y seguridad.', group: 'Datos & configuración', icon: Database, tone: 'indigo' },
+];
 
 const FEATURE_CARDS: FeatureCard[] = [
   {
@@ -147,6 +242,16 @@ const toneClasses: Record<string, { icon: string; badge: string; border: string;
   },
 };
 
+const MODULE_GROUPS: Array<'Todos' | ModuleGroup> = [
+  'Todos',
+  'Gestión comercial',
+  'Comunicación',
+  'IA & automatización',
+  'Operaciones & finanzas',
+  'Power Suite',
+  'Datos & configuración',
+];
+
 const initialScanResults: ScanResult[] = [
   { id: 'records', label: 'Integridad de registros', detail: 'Oportunidades, empresas y contactos listos para operar.', status: 'pending' },
   { id: 'relations', label: 'Relaciones del CRM', detail: 'Comprobando vínculos entre negocios, empresas y tareas.', status: 'pending' },
@@ -176,16 +281,42 @@ export const FeatureHubView: React.FC = () => {
   const [smsMessage, setSmsMessage] = useState('Hola, te escribimos desde ClientumCRM. ¿Podemos ayudarte?');
   const [smsConnected, setSmsConnected] = useState(false);
   const [lastSms, setLastSms] = useState('');
+  const [moduleQuery, setModuleQuery] = useState('');
+  const [moduleGroup, setModuleGroup] = useState<'Todos' | ModuleGroup>('Todos');
+  const [credentialModuleId, setCredentialModuleId] = useState<string | null>(null);
 
   const completedScanCount = scanResults.filter((result) => result.status === 'passed').length;
+  const moduleMetadata = useMemo(
+    () => HUB_MODULES.map((module) => {
+      const definition = getModuleCredentialDefinition(module.id);
+      return {
+        ...module,
+        hasCredentialFields: Boolean(definition && definition.fields.length > 0),
+        hasPlatformConfiguration: Boolean(definition && definition.platformConfigurations && definition.platformConfigurations.length > 0),
+      };
+    }),
+    [],
+  );
+  const filteredModules = useMemo(() => {
+    const normalizedQuery = moduleQuery.trim().toLocaleLowerCase();
+    return moduleMetadata.filter((module) => {
+      const matchesGroup = moduleGroup === 'Todos' || module.group === moduleGroup;
+      const matchesQuery = !normalizedQuery
+        || `${module.title} ${module.description} ${module.group}`.toLocaleLowerCase().includes(normalizedQuery);
+      return matchesGroup && matchesQuery;
+    });
+  }, [moduleGroup, moduleMetadata, moduleQuery]);
+  const configuredModuleCount = moduleMetadata.filter((module) => module.hasCredentialFields || module.hasPlatformConfiguration).length;
   const dataSummary = useMemo(
     () => [
       { label: 'Negocios', value: opportunities.length },
       { label: 'Empresas', value: companies.length },
       { label: 'Contactos', value: people.length },
       { label: 'Tareas', value: tasks.length },
+      { label: 'Módulos', value: HUB_MODULES.length },
+      { label: 'Configurables', value: configuredModuleCount },
     ],
-    [companies.length, opportunities.length, people.length, tasks.length],
+    [companies.length, configuredModuleCount, opportunities.length, people.length, tasks.length],
   );
 
   const runAppScan = () => {
@@ -237,6 +368,20 @@ export const FeatureHubView: React.FC = () => {
     if (id === 'auth') setIsAuthModalOpen(true);
   };
 
+  const handleModuleOpen = (module: HubModule) => {
+    setActiveTab(module.id);
+  };
+
+  const handleModuleConfigure = (module: HubModule) => {
+    const definition = getModuleCredentialDefinition(module.id);
+    if (!definition || (definition.fields.length === 0 && !definition.platformConfigurations?.length)) {
+      setActiveTab(module.id);
+      showToast(`${module.title} no requiere credenciales externas`, 'info');
+      return;
+    }
+    setCredentialModuleId(module.id);
+  };
+
   const connectSms = () => {
     setSmsConnected(true);
     showToast(`${smsProvider} preparado. Agrega las credenciales del proveedor para enviar en producción.`, 'info');
@@ -274,7 +419,7 @@ export const FeatureHubView: React.FC = () => {
                 Activa nuevas capacidades, revisa el estado de tu CRM y configura las conexiones esenciales sin perderte entre módulos.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[390px]">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6 lg:min-w-[390px]">
               {dataSummary.map((item) => (
                 <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
                   <div className="text-lg font-extrabold text-slate-900">{item.value}</div>
@@ -328,6 +473,118 @@ export const FeatureHubView: React.FC = () => {
             );
           })}
         </div>
+
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-bold text-slate-950">Todos los módulos</h2>
+                <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">
+                  {filteredModules.length} de {HUB_MODULES.length}
+                </span>
+              </div>
+              <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                Accedé a cada espacio del CRM desde un único catálogo. Los módulos con conexiones externas muestran una opción para configurar sus credenciales por workspace.
+              </p>
+            </div>
+            <label className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 lg:max-w-xs">
+              <ScanSearch className="h-4 w-4 shrink-0 text-slate-400" />
+              <span className="sr-only">Buscar módulos</span>
+              <input
+                value={moduleQuery}
+                onChange={(event) => setModuleQuery(event.target.value)}
+                placeholder="Buscar módulo, función o categoría"
+                className="min-w-0 flex-1 bg-transparent text-xs text-slate-800 outline-none placeholder:text-slate-400"
+              />
+              {moduleQuery && (
+                <button type="button" onClick={() => setModuleQuery('')} className="rounded-md p-0.5 text-slate-400 hover:bg-white hover:text-slate-700" aria-label="Limpiar búsqueda">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </label>
+          </div>
+
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+            {MODULE_GROUPS.map((group) => (
+              <button
+                key={group}
+                type="button"
+                onClick={() => setModuleGroup(group)}
+                className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-bold transition-colors ${
+                  moduleGroup === group
+                    ? 'border-slate-900 bg-slate-900 text-white'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-800'
+                }`}
+              >
+                {group}
+              </button>
+            ))}
+          </div>
+
+          {filteredModules.length > 0 ? (
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {filteredModules.map((module) => {
+                const Icon = module.icon;
+                const tone = toneClasses[module.tone] || toneClasses.blue;
+                const setupLabel = module.hasCredentialFields
+                  ? 'Configurar conexión'
+                  : module.hasPlatformConfiguration
+                    ? 'Ver conexión'
+                    : 'Abrir módulo';
+                return (
+                  <article
+                    key={module.id}
+                    className={`group flex min-h-[190px] flex-col rounded-2xl border border-slate-200 bg-slate-50/60 p-4 transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-md ${tone.border}`}
+                  >
+                    <button type="button" onClick={() => handleModuleOpen(module)} className="flex flex-1 flex-col text-left">
+                      <div className="flex items-start justify-between gap-3">
+                        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone.icon}`}>
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          {module.badge && (
+                            <span className={`rounded-full border px-2 py-1 text-[9px] font-bold ${tone.badge}`}>{module.badge}</span>
+                          )}
+                          <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-bold text-slate-500">
+                            {module.hasCredentialFields ? 'Configurable' : module.hasPlatformConfiguration ? 'Plataforma' : 'Disponible'}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{module.group}</p>
+                      <h3 className="mt-1 text-sm font-extrabold text-slate-900">{module.title}</h3>
+                      <p className="mt-1.5 text-xs leading-5 text-slate-500">{module.description}</p>
+                    </button>
+                    <div className="mt-4 flex items-center gap-2 border-t border-slate-200/80 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => handleModuleOpen(module)}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-[10px] font-bold text-white transition-colors hover:bg-blue-700"
+                      >
+                        Abrir módulo
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleModuleConfigure(module)}
+                        className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[10px] font-bold text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-700"
+                      >
+                        {module.hasCredentialFields || module.hasPlatformConfiguration ? <KeyRound className="h-3.5 w-3.5" /> : null}
+                        <span className="hidden sm:inline">{setupLabel}</span>
+                        <span className="sm:hidden">{module.hasCredentialFields ? 'Configurar' : 'Ver'}</span>
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+              <ScanSearch className="mx-auto h-7 w-7 text-slate-300" />
+              <p className="mt-2 text-sm font-bold text-slate-700">No encontramos módulos</p>
+              <p className="mt-1 text-xs text-slate-500">Probá con otro término o quitá el filtro actual.</p>
+            </div>
+          )}
+        </section>
 
         {selectedFeature === 'bugs' && (
           <section className="mt-5 rounded-2xl border border-violet-200 bg-white p-5 shadow-sm" aria-live="polite">
@@ -447,6 +704,7 @@ export const FeatureHubView: React.FC = () => {
           </div>
         </section>
       </div>
+      <ModuleCredentialsModal moduleId={credentialModuleId} onClose={() => setCredentialModuleId(null)} />
     </div>
   );
 };
