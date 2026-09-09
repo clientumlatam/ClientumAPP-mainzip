@@ -22,6 +22,7 @@ import { Language } from '../../types';
 import { SocialAuthButtons } from './SocialAuthButtons';
 import { PasswordResetFlow } from './PasswordResetFlow';
 import { signInWithEmail, registerWithEmail } from '../../firebase';
+import { bootstrapClientumAccount } from '../../lib/api';
 
 // Zod schema for password validation
 const passwordSchema = z.string()
@@ -66,6 +67,9 @@ export const AuthScreen: React.FC = () => {
         setIsLoading(false);
 
         if (authRes.success) {
+          await bootstrapClientumAccount({
+            name: authRes.user?.displayName || email.trim().split('@')[0],
+          });
           login(email.trim(), password);
           showToast('¡Bienvenido a ClientumCRM!', 'success');
         } else {
@@ -85,6 +89,10 @@ export const AuthScreen: React.FC = () => {
         setIsLoading(false);
 
         if (regRes.success) {
+          await bootstrapClientumAccount({
+            name: name.trim(),
+            company: company.trim(),
+          });
           register(name.trim(), email.trim(), password, company.trim());
           showToast('Cuenta de ClientumCRM creada y vinculada con éxito', 'success');
         } else {

@@ -343,7 +343,7 @@ const requireProductionAuthentication: express.RequestHandler = async (req, res,
 // AI and outbound email can consume paid provider credentials. Keep the local
 // demo usable, but require a Firebase-verified identity in production.
 app.use(
-  ["/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit", "/api/payments"],
+  ["/api/account", "/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit", "/api/payments"],
   requireProductionAuthentication,
 );
 
@@ -1027,6 +1027,46 @@ const getAuthenticatedTenant = async (req: express.Request, res: express.Respons
   const tenantId = await ensureTenantMembership(userId);
   return { userId, tenantId };
 };
+
+app.post("/api/account/bootstrap", async (req, res) => {
+  try {
+    const context = await getAuthenticatedTenant(req, res);
+    if (!context) return;
+
+    const body = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const company = typeof body.company === "string" ? body.company.trim() : "";
+
+    if (name.length > 120 || company.length > 160) {
+      res.status(400).json({ error: "El nombre o la empresa supera el límite permitido." });
+      return;
+    }
+
+    if (company) {
+      await credentialDatabase!.query(
+        `UPDATE clientum_tenants
+         SET name = $2
+         WHERE id = $1`,
+        [context.tenantId, company],
+      );
+    }
+
+    const tenant = await credentialDatabase!.query<{ name: string }>(
+      `SELECT name FROM clientum_tenants WHERE id = $1`,
+      [context.tenantId],
+    );
+
+    res.json({
+      success: true,
+      userId: context.userId,
+      tenantId: context.tenantId,
+      workspaceName: tenant.rows[0]?.name || `Workspace ${context.userId.slice(0, 32)}`,
+    });
+  } catch (error: any) {
+    console.error("Account bootstrap error:", error?.message || error);
+    res.status(500).json({ error: "No se pudo inicializar el workspace." });
+  }
+});
 
 const asRecordArrays = (value: unknown): Partial<Record<(typeof CRM_ENTITY_TYPES)[number], Record<string, unknown>[]>> => {
   if (!value || typeof value !== "object") return {};

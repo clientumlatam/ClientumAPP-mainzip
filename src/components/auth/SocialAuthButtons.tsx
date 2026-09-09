@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import {
   signInWithGoogle,
-  signInWithFacebook,
-  signInWithLinkedIn,
 } from '../../firebase';
 import { useCRM } from '../../context/CRMContext';
+import { bootstrapClientumAccount } from '../../lib/api';
 
 interface SocialAuthButtonsProps {
   onSuccess?: () => void;
@@ -33,24 +32,6 @@ export const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-4 
   </svg>
 );
 
-export const MetaFacebookIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path
-      fill="#1877F2"
-      d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
-    />
-  </svg>
-);
-
-export const LinkedInIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path
-      fill="#0A66C2"
-      d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37h2.79V10.9H6.46M7.86 6.34a1.62 1.62 0 1 0 0 3.24 1.62 1.62 0 0 0 0-3.24z"
-    />
-  </svg>
-);
-
 export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({
   onSuccess,
   layout = 'grid',
@@ -59,44 +40,33 @@ export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({
   const { login, updateCurrentUser, showToast, setGmailAccessToken } = useCRM();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
-  const handleProviderLogin = async (provider: 'google' | 'facebook' | 'linkedin') => {
+  const handleProviderLogin = async (provider: 'google') => {
     setLoadingProvider(provider);
     try {
-      let result;
-      if (provider === 'google') {
-        result = await signInWithGoogle();
-        if (result.token) {
-          setGmailAccessToken(result.token);
-        }
-      } else if (provider === 'facebook') {
-        result = await signInWithFacebook();
-      } else {
-        result = await signInWithLinkedIn();
+      const result = await signInWithGoogle();
+      if (result.token) {
+        setGmailAccessToken(result.token);
       }
 
       setLoadingProvider(null);
 
       if (result.success && result.user) {
         const userEmail = result.user.email || `${provider}.user@clientum.dev`;
+        const displayName = result.user.displayName || 'Google User';
+        await bootstrapClientumAccount({ name: displayName });
         login(userEmail, 'oauth-session');
 
         // Enhance user with social profile attributes
         updateCurrentUser({
-          name: result.user.displayName || (provider === 'google' ? 'Google User' : provider === 'facebook' ? 'Meta Latam User' : 'LinkedIn Executive'),
+          name: displayName,
           avatar: result.user.photoURL || (
-            provider === 'google'
-              ? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'
-              : provider === 'facebook'
-              ? 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150'
-              : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'
+            'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'
           ),
-          role: provider === 'linkedin' ? 'B2B Sales Director' : provider === 'facebook' ? 'Marketing Lead' : 'Workspace Admin',
+          role: 'Workspace Admin',
         });
 
         const providerNames = {
           google: 'Google Workspace',
-          facebook: 'Meta / Facebook',
-          linkedin: 'LinkedIn Professional',
         };
 
         showToast(`¡Sesión iniciada con éxito vía ${providerNames[provider]}!`, 'success');
@@ -125,7 +95,7 @@ export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({
       <div
         className={
           layout === 'grid'
-            ? 'grid grid-cols-3 gap-2'
+            ? 'grid grid-cols-1 gap-2'
             : 'flex flex-col gap-2'
         }
       >
@@ -148,43 +118,6 @@ export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({
           </span>
         </button>
 
-        {/* Facebook / Meta Button */}
-        <button
-          id="social-auth-facebook-btn"
-          type="button"
-          onClick={() => handleProviderLogin('facebook')}
-          disabled={isBusy}
-          title="Iniciar sesión con Meta / Facebook"
-          className="flex items-center justify-center gap-2 py-2 px-3 bg-[#111624] hover:bg-[#182033] text-slate-200 hover:text-white border border-[#21293c] hover:border-blue-500/40 rounded-xl text-xs font-medium transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
-        >
-          {loadingProvider === 'facebook' ? (
-            <span className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <MetaFacebookIcon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
-          )}
-          <span className={layout === 'grid' ? 'hidden sm:inline font-semibold' : 'font-semibold'}>
-            Meta
-          </span>
-        </button>
-
-        {/* LinkedIn Button */}
-        <button
-          id="social-auth-linkedin-btn"
-          type="button"
-          onClick={() => handleProviderLogin('linkedin')}
-          disabled={isBusy}
-          title="Iniciar sesión con LinkedIn"
-          className="flex items-center justify-center gap-2 py-2 px-3 bg-[#111624] hover:bg-[#182033] text-slate-200 hover:text-white border border-[#21293c] hover:border-[#0A66C2]/40 rounded-xl text-xs font-medium transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
-        >
-          {loadingProvider === 'linkedin' ? (
-            <span className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <LinkedInIcon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
-          )}
-          <span className={layout === 'grid' ? 'hidden sm:inline font-semibold' : 'font-semibold'}>
-            LinkedIn
-          </span>
-        </button>
       </div>
     </div>
   );

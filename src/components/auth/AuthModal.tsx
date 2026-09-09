@@ -5,6 +5,7 @@ import { useCRM } from '../../context/CRMContext';
 import { SocialAuthButtons } from './SocialAuthButtons';
 import { PasswordResetFlow } from './PasswordResetFlow';
 import { signInWithEmail, registerWithEmail } from '../../firebase';
+import { bootstrapClientumAccount } from '../../lib/api';
 
 export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, setIsAuthModalOpen, login, register, showToast } = useCRM();
@@ -35,6 +36,9 @@ export const AuthModal: React.FC = () => {
         setIsLoading(false);
 
         if (authRes.success) {
+          await bootstrapClientumAccount({
+            name: authRes.user?.displayName || email.trim().split('@')[0],
+          });
           login(email.trim(), password);
           setIsAuthModalOpen(false);
           showToast('¡Sesión iniciada con éxito!', 'success');
@@ -52,6 +56,10 @@ export const AuthModal: React.FC = () => {
         setIsLoading(false);
 
         if (regRes.success) {
+          await bootstrapClientumAccount({
+            name: name.trim(),
+            company: company.trim(),
+          });
           register(name.trim(), email.trim(), password, company.trim());
           setIsAuthModalOpen(false);
           showToast('Cuenta creada y vinculada con éxito', 'success');

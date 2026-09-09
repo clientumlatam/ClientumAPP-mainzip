@@ -860,7 +860,9 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const register = (name: string, email: string, _pass?: string, _company?: string) => {
     const newUser: User = {
-      id: 'usr-' + Date.now(),
+      id: isLiveFirebaseReady && auth.currentUser?.uid
+        ? auth.currentUser.uid
+        : 'usr-' + Date.now(),
       name,
       email,
       role: 'Administrador',
