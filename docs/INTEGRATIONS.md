@@ -98,9 +98,11 @@ POST /api/billing/mercadopago/webhook
 ```
 
 El cliente envía únicamente el `planId`. El servidor mantiene la lista
-permitida de planes y sus importes, crea la preferencia en Mercado Pago y
-guarda el checkout en Neon. Nunca se acepta un importe arbitrario proveniente
-del navegador.
+permitida de planes y sus importes, crea una suscripción recurrente mediante
+`POST /preapproval` y guarda su identificador en Neon. Nunca se acepta un
+importe arbitrario proveniente del navegador. El webhook procesa eventos
+`subscription_preapproval` y actualiza estados `approved`, `paused`,
+`cancelled` o `rejected`.
 
 ### Secrets de plataforma
 
@@ -116,14 +118,15 @@ PLATFORM_PLAN_SCALE_ARS=59900
 `APP_URL` debe ser una URL pública HTTPS para que Mercado Pago pueda volver a
 la aplicación y entregar notificaciones. Si se configura
 `PLATFORM_MERCADOPAGO_WEBHOOK_SECRET`, el webhook valida la firma HMAC antes de
-consultar el pago en la API oficial.
+consultar la suscripción en la API oficial.
 
 Los endpoints antiguos `/api/payments/*` y la credencial
 `MERCADOPAGO_ACCESS_TOKEN` pertenecen al módulo legacy de cobros por workspace
 y están deshabilitados con `410 Gone`. La interfaz de suscripciones debe usar
 únicamente `/api/billing/*`.
 
-Fuente: [Mercado Pago Developers](https://www.mercadopago.com/developers/en/docs).
+Fuente: [Referencia API de Mercado Pago](https://www.mercadopago.com.ar/developers/es/reference) y
+[Suscripciones](https://www.mercadopago.com.ar/developers/es/docs/subscriptions/landing).
 
 ## 4. Google Gemini
 

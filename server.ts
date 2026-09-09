@@ -749,15 +749,15 @@ function getPlatformMercadoPagoToken(): string | undefined {
   return token && !isPlaceholderValue(token) ? token : undefined;
 }
 
-function verifyPlatformMercadoPagoWebhook(req: express.Request, paymentId: string): boolean {
+function verifyPlatformMercadoPagoWebhook(req: express.Request, resourceId: string): boolean {
   const secret = process.env.PLATFORM_MERCADOPAGO_WEBHOOK_SECRET?.trim();
-  if (!secret || !paymentId) return !secret;
+  if (!secret || !resourceId) return !secret;
   const signature = String(req.header("x-signature") || "");
   const requestId = String(req.header("x-request-id") || "");
   const ts = signature.match(/(?:^|,)ts=([^,]+)/)?.[1];
   const v1 = signature.match(/(?:^|,)v1=([^,]+)/)?.[1];
   if (!ts || !v1 || !requestId) return false;
-  const manifest = `id:${paymentId};request-id:${requestId};ts:${ts};`;
+  const manifest = `id:${resourceId};request-id:${requestId};ts:${ts};`;
   const expected = createHmac("sha256", secret).update(manifest).digest("hex");
   return expected.length === v1.length && timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
 }
@@ -766,34 +766,70 @@ app.post("/api/billing/mercadopago/webhook", async (req, res) => {
   res.sendStatus(200);
   if (!credentialDatabase) return;
 
-  const paymentId = getPaymentIdFromWebhook(req);
-  if (!paymentId || !verifyPlatformMercadoPagoWebhook(req, paymentId)) return;
+  const resourceId = getPaymentIdFromWebhook(req);
+  if (!resourceId || !verifyPlatformMercadoPagoWebhook(req, resourceId)) return;
 
   try {
     const accessToken = getPlatformMercadoPagoToken();
     if (!accessToken) return;
-    const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
+    const notificationType = String(req.query.type || req.body?.type || req.body?.action || "").trim();
+    const isSubscriptionNotification = notificationType === "subscription_preapproval" ||
+      notificationType === "subscription_authorized_payment";
+    const resourceUrl = isSubscriptionNotification
+      ? `https://api.mercadopago.com/preapproval/${encodeURIComponent(resourceId)}`
+      : `https://api.mercadopago.com/v1/payments/${encodeURIComponent(resourceId)}`;
+    const resourceResponse = await fetch(resourceUrl, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!paymentResponse.ok) return;
-    const payment = await paymentResponse.json() as {
+    if (!resourceResponse.ok) return;
+    const resource = await resourceResponse.json() as {
       id?: string;
       status?: string;
       external_reference?: string;
+      payer_email?: string;
+      init_point?: string;
     };
-    if (!payment.external_reference) return;
-    const status = payment.status === "approved"
+    if (!resource.external_reference) return;
+
+    if (isSubscriptionNotification) {
+      const status = resource.status === "authorized"
+        ? "approved"
+        : resource.status === "paused"
+          ? "paused"
+          : resource.status === "cancelled" || resource.status === "canceled"
+            ? "cancelled"
+            : resource.status === "rejected"
+              ? "rejected"
+              : "pending";
+      await credentialDatabase.query(
+        `UPDATE clientum_platform_billing_checkouts
+         SET status = $1, provider_subscription_id = $2,
+             payer_email = COALESCE($3, payer_email),
+             init_point = COALESCE($4, init_point), updated_at = NOW()
+         WHERE external_reference = $5`,
+        [
+          status,
+          String(resource.id || resourceId),
+          resource.payer_email || null,
+          resource.init_point || null,
+          resource.external_reference,
+        ],
+      );
+      return;
+    }
+
+    const status = resource.status === "approved"
       ? "approved"
-      : payment.status === "cancelled"
+      : resource.status === "cancelled"
         ? "cancelled"
-        : payment.status === "rejected"
+        : resource.status === "rejected"
           ? "rejected"
           : "pending";
     await credentialDatabase.query(
       `UPDATE clientum_platform_billing_checkouts
        SET status = $1, provider_payment_id = $2, updated_at = NOW()
        WHERE external_reference = $3`,
-      [status, String(payment.id || paymentId), payment.external_reference],
+      [status, String(resource.id || resourceId), resource.external_reference],
     );
   } catch (error: any) {
     console.error("Platform Mercado Pago webhook error:", error?.message || error);
@@ -843,8 +879,8 @@ app.post("/api/billing/mercadopago/checkout", async (req, res) => {
   }
   const planId = req.body?.planId;
   const payerEmail = typeof req.body?.payerEmail === "string" ? req.body.payerEmail.trim().slice(0, 160) : "";
-  if (!isPlatformPlanId(planId) || (payerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail))) {
-    res.status(400).json({ error: "Selecciona un plan válido y un correo válido." });
+  if (!isPlatformPlanId(planId) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)) {
+    res.status(400).json({ error: "Selecciona un plan válido y proporciona un correo válido para la suscripción." });
     return;
   }
 
@@ -861,58 +897,56 @@ app.post("/api/billing/mercadopago/checkout", async (req, res) => {
     const plan = PLATFORM_PLANS[planId];
     const externalReference = `clientum_platform_${userId}_${Date.now()}_${randomBytes(5).toString("hex")}`;
     const appUrl = getPublicAppUrl();
-    const preferencePayload: Record<string, unknown> = {
-      items: [{
-        title: `ClientumCRM ${plan.name}`,
-        quantity: 1,
-        unit_price: plan.amount,
-        currency_id: "ARS",
-      }],
+    const subscriptionPayload: Record<string, unknown> = {
+      reason: `Suscripción ClientumCRM ${plan.name}`,
       external_reference: externalReference,
+      payer_email: payerEmail,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: "months",
+        transaction_amount: plan.amount,
+        currency_id: "ARS",
+      },
     };
-    if (payerEmail) preferencePayload.payer = { email: payerEmail };
     if (appUrl) {
-      preferencePayload.back_urls = {
-        success: `${appUrl}/app?billing=success`,
-        failure: `${appUrl}/app?billing=failure`,
-        pending: `${appUrl}/app?billing=pending`,
-      };
-      preferencePayload.auto_return = "approved";
-      preferencePayload.notification_url = `${appUrl}/api/billing/mercadopago/webhook`;
+      subscriptionPayload.back_url = `${appUrl}/app?billing=subscription`;
+      subscriptionPayload.notification_url = `${appUrl}/api/billing/mercadopago/webhook`;
     }
 
-    const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
+    const response = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
+        "X-Idempotency-Key": externalReference,
       },
-      body: JSON.stringify(preferencePayload),
+      body: JSON.stringify(subscriptionPayload),
     });
     const payload = await response.json().catch(() => ({})) as {
       id?: string;
       init_point?: string;
-      sandbox_init_point?: string;
       message?: string;
+      status?: string;
     };
     if (!response.ok || !payload.init_point) {
-      console.error("Platform Mercado Pago checkout failed:", response.status, payload.message || "unknown provider error");
-      res.status(502).json({ error: "Mercado Pago rechazó la creación del checkout.", code: "PLATFORM_PAYMENT_PROVIDER_ERROR" });
+      console.error("Platform Mercado Pago subscription failed:", response.status, payload.message || "unknown provider error");
+      res.status(502).json({ error: "Mercado Pago rechazó la creación de la suscripción.", code: "PLATFORM_PAYMENT_PROVIDER_ERROR" });
       return;
     }
 
     const checkoutId = `platform-checkout-${Date.now()}-${randomBytes(5).toString("hex")}`;
     await credentialDatabase.query(
       `INSERT INTO clientum_platform_billing_checkouts
-        (id, clerk_user_id, plan_id, external_reference, preference_id, amount, currency, payer_email, init_point)
-       VALUES ($1, $2, $3, $4, $5, $6, 'ARS', $7, $8)`,
-      [checkoutId, userId, planId, externalReference, payload.id || null, plan.amount, payerEmail || null, payload.init_point],
+        (id, clerk_user_id, plan_id, external_reference, preference_id, provider_subscription_id,
+         amount, currency, payer_email, init_point)
+       VALUES ($1, $2, $3, $4, NULL, $5, $6, 'ARS', $7, $8)`,
+      [checkoutId, userId, planId, externalReference, payload.id || null, plan.amount, payerEmail, payload.init_point],
     );
     res.status(201).json({
       checkoutId,
+      subscriptionId: payload.id || null,
       planId,
       checkoutUrl: payload.init_point,
-      sandboxCheckoutUrl: payload.sandbox_init_point || null,
       status: "pending",
     });
   } catch (error: any) {

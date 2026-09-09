@@ -62,9 +62,9 @@ export const PlatformBillingView: React.FC = () => {
         body: JSON.stringify({ planId, payerEmail: currentUser.email }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload.checkoutUrl) throw new Error(payload.error || "No se pudo abrir Mercado Pago.");
+      if (!response.ok || !payload.checkoutUrl) throw new Error(payload.error || "No se pudo abrir la suscripción de Mercado Pago.");
       window.open(payload.checkoutUrl, "_blank", "noopener,noreferrer");
-      showToast("Checkout creado. Completa el pago en Mercado Pago.", "success");
+      showToast("Suscripción creada. Completa el primer pago en Mercado Pago.", "success");
       await loadBilling();
     } catch (error) {
       showToast(error instanceof Error ? error.message : "No se pudo iniciar el pago.", "error");
@@ -127,7 +127,7 @@ export const PlatformBillingView: React.FC = () => {
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {checkoutPlan === plan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-              Pagar con Mercado Pago
+              Suscribirme con Mercado Pago
             </button>
           </article>
         ))}
