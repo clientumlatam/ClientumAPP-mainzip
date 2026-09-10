@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
+import WebSocket from 'ws';
 
 const baseUrl = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:5000/';
 const chromiumPath = process.env.CHROMIUM_PATH || '/repl/tools/bin/chromium';

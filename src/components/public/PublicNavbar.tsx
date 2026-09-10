@@ -639,7 +639,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
 
             {/* Primary CTA: dashboard access */}
             <button
-              onClick={enterApp}
+              onClick={() => enterApp()}
               className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs tracking-wide shadow-md shadow-blue-600/20 transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <span>{isAuthenticated ? 'Ir al Dashboard' : 'Ingresar al CRM'}</span>

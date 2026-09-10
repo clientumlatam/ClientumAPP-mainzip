@@ -138,7 +138,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
             {/* Primary Action Buttons */}
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
-                onClick={enterApp}
+                onClick={() => enterApp()}
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer"
               >
                 <span>Probar Demo Interactiva Gratis</span>
@@ -260,7 +260,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
               <span className="text-xs text-slate-500 font-mono ml-2">app.clientum.com.ar/{previewTab}</span>
             </div>
             <button
-              onClick={enterApp}
+              onClick={() => enterApp()}
               className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>Abrir vista completa en CRM</span>
@@ -764,7 +764,7 @@ export const PublicHome: React.FC<PublicHomeProps> = ({
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
-              onClick={enterApp}
+              onClick={() => enterApp()}
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white text-blue-900 font-bold text-sm shadow-lg hover:bg-blue-50 transition-colors cursor-pointer"
             >
               Ingresar al CRM Ahora

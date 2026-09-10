@@ -76,7 +76,7 @@ export const PublicCrmLanding: React.FC<PublicCrmLandingProps> = ({ onNavigate }
 
         <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
           <button
-            onClick={enterApp}
+            onClick={() => enterApp()}
             className="px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm tracking-wide shadow-md shadow-blue-600/20 transition-all cursor-pointer flex items-center gap-2"
           >
             <Play className="w-4 h-4 fill-current" />
@@ -169,7 +169,7 @@ export const PublicCrmLanding: React.FC<PublicCrmLandingProps> = ({ onNavigate }
           Pruébalo gratis con nuestra base de datos de demostración o solicita un plan a medida para tu empresa.
         </p>
         <button
-          onClick={enterApp}
+            onClick={() => enterApp()}
           className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs tracking-wide shadow-md shadow-blue-600/20 cursor-pointer"
         >
           Acceder al CRM en Vivo

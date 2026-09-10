@@ -169,7 +169,7 @@ export const PublicProductPage: React.FC<PublicProductPageProps> = ({
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={enterApp}
+                  onClick={() => enterApp()}
                   className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />

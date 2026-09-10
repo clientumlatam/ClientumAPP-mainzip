@@ -176,7 +176,7 @@ export const PublicCompanyPage: React.FC<PublicCompanyPageProps> = ({ onNavigate
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <button
-            onClick={enterApp}
+            onClick={() => enterApp()}
             className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer shadow-xs"
           >
             Explorar Demo
