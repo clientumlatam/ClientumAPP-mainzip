@@ -9,6 +9,7 @@
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
+    "check:root-layout": "node scripts/check-root-layout.mjs",
     "smoke:navigation": "node scripts/navigation-smoke.mjs",
     "smoke:credentials": "node scripts/credentials-isolation-smoke.mjs",
     "db:migrate": "node scripts/migrate.mjs"
