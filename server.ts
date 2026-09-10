@@ -2792,7 +2792,15 @@ async function main() {
       define: {
         "import.meta.env.VITE_CLERK_PUBLISHABLE_KEY": JSON.stringify(process.env.VITE_CLERK_PUBLISHABLE_KEY || ""),
         "import.meta.env.VITE_CLERK_PROXY_URL": JSON.stringify(process.env.VITE_CLERK_PROXY_URL || ""),
-         "import.meta.env.VITE_GOOGLE_ANALYTICS_ID": JSON.stringify(process.env.VITE_GOOGLE_ANALYTICS_ID || ""),
+        "import.meta.env.VITE_CLERK_SIGN_IN_URL": JSON.stringify(process.env.VITE_CLERK_SIGN_IN_URL || ""),
+        "import.meta.env.VITE_CLERK_SIGN_UP_URL": JSON.stringify(process.env.VITE_CLERK_SIGN_UP_URL || ""),
+        "import.meta.env.VITE_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL": JSON.stringify(
+          process.env.VITE_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL || "/app",
+        ),
+        "import.meta.env.VITE_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL": JSON.stringify(
+          process.env.VITE_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL || "/app",
+        ),
+        "import.meta.env.VITE_GOOGLE_ANALYTICS_ID": JSON.stringify(process.env.VITE_GOOGLE_ANALYTICS_ID || ""),
         "import.meta.env.VITE_FIREBASE_API_KEY": JSON.stringify(process.env.VITE_FIREBASE_API_KEY || ""),
         "import.meta.env.VITE_FIREBASE_AUTH_DOMAIN": JSON.stringify(process.env.VITE_FIREBASE_AUTH_DOMAIN || ""),
         "import.meta.env.VITE_FIREBASE_PROJECT_ID": JSON.stringify(process.env.VITE_FIREBASE_PROJECT_ID || ""),

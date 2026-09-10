@@ -24,6 +24,12 @@ const isReplitHost =
   window.location.hostname.endsWith('.replit.dev') ||
   window.location.hostname.endsWith('.replit.app');
 const clerkProxyUrl = isReplitHost ? viteEnv.VITE_CLERK_PROXY_URL : undefined;
+const clerkSignInUrl = viteEnv.VITE_CLERK_SIGN_IN_URL || undefined;
+const clerkSignUpUrl = viteEnv.VITE_CLERK_SIGN_UP_URL || undefined;
+const clerkSignInFallbackRedirectUrl =
+  viteEnv.VITE_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL || '/app';
+const clerkSignUpFallbackRedirectUrl =
+  viteEnv.VITE_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL || '/app';
 const clerkAppearance = {
   variables: {
     colorPrimary: '#2563eb',
@@ -166,6 +172,10 @@ export default function App() {
     <ClerkProvider
       publishableKey={clerkPubKey}
       proxyUrl={clerkProxyUrl}
+      signInUrl={clerkSignInUrl}
+      signUpUrl={clerkSignUpUrl}
+      signInFallbackRedirectUrl={clerkSignInFallbackRedirectUrl}
+      signUpFallbackRedirectUrl={clerkSignUpFallbackRedirectUrl}
       appearance={clerkAppearance}
       localization={{
         signIn: { start: { title: 'Inicia sesión en ClientumCRM' } },
