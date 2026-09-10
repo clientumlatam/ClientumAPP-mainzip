@@ -261,7 +261,7 @@ async function run() {
   await clickNavigationItem('googleMaps');
   await waitFor('the Maps prospecting view', () => document.body?.innerText?.includes('Prospección Geolocalizada con Google Maps'));
   await assertConfigButton(true, 'Maps needs user credentials');
-  await clickAriaLabel('Configurar credenciales de Prospección Mapa B2B');
+  await clickAriaLabel('Configurar credenciales de Prospección B2B');
   await waitFor('the mixed Maps credential modal', () => {
     const text = document.body?.innerText || '';
     return text.includes('Google Maps Server API Key') && text.includes('VITE_GOOGLE_MAPS_API_KEY') && text.includes('Configuración administrada por ClientumCRM');

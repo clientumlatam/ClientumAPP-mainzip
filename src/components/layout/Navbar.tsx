@@ -70,7 +70,7 @@ export const Navbar: React.FC = () => {
       case 'analytics':
         return { name: t('analytics') || 'Analíticas & BI', count: undefined, desc: 'Rendimiento y conversión' };
       case 'activityInbox':
-        return { name: 'Actividades & Agenda', count: undefined, desc: 'Notas, llamadas y seguimiento comercial' };
+        return { name: 'Actividades & Seguimiento', count: undefined, desc: 'Notas, llamadas y seguimiento comercial' };
       case 'propuestas':
         return { name: 'Propuestas & Presupuestos', count: undefined, desc: 'Cotizaciones y propuestas PDF' };
       case 'googleMaps':
@@ -79,27 +79,31 @@ export const Navbar: React.FC = () => {
       case 'meddic':
         return { name: 'Lead Scoring MEDDIC', count: undefined, desc: 'Evaluación y calificación de oportunidades' };
       case 'agenteOS':
-        return { name: 'Agentes & Copilot', count: 14, desc: 'Agentes especializados y asistencia inteligente' };
+        return { name: 'Agentes Especializados', count: 14, desc: 'Agentes especializados y asistencia inteligente' };
       case 'aiAssistant':
         return { name: 'Asistente Gemini', count: undefined, desc: 'Asistencia estratégica con IA' };
       case 'sdrOutreach':
         return { name: 'Agente SDR Outreach', count: undefined, desc: 'Prospección y seguimiento comercial' };
       case 'workflows':
-        return { name: 'Automatizaciones & Flujos', count: undefined, desc: 'Triggers, condiciones y acciones automáticas' };
+        return { name: 'Flujos de Trabajo', count: undefined, desc: 'Triggers, condiciones y acciones automáticas' };
       case 'operations':
-        return { name: 'Operaciones internas', count: undefined, desc: 'Gestión operativa del espacio comercial' };
+        return { name: 'Operaciones Internas', count: undefined, desc: 'Gestión operativa del espacio comercial' };
+      case 'inventory':
+        return { name: 'Inventario & Catálogo', count: undefined, desc: 'Stock, productos y catálogo operativo' };
       case 'payments':
-        return { name: 'Cobros & Pagos', count: undefined, desc: 'Checkouts y estado de pagos' };
+        return { name: 'Suscripción & Facturación Clientum', count: undefined, desc: 'Plan actual, facturación y uso de la plataforma' };
       case 'tiendaDigital':
         return { name: 'Tienda Digital WhatsApp', count: undefined, desc: 'Catálogo y pedidos digitales' };
       case 'campusLMS':
         return { name: 'Campus Academia LMS', count: undefined, desc: 'Cursos y capacitación comercial' };
       case 'whatsapp':
-        return { name: 'WhatsApp Omnicanal', count: 12, desc: 'Bandeja centralizada y chats en tiempo real' };
+        return { name: 'Bandeja Unificada', count: 12, desc: 'WhatsApp, email y mensajes en un mismo centro' };
+      case 'whatsappInbox':
+        return { name: 'WhatsApp Inbox', count: 12, desc: 'Conversaciones de WhatsApp en tiempo real' };
       case 'messages':
-        return { name: 'Mensajes', count: 12, desc: 'Centro unificado de conversaciones' };
+        return { name: 'Mensajes Internos', count: 12, desc: 'Comunicaciones internas del workspace' };
       case 'erp':
-        return { name: 'ERP & Facturación AFIP', count: undefined, desc: 'Comprobantes fiscales A, B y C con CAE automático' };
+        return { name: 'Facturación AFIP', count: undefined, desc: 'Comprobantes fiscales A, B y C con CAE automático' };
       case 'settings':
         return { name: t('settings') || 'Configuración', count: undefined, desc: 'Ajustes del espacio y permisos' };
       default:

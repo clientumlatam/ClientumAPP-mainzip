@@ -85,8 +85,10 @@ const MainContent: React.FC = () => {
         {activeTab === 'analytics' && <AnalyticsView />}
         {activeTab === 'powerSuite' && <PowerSuiteView />}
         {activeTab === 'whatsapp' && <WhatsAppView />}
+        {activeTab === 'whatsappInbox' && <WhatsAppView />}
         {activeTab === 'messages' && <MessagesView />}
-        {activeTab === 'erp' && <ErpView />}
+        {activeTab === 'erp' && <ErpView key="erp" />}
+        {activeTab === 'inventory' && <ErpView key="inventory" defaultTab="inventory" />}
         {activeTab === 'restaurant' && <RestaurantView />}
         {activeTab === 'ecommerce' && <EcommerceView />}
         {activeTab === 'saasCluster' && <SaaSClusterView />}

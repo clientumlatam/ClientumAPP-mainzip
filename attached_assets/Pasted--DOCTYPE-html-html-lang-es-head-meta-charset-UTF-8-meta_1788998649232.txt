@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientum CRM - Comparativa Visual de Reorganización de Menú</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .sidebar-mock {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-mock h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #60a5fa;
+        }
+
+        .sidebar-mock h2 span {
+            font-size: 1.5rem;
+        }
+
+        .nav-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            padding: 10px 0 8px 0;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 10px;
+        }
+
+        .nav-item {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background: #334155;
+            color: #f1f5f9;
+        }
+
+        .nav-item-label {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .nav-item-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .nav-item-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nav-item-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-weight: 600;
+        }
+
+        .badge-blue {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .badge-green {
+            background: #10b981;
+            color: white;
+        }
+
+        .badge-yellow {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .badge-purple {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .sub-item {
+            margin-left: 24px;
+            padding: 6px 10px;
+            background: #0f172a;
+            border-left: 2px solid #334155;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }
+
+        .sub-item:hover {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3b82f6;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .changes-list {
+            background: #1e293b;
+            border-left: 4px solid #10b981;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .changes-list h3 {
+            color: #10b981;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .change-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #334155;
+            font-size: 0.95rem;
+            display: flex;
+            gap: 10px;
+        }
+
+        .change-item:last-child {
+            border-bottom: none;
+        }
+
+        .change-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            width: 20px;
+            text-align: center;
+        }
+
+        .change-item.rename .change-icon {
+            color: #f59e0b;
+        }
+
+        .change-item.reorder .change-icon {
+            color: #3b82f6;
+        }
+
+        .change-item.move .change-icon {
+            color: #10b981;
+        }
+
+        .change-item.reduce .change-icon {
+            color: #ec4899;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin: 30px 0;
+        }
+
+        .comparison-table th {
+            background: #0f172a;
+            border-bottom: 2px solid #334155;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comparison-table tr:hover {
+            background: #334155;
+        }
+
+        .accent {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #64748b;
+            border-top: 1px solid #334155;
+            margin-top: 40px;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        @media (max-width: 1024px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .highlight {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+            padding: 10px 0 10px 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .highlight strong {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Reorganización de Menú Clientum CRM</h1>
+        <p class="subtitle">Propuesta 2026-09-09 | Reducción de complejidad visual + Mejora de UX</p>
+
+        <!-- ESTADÍSTICAS COMPARATIVAS -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">22</div>
+                <div class="stat-label">Items Antes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">16</div>
+                <div class="stat-label">Items Después</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">-27%</div>
+                <div class="stat-label">Reducción</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">2</div>
+                <div class="stat-label">Profundidad Máx</div>
+            </div>
+        </div>
+
+        <!-- CAMBIOS PRINCIPALES -->
+        <div class="changes-list">
+            <h3>✨ Cambios Principales</h3>
+            
+            <div class="change-item reorder">
+                <div class="change-icon">↕️</div>
+                <div>
+                    <strong>Reordenamiento por Flujo de Trabajo:</strong> Pipeline primero (más relevante), luego Contactos, Actividades, Propuestas, Prospección.
+                </div>
+            </div>
+
+            <div class="change-item rename">
+                <div class="change-icon">✏️</div>
+                <div>
+                    <strong>Renombramientos para Claridad:</strong>
+                    <ul style="margin-top: 5px; margin-left: 20px;">
+                        <li>"Bandeja Omnicanal" → "Bandeja Unificada"</li>
+                        <li>"Actividades & Agenda" → "Actividades & Seguimiento"</li>
+                        <li>"Automatizaciones & Flujos" → "Flujos de Trabajo"</li>
+                        <li>"Centro de Comunicación" → "Comunicación Integrada"</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="change-item move">
+                <div class="change-icon">📦</div>
+                <div>
+                    <strong>Reorganización de Sub-items:</strong> "Operaciones Internas" traído a nivel visible, "Mensajes" y "Email" como sub-items de Bandeja.
+                </div>
+            </div>
+
+            <div class="change-item reduce">
+                <div class="change-icon">⚡</div>
+                <div>
+                    <strong>Reducción de Ruido Visual:</strong> Menú más compacto, profundidad consistente, jerarquía clara.
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARATIVA VISUAL LADO A LADO -->
+        <h2 style="color: #e2e8f0; margin: 40px 0 20px 0; font-size: 1.5rem;">
+            📊 Comparativa Visual
+        </h2>
+
+        <div class="comparison">
+            <!-- ANTES -->
+            <div>
+                <div class="sidebar-mock">
+                    <h2><span>❌</span> Menú Actual (Antes)</h2>
+
+                    <div class="nav-section">
+                        <div class="section-title">Panel de Control & Análisis</div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📊</span>
+                                <span class="nav-item-text">Resumen Ejecutivo</span>
+                            </div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📈</span>
+                                <span class="nav-item-text">Reportes & BI</span>
+                            </div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">🔍</span>
+                                <span class="nav-item-text">Centro de Funciones</span>
+                            </div>
+                            <span class="nav-item-badge badge-purple">Activo</span>
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="section-title">Ventas & Clientes</div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">👥</span>
+                                <span class="nav-item-text">Contactos & Empresas</span>
+                            </div>
+                            <span class="nav-item-badge badge-blue">150</span>
+                        </div>
+                        <div class="sub-item">└─ Empresas (45)</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">💼</span>
+                                <span class="nav-item-text">Pipeline de Negocios</span>
+                            </div>
+                            <span class="nav-item-badge badge-blue">Kanban</span>
+                        </div>
+                        <div class="sub-item">└─ Lead Scoring MEDDIC</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">✓</span>
+                                <span class="nav-item-text">Actividades & Agenda</span>
+                            </div>
+                            <span class="nav-item-badge badge-yellow">4</span>
+                        </div>
+                        <div class="sub-item">├─ Calendario</div>
+                        <div class="sub-item">└─ Notas y Llamadas (6)</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📄</span>
+                                <span class="nav-item-text">Propuestas & Presupuestos</span>
+                            </div>
+                        </div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📍</span>
+                                <span class="nav-item-text">Prospección Mapa B2B</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="section-title">Centro de Comunicación</div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📬</span>
+                                <span class="nav-item-text">Bandeja Omnicanal</span>
+                            </div>
+                            <span class="nav-item-badge badge-green">LIVE</span>
+                        </div>
+                        <div class="sub-item">├─ Mensajes (12)</div>
+                        <div class="sub-item">└─ Webmail Cloudflare</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">🤖</span>
+                                <span class="nav-item-text">Bots & Atención Automática</span>
+                            </div>
+                        </div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📮</span>
+                                <span class="nav-item-text">Campañas Masivas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="section-title">IA & Automatización</div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">⚙️</span>
+                                <span class="nav-item-text">Agentes & Copilot</span>
+                            </div>
+                            <span class="nav-item-badge badge-blue">14</span>
+                        </div>
+                        <div class="sub-item">├─ Asistente Gemini</div>
+                        <div class="sub-item">└─ Agente SDR Outreach</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">🔄</span>
+                                <span class="nav-item-text">Automatizaciones & Flujos</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="highlight" style="margin-top: 15px;">
+                        <strong>⚠️ Problema:</strong> 22 items en nivel raíz. Menú plano. Difícil navigación.
+                    </div>
+                </div>
+            </div>
+
+            <!-- DESPUÉS -->
+            <div>
+                <div class="sidebar-mock">
+                    <h2><span>✅</span> Menú Propuesto (Después)</h2>
+
+                    <div class="nav-section">
+                        <div class="section-title">Resumen Operativo</div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📊</span>
+                                <span class="nav-item-text">Resumen Ejecutivo</span>
+                            </div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📈</span>
+                                <span class="nav-item-text">Reportes & BI</span>
+                            </div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">🔍</span>
+                                <span class="nav-item-text">Centro de Funciones</span>
+                            </div>
+                            <span class="nav-item-badge badge-purple">Activo</span>
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="section-title">Ventas</div>
+                        <div class="nav-item" style="background: rgba(59, 130, 246, 0.1);">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">💼</span>
+                                <span class="nav-item-text">Pipeline de Negocios</span>
+                            </div>
+                            <span class="nav-item-badge badge-blue">Kanban</span>
+                        </div>
+                        <div class="sub-item">└─ Lead Scoring MEDDIC</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">👥</span>
+                                <span class="nav-item-text">Contactos & Empresas</span>
+                            </div>
+                            <span class="nav-item-badge badge-blue">150</span>
+                        </div>
+                        <div class="sub-item">└─ Empresas (45)</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">✓</span>
+                                <span class="nav-item-text">Actividades & Seguimiento</span>
+                            </div>
+                            <span class="nav-item-badge badge-yellow">4</span>
+                        </div>
+                        <div class="sub-item">├─ Calendario</div>
+                        <div class="sub-item">└─ Notas y Llamadas (6)</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📄</span>
+                                <span class="nav-item-text">Propuestas & Presupuestos</span>
+                            </div>
+                        </div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📍</span>
+                                <span class="nav-item-text">Prospección B2B</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="section-title">Comunicación Integrada</div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📬</span>
+                                <span class="nav-item-text">Bandeja Unificada</span>
+                            </div>
+                            <span class="nav-item-badge badge-green">LIVE</span>
+                        </div>
+                        <div class="sub-item">├─ WhatsApp Inbox</div>
+                        <div class="sub-item">├─ Email Cloudflare</div>
+                        <div class="sub-item">└─ Mensajes Internos</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">🤖</span>
+                                <span class="nav-item-text">Bots y Automatización</span>
+                            </div>
+                        </div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">📮</span>
+                                <span class="nav-item-text">Campañas & Difusión</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="section-title">Inteligencia & Automatización</div>
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">⚙️</span>
+                                <span class="nav-item-text">Agentes Especializados</span>
+                            </div>
+                            <span class="nav-item-badge badge-blue">14</span>
+                        </div>
+                        <div class="sub-item">├─ Copilot IA (Gemini 1.5)</div>
+                        <div class="sub-item">└─ Agente SDR Outreach</div>
+
+                        <div class="nav-item">
+                            <div class="nav-item-label">
+                                <span class="nav-item-icon">🔄</span>
+                                <span class="nav-item-text">Flujos de Trabajo</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="highlight" style="margin-top: 15px; background: rgba(16, 185, 129, 0.1); border-left-color: #10b981;">
+                        <strong style="color: #10b981;">✅ Beneficio:</strong> 16 items. Flujo lógico. Fácil navegación.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA COMPARATIVA -->
+        <h2 style="color: #e2e8f0; margin: 40px 0 20px 0; font-size: 1.5rem;">
+            📋 Tabla Comparativa
+        </h2>
+
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Métrica</th>
+                    <th>Antes</th>
+                    <th>Después</th>
+                    <th>Mejora</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Items en nivel raíz</strong></td>
+                    <td>22</td>
+                    <td>16</td>
+                    <td><span class="accent">-27%</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Sub-items</strong></td>
+                    <td>6</td>
+                    <td>9</td>
+                    <td><span class="accent">+50% (mejor org)</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Total opciones</strong></td>
+                    <td>28</td>
+                    <td>25</td>
+                    <td><span class="accent">-11%</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Profundidad máxima</strong></td>
+                    <td>3 niveles</td>
+                    <td>2 niveles</td>
+                    <td><span class="accent">33% más shallow</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Jerarquía visual</strong></td>
+                    <td>Inconsistente</td>
+                    <td>Consistente</td>
+                    <td><span class="accent">✅ Mejorada</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Orientación</strong></td>
+                    <td>Por módulo</td>
+                    <td>Por flujo de trabajo</td>
+                    <td><span class="accent">+UX</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Tiempo a acción (vendedor)</strong></td>
+                    <td>~4-5 clics</td>
+                    <td>~3 clics</td>
+                    <td><span class="accent">-25%</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <p><strong>Clientum CRM - Menu Reorganization Proposal</strong></p>
+            <p>Propuesta de mejora de UX / Fecha: 2026-09-09 / Estado: Ready for Review</p>
+            <p style="color: #475569; margin-top: 15px; font-size: 0.9rem;">
+                Documentos complementarios: MENU_REORGANIZATION_PROPOSAL.md | SIDEBAR_NEW_STRUCTURE.ts
+            </p>
+        </div>
+    </div>
+</body>
+</html>

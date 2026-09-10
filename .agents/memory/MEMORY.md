@@ -9,3 +9,4 @@
 - [Portable npm lockfiles](portable-npm-lockfiles.md) — lockfiles generated inside Replit must not retain the internal package-firewall hostname before external publishing.
 - [Clerk identity bridge](clerk-identity-bridge.md) — make Clerk-to-app session sync idempotent and independent of recreated context callbacks.
 - [Clerk session and service worker](clerk-session-and-service-worker.md) — keep public routes recoverable from mismatched Clerk cookies and never return undefined from fetch handlers.
+- [TypeScript attachment isolation](typescript-attachment-isolation.md) — reference TypeScript files uploaded under attached_assets can enter the root typecheck unless that directory is excluded.

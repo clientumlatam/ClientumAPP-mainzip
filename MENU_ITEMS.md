@@ -15,7 +15,7 @@ Documento de referencia de los menús visibles del **Dashboard privado** y del
 El dashboard se encuentra disponible para usuarios autenticados en `/app`.
 También existen aliases compatibles en `/dashboard`, `/crm` y `/erp`.
 
-### 1.1 Panel de control & análisis
+### 1.1 Resumen Operativo
 
 | Ítem | Identificador | Función |
 | --- | --- | --- |
@@ -23,48 +23,49 @@ También existen aliases compatibles en `/dashboard`, `/crm` y `/erp`.
 | Reportes & BI | `analytics` | Métricas de conversión, forecasting y analítica avanzada |
 | Centro de Funciones | `featureHub` | Explorar, activar y gestionar módulos del workspace |
 
-### 1.2 Ventas & Clientes
+### 1.2 Ventas
 
 | Ítem agrupado | Ítem principal | Subítems | Función |
 | --- | --- | --- | --- |
 | Contactos & Empresas | `people` | `companies` — Empresas | Directorio unificado de personas, leads y cuentas |
 | Pipeline de Negocios | `opportunities` | `meddic` — Lead Scoring MEDDIC | Oportunidades en Kanban/Tabla con calificación integrada |
-| Actividades & Agenda | `tasks` | `calendar` — Calendario; `activityInbox` — Notas y llamadas | Tareas, seguimientos, notas y llamadas |
+| Actividades & Seguimiento | `tasks` | `calendar` — Calendario; `activityInbox` — Notas y Llamadas | Tareas, seguimientos, notas y llamadas |
 | Propuestas & Presupuestos | `propuestas` | — | Generación de propuestas PDF |
-| Prospección Mapa B2B | `googleMaps` | — | Búsqueda geolocalizada de prospectos |
+| Prospección B2B | `googleMaps` | — | Búsqueda geolocalizada de prospectos |
 
-### 1.3 Centro de Comunicación
-
-| Ítem agrupado | Ítem principal | Subítems | Función |
-| --- | --- | --- | --- |
-| Bandeja Omnicanal | `whatsapp` | `messages` — Mensajes; `webmail` — Webmail Cloudflare | WhatsApp, correo corporativo y mensajes en un mismo centro |
-| Bots & Atención Automática | `chatbot` | — | Configuración y supervisión del chatbot de WhatsApp |
-| Campañas Masivas | `campaigns` | — | Creación, envío y métricas de campañas |
-
-### 1.4 IA & Automatización
+### 1.3 Comunicación Integrada
 
 | Ítem agrupado | Ítem principal | Subítems | Función |
 | --- | --- | --- | --- |
-| Agentes & Copilot | `agenteOS` | `aiAssistant` — Asistente Gemini; `sdrOutreach` — Agente SDR | IA generativa, agentes autónomos y prospección |
-| Automatizaciones & Flujos | `workflows` | — | Triggers, condiciones y acciones automáticas |
+| Bandeja Unificada | `whatsapp` | `whatsappInbox` — WhatsApp Inbox; `webmail` — Email Cloudflare; `messages` — Mensajes Internos | WhatsApp, correo corporativo y mensajes en un mismo centro |
+| Bots y Automatización de Atención | `chatbot` | — | Configuración y supervisión del chatbot de WhatsApp |
+| Campañas & Difusión Masiva | `campaigns` | — | Creación, envío y métricas de campañas |
+
+### 1.4 Inteligencia & Automatización
+
+| Ítem agrupado | Ítem principal | Subítems | Función |
+| --- | --- | --- | --- |
+| Agentes Especializados | `agenteOS` | `aiAssistant` — Copilot IA (Gemini 1.5); `sdrOutreach` — Agente SDR | IA generativa, agentes autónomos y prospección |
+| Flujos de Trabajo | `workflows` | — | Triggers, condiciones y acciones automáticas |
 | Estrategias GTM | `gtmStrategy` | — | Planificación asistida go-to-market |
 
-### 1.5 Operaciones & Finanzas
+### 1.5 Operaciones & Back-Office
 
 | Ítem agrupado | Ítem principal | Subítems | Función |
 | --- | --- | --- | --- |
-| Facturación AFIP & ERP | `erp` | `operations` — Operaciones internas | Comprobantes fiscales A, B y C con CAE y gestión operativa |
-| Cobros & Pagos | `payments` | — | Checkouts y estado de pagos |
+| Facturación AFIP | `erp` | — | Comprobantes fiscales A, B y C con CAE |
+| Operaciones Internas | `operations` | `inventory` — Inventario & Catálogo | Gestión operativa, inventario y catálogo |
 | Tienda Digital WhatsApp | `tiendaDigital` | — | Catálogo y pedidos digitales |
-| Campus Academia LMS | `campusLMS` | — | Cursos y capacitación comercial |
+| Suscripción & Facturación Clientum | `payments` | — | Plan actual, facturación y uso de la plataforma |
 
-### 1.6 Sistema & Configuración
+### 1.6 Aprendizaje & Configuración
 
 | Ítem agrupado | Ítem principal | Subítems | Función |
 | --- | --- | --- | --- |
 | Estructura de Datos | `customObjects` | `csvStudio` — Importar / Exportar CSV | Objetos personalizados y operaciones masivas de datos |
 | Gestor de Dominios | `domainManager` | — | Dominios, DNS y Cloudflare |
-| Ajustes Generales | `settings` | — | Permisos, integraciones, auditoría y preferencias |
+| Configuración General | `settings` | — | Permisos, integraciones, auditoría y preferencias |
+| Campus Academia LMS | `campusLMS` | — | Cursos y capacitación comercial |
 
 ### 1.7 Acciones globales
 
@@ -72,7 +73,7 @@ También existen aliases compatibles en `/dashboard`, `/crm` y `/erp`.
 | --- | --- |
 | Buscar en todo el CRM | Buscador universal del sidebar / paleta `⌘K` |
 | Nuevo Registro | Botón `+` del encabezado lateral |
-| Notificaciones | Botón de campana del topbar; abre Actividades & Agenda |
+| Notificaciones | Botón de campana del topbar; abre Actividades & Seguimiento |
 | Clientum Copilot | Tarjeta lateral y botón superior |
 | Ver Portal Público | Acceso lateral y menú “Más” |
 | Cuentas Clave | Acceso contextual a las primeras oportunidades |

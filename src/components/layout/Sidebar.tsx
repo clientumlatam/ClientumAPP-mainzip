@@ -33,6 +33,7 @@ import {
   Globe,
   Mail,
   Inbox,
+  MessageCircle,
   FolderKanban,
   ScanSearch,
   KeyRound,
@@ -162,8 +163,8 @@ export const Sidebar: React.FC = () => {
 
   const [configModuleId, setConfigModuleId] = useState<ActiveTab | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
-    'Operaciones & Finanzas': true,
-    'Sistema & Configuración': true,
+    'Operaciones & Back-Office': true,
+    'Aprendizaje & Configuración': true,
   });
 
   const unreadWebmailCount = webmailEmails ? webmailEmails.filter((e) => e.folder === 'inbox' && !e.isRead).length : 0;
@@ -181,13 +182,15 @@ export const Sidebar: React.FC = () => {
   type SidebarSection = {
     id: string;
     label: string;
+    description: string;
     items: SidebarNavItem[];
   };
 
   const navigationSections: SidebarSection[] = [
     {
-      id: 'dashboard',
-      label: 'Panel de control & análisis',
+      id: 'executive',
+      label: 'Resumen Operativo',
+      description: 'KPIs, reportes y estado de los módulos del workspace',
       items: [
         { id: 'dashboard', label: 'Resumen Ejecutivo', icon: Home },
         { id: 'analytics', label: 'Reportes & BI', icon: BarChart3 },
@@ -196,50 +199,56 @@ export const Sidebar: React.FC = () => {
     },
     {
       id: 'sales',
-      label: 'Ventas & Clientes',
+      label: 'Ventas',
+      description: 'Prospección, oportunidades, seguimiento y propuestas',
       items: [
-        { id: 'people', label: 'Contactos & Empresas', icon: Users2, badge: people.length, subItems: [{ id: 'companies', label: 'Empresas', icon: Building2, badge: companies.length }] },
         { id: 'opportunities', label: 'Pipeline de Negocios', icon: Briefcase, badge: 'Kanban', badgeColor: 'bg-blue-100 text-blue-800', subItems: [{ id: 'meddic', label: 'Lead Scoring MEDDIC', icon: Target }] },
-        { id: 'tasks', label: 'Actividades & Agenda', icon: CheckSquare, badge: tasks.filter((task) => task.status !== 'Completed').length, badgeColor: 'bg-amber-100 text-amber-800', subItems: [{ id: 'calendar', label: 'Calendario', icon: Calendar }, { id: 'activityInbox', label: 'Notas y llamadas', icon: Inbox, badge: activities.length, badgeColor: 'bg-violet-100 text-violet-800' }] },
+        { id: 'people', label: 'Contactos & Empresas', icon: Users2, badge: people.length, subItems: [{ id: 'companies', label: 'Empresas', icon: Building2, badge: companies.length }] },
+        { id: 'tasks', label: 'Actividades & Seguimiento', icon: CheckSquare, badge: tasks.filter((task) => task.status !== 'Completed').length, badgeColor: 'bg-amber-100 text-amber-800', subItems: [{ id: 'calendar', label: 'Calendario', icon: Calendar }, { id: 'activityInbox', label: 'Notas y Llamadas', icon: Inbox, badge: activities.length, badgeColor: 'bg-violet-100 text-violet-800' }] },
         { id: 'propuestas', label: 'Propuestas & Presupuestos', icon: FileCheck, badge: 'PDF', badgeColor: 'bg-emerald-100 text-emerald-800' },
-        { id: 'googleMaps', label: 'Prospección Mapa B2B', icon: MapPin, badge: 'Maps', badgeColor: 'bg-blue-100 text-blue-800' },
+        { id: 'googleMaps', label: 'Prospección B2B', icon: MapPin, badge: 'Maps', badgeColor: 'bg-blue-100 text-blue-800' },
       ],
     },
     {
       id: 'communication',
-      label: 'Centro de Comunicación',
+      label: 'Comunicación Integrada',
+      description: 'Mensajes entrantes, atención automática y difusión',
       items: [
-        { id: 'whatsapp', label: 'Bandeja Omnicanal', icon: Inbox, badge: 'LIVE', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold', subItems: [{ id: 'messages', label: 'Mensajes', icon: MessageSquare, badge: 12, badgeColor: 'bg-blue-100 text-blue-800' }, { id: 'webmail', label: 'Webmail Cloudflare', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'GTM', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-semibold' }] },
-        { id: 'chatbot', label: 'Bots & Atención Automática', icon: Bot },
-        { id: 'campaigns', label: 'Campañas Masivas', icon: Send },
+        { id: 'whatsapp', label: 'Bandeja Unificada', icon: Inbox, badge: 'LIVE', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold', subItems: [{ id: 'whatsappInbox', label: 'WhatsApp Inbox', icon: MessageSquare, badge: 12, badgeColor: 'bg-blue-100 text-blue-800' }, { id: 'webmail', label: 'Email Cloudflare', icon: Mail, badge: unreadWebmailCount > 0 ? unreadWebmailCount : 'GTM', badgeColor: unreadWebmailCount > 0 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-semibold' }, { id: 'messages', label: 'Mensajes Internos', icon: MessageCircle, badge: 12, badgeColor: 'bg-blue-100 text-blue-800' }] },
+        { id: 'chatbot', label: 'Bots y Automatización de Atención', icon: Bot },
+        { id: 'campaigns', label: 'Campañas & Difusión Masiva', icon: Send },
       ],
     },
     {
       id: 'ai',
-      label: 'IA & Automatización',
+      label: 'Inteligencia & Automatización',
+      description: 'Agentes especializados, workflows y estrategias GTM',
       items: [
-        { id: 'agenteOS', label: 'Agentes & Copilot', icon: Cpu, badge: '14', badgeColor: 'bg-blue-100 text-blue-800 font-bold', subItems: [{ id: 'aiAssistant', label: 'Asistente Gemini', icon: Sparkles }, { id: 'sdrOutreach', label: 'Agente SDR Outreach', icon: Bot }] },
-        { id: 'workflows', label: 'Automatizaciones & Flujos', icon: Workflow },
+        { id: 'agenteOS', label: 'Agentes Especializados', icon: Cpu, badge: '14', badgeColor: 'bg-blue-100 text-blue-800 font-bold', subItems: [{ id: 'aiAssistant', label: 'Copilot IA (Gemini 1.5)', icon: Sparkles }, { id: 'sdrOutreach', label: 'Agente SDR Outreach', icon: Bot }] },
+        { id: 'workflows', label: 'Flujos de Trabajo', icon: Workflow },
         { id: 'gtmStrategy', label: 'Estrategias GTM', icon: Compass },
       ],
     },
     {
       id: 'operations',
-      label: 'Operaciones & Finanzas',
+      label: 'Operaciones & Back-Office',
+      description: 'Facturación, inventario, catálogo y cuenta Clientum',
       items: [
-        { id: 'erp', label: 'Facturación AFIP & ERP', icon: Receipt, badge: 'CAE', badgeColor: 'bg-blue-100 text-blue-800 font-bold', subItems: [{ id: 'operations', label: 'Operaciones internas', icon: FolderKanban, badge: 'Nuevo', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold' }] },
-        { id: 'payments', label: 'Suscripción Clientum', icon: CreditCard, configurable: false },
+        { id: 'erp', label: 'Facturación AFIP', icon: Receipt, badge: 'CAE', badgeColor: 'bg-blue-100 text-blue-800 font-bold' },
+        { id: 'operations', label: 'Operaciones Internas', icon: FolderKanban, badge: 'Nuevo', badgeColor: 'bg-emerald-100 text-emerald-800 font-bold', subItems: [{ id: 'inventory', label: 'Inventario & Catálogo', icon: Store }] },
         { id: 'tiendaDigital', label: 'Tienda Digital WhatsApp', icon: Store, badge: 'Catálogo', badgeColor: 'bg-emerald-100 text-emerald-800' },
-        { id: 'campusLMS', label: 'Campus Academia LMS', icon: GraduationCap, badge: 'LMS', badgeColor: 'bg-purple-100 text-purple-800' },
+        { id: 'payments', label: 'Suscripción & Facturación Clientum', icon: CreditCard, configurable: false },
       ],
     },
     {
       id: 'system',
-      label: 'Sistema & Configuración',
+      label: 'Aprendizaje & Configuración',
+      description: 'Campus, estructura de datos, dominios y configuración',
       items: [
+        { id: 'campusLMS', label: 'Campus Academia LMS', icon: GraduationCap, badge: 'LMS', badgeColor: 'bg-purple-100 text-purple-800' },
         { id: 'customObjects', label: 'Estructura de Datos', icon: Database, subItems: [{ id: 'csvStudio', label: 'Importar / Exportar CSV', icon: FileSpreadsheet }] },
         { id: 'domainManager', label: 'Gestor de Dominios', icon: Globe },
-        { id: 'settings', label: 'Ajustes Generales', icon: Settings },
+        { id: 'settings', label: 'Configuración General', icon: Settings },
       ],
     },
   ];
@@ -352,6 +361,7 @@ export const Sidebar: React.FC = () => {
                 className="w-full flex items-center justify-between px-2 pb-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-primary)] cursor-pointer"
                 onClick={() => setCollapsedSections((previous) => ({ ...previous, [section.label]: !storedCollapsed }))}
                 aria-expanded={!isCollapsed}
+                title={section.description}
               >
                 <span>{section.label}</span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />

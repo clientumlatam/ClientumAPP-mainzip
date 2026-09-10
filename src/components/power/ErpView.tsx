@@ -16,8 +16,8 @@ import { InvoiceHistoryTable } from '../erp/InvoiceHistoryTable';
 import { InventoryDashboard } from '../erp/InventoryDashboard';
 import { ExpenseTracker } from '../erp/ExpenseTracker';
 
-export const ErpView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'invoices' | 'history' | 'inventory' | 'expenses'>('history');
+export const ErpView: React.FC<{ defaultTab?: 'invoices' | 'history' | 'inventory' | 'expenses' }> = ({ defaultTab = 'history' }) => {
+  const [activeTab, setActiveTab] = useState<'invoices' | 'history' | 'inventory' | 'expenses'>(defaultTab);
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#0a0c10] text-slate-300 text-xs">
