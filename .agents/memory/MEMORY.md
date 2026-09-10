@@ -10,3 +10,4 @@
 - [Clerk identity bridge](clerk-identity-bridge.md) — make Clerk-to-app session sync idempotent and independent of recreated context callbacks.
 - [Boolean navigation handlers](boolean-navigation-handlers.md) — callbacks that accept boolean flags must be wrapped before passing them to React event props.
 - [Vercel Clerk delivery](vercel-clerk-delivery.md) — external deployments must not use an unavailable Replit Clerk proxy, and the Service Worker must skip cross-origin requests.
+- [Production demo access](production-demo-access.md) — the demo button is a local UI session, not a substitute for an authenticated Clerk user or persistent backend access.

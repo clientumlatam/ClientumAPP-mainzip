@@ -560,6 +560,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const demoSessionRef = useRef(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
   const [isCrmRemoteReady, setIsCrmRemoteReady] = useState(false);
@@ -603,12 +604,18 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const syncClerkAuth = useCallback((identity: { id: string; email: string; name: string; avatar?: string | null } | null) => {
     if (!identity) {
+      if (demoSessionRef.current) {
+        setIsAuthenticated(true);
+        setIsAuthReady(true);
+        return;
+      }
       setIsAuthenticated(false);
       setIsAuthReady(true);
       setIsCrmRemoteReady(false);
       return;
     }
 
+    demoSessionRef.current = false;
     const identityEmail = typeof identity.email === 'string' ? identity.email : '';
     const matchingUser = users.find(
       (user) =>
@@ -808,6 +815,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const login = (email: string, _pass?: string) => {
+    demoSessionRef.current = true;
     const found = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
     const userToSet = found || {
       id: 'usr-' + Date.now(),
@@ -828,6 +836,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setIsAuthenticated(true);
+    setIsAuthReady(true);
     setActiveTab('dashboard');
     setIsAuthModalOpen(false);
     setIsPublicSiteVisible(false);
@@ -861,6 +870,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    demoSessionRef.current = false;
     setIsAuthenticated(false);
     setGmailAccessToken(null);
     try {
