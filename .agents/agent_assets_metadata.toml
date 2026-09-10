@@ -28,3 +28,17 @@ mtime_ms = 1788931687972
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:5c19525b-ae7c-40b7-87d3-f638dff005b5/144a4823-e190-4d97-a2d7-59ffd928230a/4c2e4137-a06e-4039-8f10-fc90bf032f3e"
 storage_version_token = "1788931700752790"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "meSxrBPEHTeX9s-9a0kJp"
+uri = "file://docs/design-system/preview.html"
+type = "text"
+title = "Clientum Clarity — Design System"
+description = "Referencia visual autónoma del sistema de diseño extraído de ClientumCRM. Incluye paleta, tipografía, acciones, estados, navegación y principios de uso; no modifica pantallas de producción."
+logical_id = "8b7f590b-1584-4caf-ba79-c70123bf1bad"
+content_hash = "sha256:0d26af29b7da197557fb0b2c800a609cbfe3a62485e3f76c0633be76f42e3131"
+size = 13868
+mtime_ms = 1788999063261
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:2da6d973-4497-46fb-8eb7-c98fe3f31b0c/8b7f590b-1584-4caf-ba79-c70123bf1bad/2a77673a-62ae-4c3a-aefd-1a2e2f0169e0"
+storage_version_token = "1788999077209491"
+content_type = "text/html"
