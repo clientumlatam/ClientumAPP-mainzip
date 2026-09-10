@@ -461,7 +461,7 @@ app.post("/api/public/newsletter", async (req, res) => {
 
 // Protected application APIs require a Clerk session in production.
 app.use(
-  ["/api/account", "/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit", "/api/payments", "/api/billing", "/api/vercel"],
+  ["/api/account", "/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit", "/api/payments", "/api/billing", "/api/vercel", "/api/cloudflare"],
   requireProductionAuthentication,
 );
 
@@ -524,6 +524,103 @@ app.get("/api/vercel/deployments", async (req, res) => {
     res.status(502).json({
       error: "Could not connect to the Vercel API.",
       code: "VERCEL_CONNECTION_ERROR",
+    });
+  }
+});
+
+const CLOUDFLARE_API_BASE_URL = "https://api.cloudflare.com/client/v4";
+
+async function requestCloudflareApi(pathname: string, searchParams?: URLSearchParams): Promise<{
+  response: Response;
+  payload: unknown;
+}> {
+  const url = new URL(`${CLOUDFLARE_API_BASE_URL}${pathname}`);
+  if (searchParams) url.search = searchParams.toString();
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN?.trim()}`,
+    },
+  });
+  const payload = await response.json().catch(() => null);
+  return { response, payload };
+}
+
+app.get("/api/cloudflare/token/verify", async (_req, res) => {
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN?.trim();
+  if (!apiToken) {
+    res.status(503).json({
+      error: "Cloudflare API access is not configured on the server.",
+      code: "CLOUDFLARE_NOT_CONFIGURED",
+    });
+    return;
+  }
+
+  try {
+    const { response, payload } = await requestCloudflareApi("/user/tokens/verify");
+    if (!response.ok) {
+      console.error("Cloudflare token verification failed:", response.status, payload);
+      res.status(response.status >= 400 && response.status < 600 ? response.status : 502).json({
+        error: "Cloudflare token verification failed.",
+        code: "CLOUDFLARE_API_ERROR",
+        status: response.status,
+      });
+      return;
+    }
+
+    res.json(payload);
+  } catch (error: any) {
+    console.error("Cloudflare API connection failed:", error?.message || error);
+    res.status(502).json({
+      error: "Could not connect to the Cloudflare API.",
+      code: "CLOUDFLARE_CONNECTION_ERROR",
+    });
+  }
+});
+
+app.get("/api/cloudflare/zones", async (req, res) => {
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN?.trim();
+  if (!apiToken) {
+    res.status(503).json({
+      error: "Cloudflare API access is not configured on the server.",
+      code: "CLOUDFLARE_NOT_CONFIGURED",
+    });
+    return;
+  }
+
+  const searchParams = new URLSearchParams({
+    page: String(readBoundedQueryNumber(req.query.page, 1, 1, 10000)),
+    per_page: String(readBoundedQueryNumber(req.query.per_page, 20, 1, 50)),
+  });
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
+  if (accountId) searchParams.set("account.id", accountId);
+
+  for (const parameter of ["name", "status", "direction", "match"]) {
+    const value = req.query[parameter];
+    if (typeof value === "string" && value.trim()) {
+      searchParams.set(parameter, value.trim().slice(0, 160));
+    }
+  }
+
+  try {
+    const { response, payload } = await requestCloudflareApi("/zones", searchParams);
+    if (!response.ok) {
+      console.error("Cloudflare zones request failed:", response.status, payload);
+      res.status(response.status >= 400 && response.status < 600 ? response.status : 502).json({
+        error: "Cloudflare zones request failed.",
+        code: "CLOUDFLARE_API_ERROR",
+        status: response.status,
+      });
+      return;
+    }
+
+    res.json(payload);
+  } catch (error: any) {
+    console.error("Cloudflare API connection failed:", error?.message || error);
+    res.status(502).json({
+      error: "Could not connect to the Cloudflare API.",
+      code: "CLOUDFLARE_CONNECTION_ERROR",
     });
   }
 });
