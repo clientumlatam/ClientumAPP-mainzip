@@ -3,7 +3,7 @@ generated = []
 
 [[outputs]]
 id = "cvrUfFb_pY5u6rfgM9Hnh"
-uri = "file://SECRETS.md"
+uri = "file://project_archive/SECRETS.md"
 type = "text"
 title = "Inventario seguro de secretos de ClientumCRM"
 description = "Matriz por módulo del menú con variables, estado actual, clasificación pública/privada y checklist de producción. No contiene valores reales de credenciales."
@@ -17,7 +17,7 @@ content_type = "text/markdown"
 
 [[outputs]]
 id = "XD_fr2CqopZ9fVm1KcC39"
-uri = "file://plan_consolidado_proyecto.md"
+uri = "file://project_archive/plan_consolidado_proyecto.md"
 type = "text"
 title = "Plan consolidado del proyecto"
 description = "Roadmap integrado de CRM, captación web, integraciones, ERP/e-commerce y portal de clientes."
