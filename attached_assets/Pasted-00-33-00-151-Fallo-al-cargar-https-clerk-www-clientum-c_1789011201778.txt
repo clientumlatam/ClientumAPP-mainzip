@@ -1,0 +1,40 @@
+00:33:00.151 Fallo al cargar 'https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js'. Un ServiceWorker ha pasado un promise a FetchEvent.respondWith() que lo ha resuelto con el valor sin respuesta 'undefined'. sw.js:37:9
+00:33:00.151 Solicitud de origen cruzado bloqueada: La política de mismo origen no permite la lectura de recursos remotos en https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js. (Razón: Solicitud CORS sin éxito). Código de estado: (null). 
+00:33:00.151 La URI de origen del <script> no está permitida en este docuento: "https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js". www.clientum.com.ar:1:1
+00:33:00.195 ServiceWorker registration successful with scope:  https://www.clientum.com.ar/ index-DumvBaSr.js:587:11530
+00:33:00.316 Fallo al cargar 'https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js'. Un ServiceWorker ha pasado un promise a FetchEvent.respondWith() que lo ha resuelto con el valor sin respuesta 'undefined'. sw.js:37:9
+00:33:00.316 Solicitud de origen cruzado bloqueada: La política de mismo origen no permite la lectura de recursos remotos en https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js. (Razón: Solicitud CORS sin éxito). Código de estado: (null). 
+00:33:00.316 La URI de origen del <script> no está permitida en este docuento: "https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js". www.clientum.com.ar:1:1
+00:33:00.716 Fallo al cargar 'https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js'. Un ServiceWorker ha pasado un promise a FetchEvent.respondWith() que lo ha resuelto con el valor sin respuesta 'undefined'. sw.js:37:9
+00:33:00.716 Solicitud de origen cruzado bloqueada: La política de mismo origen no permite la lectura de recursos remotos en https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js. (Razón: Solicitud CORS sin éxito). Código de estado: (null). 
+00:33:00.716 La URI de origen del <script> no está permitida en este docuento: "https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js". www.clientum.com.ar:1:1
+00:33:01.503 Fallo al cargar 'https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js'. Un ServiceWorker ha pasado un promise a FetchEvent.respondWith() que lo ha resuelto con el valor sin respuesta 'undefined'. sw.js:37:9
+00:33:01.503 Solicitud de origen cruzado bloqueada: La política de mismo origen no permite la lectura de recursos remotos en https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js. (Razón: Solicitud CORS sin éxito). Código de estado: (null). 
+00:33:01.503 La URI de origen del <script> no está permitida en este docuento: "https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js". www.clientum.com.ar:1:1
+00:33:02.661 Fallo al cargar 'https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js'. Un ServiceWorker ha pasado un promise a FetchEvent.respondWith() que lo ha resuelto con el valor sin respuesta 'undefined'. sw.js:37:9
+00:33:02.662 Solicitud de origen cruzado bloqueada: La política de mismo origen no permite la lectura de recursos remotos en https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js. (Razón: Solicitud CORS sin éxito). Código de estado: (null). 
+00:33:02.662 La URI de origen del <script> no está permitida en este docuento: "https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js". www.clientum.com.ar:1:1
+00:33:06.006 Fallo al cargar 'https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js'. Un ServiceWorker ha pasado un promise a FetchEvent.respondWith() que lo ha resuelto con el valor sin respuesta 'undefined'. sw.js:37:9
+00:33:06.076 Solicitud de origen cruzado bloqueada: La política de mismo origen no permite la lectura de recursos remotos en https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js. (Razón: Solicitud CORS sin éxito). Código de estado: (null). 
+00:33:06.077 La URI de origen del <script> no está permitida en este docuento: "https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js". www.clientum.com.ar:1:1
+00:33:06.081 Uncaught (in promise) Jn: Clerk: Failed to load Clerk JS, failed to load script: https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js
+
+(code="failed_to_load_clerk_js")
+
+    Xn https://www.clientum.com.ar/assets/index-DumvBaSr.js:49
+    Jn https://www.clientum.com.ar/assets/index-DumvBaSr.js:56
+    l https://www.clientum.com.ar/assets/index-DumvBaSr.js:64
+    Tw https://www.clientum.com.ar/assets/index-DumvBaSr.js:64
+Caused by: Error: failed to load script: https://clerk.www.clientum.com.ar/npm/@clerk/clerk-js@6/dist/clerk.browser.js
+    Fy https://www.clientum.com.ar/assets/index-DumvBaSr.js:64
+    Fy https://www.clientum.com.ar/assets/index-DumvBaSr.js:64
+    Fy https://www.clientum.com.ar/assets/index-DumvBaSr.js:64
+    gw https://www.clientum.com.ar/assets/index-DumvBaSr.js:64
+index-DumvBaSr.js:49:38680
+00:33:08.522 Error al interpretar el valor para '-webkit-text-size-adjust'.  Declaración rechazada. index-B63NDOKp.css:1:9355
+00:33:08.529 Propiedad desconocida '-moz-osx-font-smoothing'.  Declaración rechazada. index-B63NDOKp.css:1:115253
+00:33:08.530 Propiedad desconocida 'backdrop-filter'.  Declaración rechazada. index-B63NDOKp.css:1:126977
+00:33:08.530 Propiedad desconocida 'backdrop-filter'.  Declaración rechazada. index-B63NDOKp.css:1:127587
+00:33:08.530 Propiedad desconocida 'backdrop-filter'.  Declaración rechazada. index-B63NDOKp.css:1:128197
+00:33:08.530 Propiedad desconocida 'backdrop-filter'.  Declaración rechazada. index-B63NDOKp.css:1:128807
+00:33:08.530 Propiedad desconocida 'backdrop-filter'.  Declaración rechazada. index-B63NDOKp.css:1:129376

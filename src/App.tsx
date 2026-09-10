@@ -18,7 +18,12 @@ const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   viteEnv.VITE_CLERK_PUBLISHABLE_KEY,
 );
-const clerkProxyUrl = viteEnv.VITE_CLERK_PROXY_URL;
+const isReplitHost =
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname.endsWith('.replit.dev') ||
+  window.location.hostname.endsWith('.replit.app');
+const clerkProxyUrl = isReplitHost ? viteEnv.VITE_CLERK_PROXY_URL : undefined;
 const clerkAppearance = {
   variables: {
     colorPrimary: '#2563eb',
