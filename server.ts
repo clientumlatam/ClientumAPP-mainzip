@@ -39,6 +39,10 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
+const clerkAuthorizedParties = (process.env.CLERK_AUTHORIZED_PARTIES || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(express.json({
@@ -53,6 +57,9 @@ app.use(
       getClerkProxyHost(req) ?? "",
       process.env.CLERK_PUBLISHABLE_KEY,
     ),
+    ...(clerkAuthorizedParties.length > 0
+      ? { authorizedParties: clerkAuthorizedParties }
+      : {}),
   })),
 );
 
