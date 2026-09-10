@@ -461,9 +461,72 @@ app.post("/api/public/newsletter", async (req, res) => {
 
 // Protected application APIs require a Clerk session in production.
 app.use(
-  ["/api/account", "/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit", "/api/payments", "/api/billing"],
+  ["/api/account", "/api/ai", "/api/expense", "/api/email/send", "/api/crm", "/api/agent", "/api/audit", "/api/payments", "/api/billing", "/api/vercel"],
   requireProductionAuthentication,
 );
+
+function readBoundedQueryNumber(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, Math.trunc(parsed)));
+}
+
+app.get("/api/vercel/deployments", async (req, res) => {
+  const accessToken = process.env.VERCEL_ACCESS_TOKEN?.trim();
+  if (!accessToken) {
+    res.status(503).json({
+      error: "Vercel API access is not configured on the server.",
+      code: "VERCEL_NOT_CONFIGURED",
+    });
+    return;
+  }
+
+  const url = new URL("https://api.vercel.com/v7/deployments");
+  url.searchParams.set(
+    "limit",
+    String(readBoundedQueryNumber(req.query.limit, 20, 1, 100)),
+  );
+
+  // Full-account tokens can target a team with teamId. Scoped team/project
+  // tokens already carry that context and should omit the query parameter.
+  const teamId = process.env.VERCEL_TEAM_ID?.trim();
+  if (teamId) url.searchParams.set("teamId", teamId);
+
+  for (const parameter of ["projectId", "target", "state", "from", "to", "until"]) {
+    const value = req.query[parameter];
+    if (typeof value === "string" && value.trim()) {
+      url.searchParams.set(parameter, value.trim().slice(0, 160));
+    }
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      console.error("Vercel API request failed:", response.status, payload);
+      res.status(response.status >= 400 && response.status < 600 ? response.status : 502).json({
+        error: "Vercel API request failed.",
+        code: "VERCEL_API_ERROR",
+        status: response.status,
+      });
+      return;
+    }
+
+    res.json(payload);
+  } catch (error: any) {
+    console.error("Vercel API connection failed:", error?.message || error);
+    res.status(502).json({
+      error: "Could not connect to the Vercel API.",
+      code: "VERCEL_CONNECTION_ERROR",
+    });
+  }
+});
 
 // Platform billing is the only active payment surface. The older
 // tenant/customer checkout routes remain in the codebase for migration
