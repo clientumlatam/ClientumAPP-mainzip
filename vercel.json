@@ -5,7 +5,7 @@
   "functions": {
     "api/[...path].ts": {
       "maxDuration": 60,
-      "includeFiles": ["migrations/**"]
+      "includeFiles": "migrations/**"
     }
   }
 }
