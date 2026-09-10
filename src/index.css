@@ -2261,3 +2261,343 @@ html[data-theme="light"] .clientum-light-dashboard .crm-chat-reopen {
     display: none;
   }
 }
+
+/* ==========================================================================
+   Clientum Clarity — approved dashboard application
+   This layer applies the extracted design system to the executive dashboard
+   only. It preserves the existing data, handlers, routes, and interactions.
+   ========================================================================== */
+html[data-theme="light"] .clientum-light-dashboard .crm-dashboard {
+  --crm-bg: var(--bg-canvas);
+  --crm-surface: var(--bg-surface);
+  --crm-surface-2: var(--bg-muted);
+  --crm-border: var(--border-subtle);
+  --crm-border-soft: #eef2f7;
+  --crm-muted: var(--text-muted);
+  --crm-text: var(--text-primary);
+  --crm-cyan: #0f766e;
+  background: var(--bg-canvas);
+  background-image: none;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-dashboard__content {
+  gap: 0;
+  padding: 24px 28px 32px;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-dashboard__header {
+  order: 1;
+  margin-bottom: 20px;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-attention-panel {
+  order: 2;
+  margin-bottom: 20px;
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-grid {
+  order: 3;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-analytics-grid {
+  order: 4;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-pipeline-heading {
+  order: 5;
+  margin-top: 28px;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-board-shell {
+  order: 6;
+  margin-bottom: 0;
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-dashboard__header h1 {
+  margin-top: 7px;
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-dashboard__header p {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-eyebrow,
+html[data-theme="light"] .clientum-light-dashboard .crm-section-kicker {
+  color: var(--color-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-status-dot,
+html[data-theme="light"] .clientum-light-dashboard .crm-online-pip {
+  background: var(--color-success);
+  box-shadow: none;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-select-button,
+html[data-theme="light"] .clientum-light-dashboard .crm-icon-button,
+html[data-theme="light"] .clientum-light-dashboard .crm-ai-toggle {
+  border-color: var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-select-button:hover,
+html[data-theme="light"] .clientum-light-dashboard .crm-icon-button:hover,
+html[data-theme="light"] .clientum-light-dashboard .crm-ai-toggle:hover {
+  border-color: #93c5fd;
+  background: var(--bg-accent-subtle);
+  color: var(--color-primary-hover);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-ai-toggle,
+html[data-theme="light"] .clientum-light-dashboard .crm-ai-toggle.is-active {
+  border-color: #bfdbfe;
+  background: var(--bg-accent-subtle);
+  color: var(--color-primary-text);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-ai-toggle svg {
+  color: var(--color-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-dropdown {
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-popover);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-attention-panel__header h2,
+html[data-theme="light"] .clientum-light-dashboard .crm-pipeline-heading h2 {
+  color: var(--text-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-attention-panel__header p,
+html[data-theme="light"] .clientum-light-dashboard .crm-pipeline-heading > span {
+  color: var(--text-muted);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-report-link {
+  border-color: var(--border-subtle);
+  color: var(--color-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-attention-item,
+html[data-theme="light"] .clientum-light-dashboard .crm-stale-deals__list button {
+  border-color: var(--border-subtle);
+  background: var(--bg-muted);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-attention-item:hover,
+html[data-theme="light"] .clientum-light-dashboard .crm-stale-deals__list button:hover {
+  border-color: #93c5fd;
+  background: var(--bg-surface);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-attention-item__body strong,
+html[data-theme="light"] .clientum-light-dashboard .crm-stale-deals__list span {
+  color: var(--text-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-board-scroll {
+  gap: 10px;
+  padding: 12px;
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-stage {
+  min-height: 338px;
+  padding: 12px 10px 10px;
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-muted);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-stage__header,
+html[data-theme="light"] .clientum-light-dashboard .crm-deal-card__footer {
+  border-color: var(--border-subtle);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-stage__title,
+html[data-theme="light"] .clientum-light-dashboard .crm-deal-card h3 {
+  color: var(--text-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-stage__total,
+html[data-theme="light"] .clientum-light-dashboard .crm-deal-card__top {
+  color: var(--text-muted);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-deal-card {
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-deal-card:hover {
+  border-color: #93c5fd;
+  box-shadow: var(--shadow-elevated);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-deal-card__footer strong {
+  color: var(--color-primary-text);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-new-deal {
+  border-color: #bfdbfe;
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-new-deal:hover {
+  border-color: #93c5fd;
+  background: var(--bg-accent-subtle);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-card,
+html[data-theme="light"] .clientum-light-dashboard .crm-panel {
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-card__head,
+html[data-theme="light"] .clientum-light-dashboard .crm-panel__header p,
+html[data-theme="light"] .clientum-light-dashboard .crm-panel__total span,
+html[data-theme="light"] .clientum-light-dashboard .crm-source-list em {
+  color: var(--text-muted);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-card strong,
+html[data-theme="light"] .clientum-light-dashboard .crm-donut strong,
+html[data-theme="light"] .clientum-light-dashboard .crm-panel__title {
+  color: var(--text-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-card--accent {
+  border-color: #bfdbfe;
+  background: var(--bg-accent-subtle);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-card--accent strong,
+html[data-theme="light"] .clientum-light-dashboard .crm-panel__total strong {
+  color: var(--color-primary-text);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-kpi-icon {
+  border-color: #bfdbfe;
+  background: var(--bg-accent-subtle);
+  color: var(--color-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-source-list > div,
+html[data-theme="light"] .clientum-light-dashboard .crm-source-list strong {
+  color: var(--text-secondary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-panel__title svg,
+html[data-theme="light"] .clientum-light-dashboard .crm-title-mark {
+  color: var(--color-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant {
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-popover);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__header,
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__composer {
+  border-color: var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__identity strong {
+  color: var(--text-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__tools button,
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__composer button {
+  color: var(--text-muted);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__tools button:hover,
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__composer button:hover {
+  color: var(--color-primary-hover);
+  background: var(--bg-accent-subtle);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__composer input {
+  border-color: var(--border-default);
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-assistant__composer input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgb(37 99 235 / .14);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-message__bubble {
+  border-color: var(--border-subtle);
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-message--user .crm-message__bubble {
+  border-color: #bfdbfe;
+  background: var(--color-primary);
+  color: var(--text-inverse);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-chat-reopen {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-elevated);
+}
+
+html[data-theme="light"] .clientum-light-dashboard .crm-chat-reopen:hover {
+  background: var(--color-primary-hover);
+}
+
+html[data-theme="light"] .clientum-light-dashboard button:focus-visible,
+html[data-theme="light"] .clientum-light-dashboard [role="button"]:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  html[data-theme="light"] .clientum-light-dashboard .crm-dashboard__content {
+    padding: 20px 18px 28px;
+  }
+}
+
+@media (max-width: 620px) {
+  html[data-theme="light"] .clientum-light-dashboard .crm-dashboard__content {
+    padding: 18px 12px 24px;
+  }
+
+  html[data-theme="light"] .clientum-light-dashboard .crm-dashboard__header {
+    gap: 14px;
+  }
+}

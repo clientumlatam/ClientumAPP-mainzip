@@ -184,19 +184,19 @@ export const ExecutiveDashboardView: React.FC = () => {
           </div>
           <div className="crm-dashboard__actions">
             <div className="crm-select-wrap">
-              <button className="crm-select-button" onClick={() => setIsPipelineDropdownOpen((open) => !open)}>
+              <button type="button" className="crm-select-button" onClick={() => setIsPipelineDropdownOpen((open) => !open)} aria-haspopup="menu" aria-expanded={isPipelineDropdownOpen}>
                   {pipelineFilter}<ChevronDown size={14} />
               </button>
               {isPipelineDropdownOpen && (
                 <div className="crm-dropdown">
                     {(['Todos los negocios', 'New Business', 'Expansion', 'Renewal'] as const).map((item) => (
-                    <button key={item} onClick={() => { setPipelineFilter(item); setIsPipelineDropdownOpen(false); }}>{item}</button>
+                    <button type="button" key={item} onClick={() => { setPipelineFilter(item); setIsPipelineDropdownOpen(false); }}>{item}</button>
                   ))}
                 </div>
               )}
             </div>
-            <button className="crm-icon-button" onClick={() => showToast('Filtro de oportunidades aplicado', 'info')} title="Filtrar"><Filter size={15} /></button>
-            <button className="crm-icon-button" onClick={() => showToast('Opciones del pipeline', 'info')} title="Más opciones"><MoreHorizontal size={16} /></button>
+            <button type="button" className="crm-icon-button" onClick={() => showToast('Filtro de oportunidades aplicado', 'info')} title="Filtrar" aria-label="Filtrar oportunidades"><Filter size={15} /></button>
+            <button type="button" className="crm-icon-button" onClick={() => showToast('Opciones del pipeline', 'info')} title="Más opciones" aria-label="Más opciones del pipeline"><MoreHorizontal size={16} /></button>
             <button
               className={`crm-ai-toggle ${isChatOpen ? 'is-active' : ''}`}
               onClick={() => setIsChatOpen((open) => !open)}
@@ -364,7 +364,7 @@ export const ExecutiveDashboardView: React.FC = () => {
         <div className="crm-analytics-grid">
           <section className="crm-panel crm-revenue-panel">
             <div className="crm-panel__header">
-              <div><div className="crm-panel__title"><BarChart3 size={16} /> Ingresos <button className="crm-period">Negocios ganados <ChevronDown size={12} /></button></div><p>Valor de negocios en estado ganado</p></div>
+              <div><div className="crm-panel__title"><BarChart3 size={16} /> Ingresos <button type="button" className="crm-period">Negocios ganados <ChevronDown size={12} /></button></div><p>Valor de negocios en estado ganado</p></div>
               <div className="crm-panel__total"><span>Ingresos registrados</span><strong>{money(wonDeals.reduce((total, deal) => total + deal.amount, 0))}</strong><small><ArrowUpRight size={11} /> {wonDeals.length} <em>cierres registrados</em></small></div>
             </div>
             <div className="crm-revenue-chart">
@@ -381,7 +381,7 @@ export const ExecutiveDashboardView: React.FC = () => {
           </section>
 
           <section className="crm-panel crm-sources-panel">
-            <div className="crm-panel__header"><div><div className="crm-panel__title"><span className="crm-title-mark" /> Fuentes de negocio</div><p>Origen de tus oportunidades</p></div><button className="crm-icon-button crm-icon-button--small" onClick={() => showToast('Detalle de fuentes abierto', 'info')}><MoreHorizontal size={15} /></button></div>
+            <div className="crm-panel__header"><div><div className="crm-panel__title"><span className="crm-title-mark" /> Fuentes de negocio</div><p>Origen de tus oportunidades</p></div><button type="button" className="crm-icon-button crm-icon-button--small" onClick={() => showToast('Detalle de fuentes abierto', 'info')} aria-label="Más opciones de fuentes"><MoreHorizontal size={15} /></button></div>
             <div className="crm-sources-content">
               <div className="crm-donut">
                 <ResponsiveContainer width="100%" height="100%">
@@ -421,7 +421,7 @@ export const ExecutiveDashboardView: React.FC = () => {
               {isAiTyping && <div className="crm-message__typing" role="status" aria-label="El asistente está escribiendo"><i /><i /><i /></div>}
             </div>
             <div className="crm-assistant__composer">
-              <button onClick={() => setInputMessage((previous) => `${previous} ✨`)} aria-label="Agregar sugerencia"><Smile size={16} /></button>
+              <button type="button" onClick={() => setInputMessage((previous) => previous || 'Necesito un resumen ejecutivo')} aria-label="Agregar sugerencia"><Smile size={16} /></button>
               <input value={inputMessage} onChange={(event) => setInputMessage(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') handleSendMessage(); }} placeholder="Escribe un mensaje..." />
               <button onClick={() => showToast('Adjuntar archivo...', 'info')} aria-label="Adjuntar archivo"><Paperclip size={15} /></button>
               <button className="crm-send-button" onClick={handleSendMessage} aria-label="Enviar mensaje"><Send size={14} /></button>
