@@ -2991,6 +2991,12 @@ async function main() {
   });
 }
 
-main().catch((err) => {
-  console.error("Failed to start server", err);
-});
+export { app };
+
+// Vercel imports this Express app from api/[...path].ts. The standalone
+// listener is only needed for the local/Replit Node process.
+if (!process.env.VERCEL) {
+  main().catch((err) => {
+    console.error("Failed to start server", err);
+  });
+}
