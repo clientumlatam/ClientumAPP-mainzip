@@ -43,6 +43,10 @@ const clerkAuthorizedParties = (process.env.CLERK_AUTHORIZED_PARTIES || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const clerkPublishableKey =
+  process.env.CLERK_PUBLISHABLE_KEY ||
+  process.env.VITE_CLERK_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(express.json({
@@ -55,7 +59,7 @@ app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
       getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
+      clerkPublishableKey,
     ),
     ...(clerkAuthorizedParties.length > 0
       ? { authorizedParties: clerkAuthorizedParties }
