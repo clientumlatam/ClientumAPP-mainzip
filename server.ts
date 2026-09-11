@@ -1,6 +1,5 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
@@ -2954,6 +2953,9 @@ app.get("/api/whatsapp/webhook", (req, res) => {
 // --- Vite Middleware Integration ---
 async function main() {
   if (process.env.NODE_ENV !== "production") {
+    // Vite is a local development dependency. Keep it out of the Vercel
+    // serverless import graph; the API handler only needs the Express app.
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
