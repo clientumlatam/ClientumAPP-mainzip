@@ -346,7 +346,7 @@ const requireProductionAuthentication: express.RequestHandler = async (req, res,
   next();
 };
 
-app.get("/health", (_req, res) => {
+app.get(["/health", "/api/health"], (_req, res) => {
   res.json({
     status: "OK",
     service: "clientum-crm",
